@@ -28,7 +28,6 @@ require_once 'includes/lib/class-rew-bulk-editor-admin-api.php';
 require_once 'includes/lib/class-rew-bulk-editor-post-type.php';
 require_once 'includes/lib/class-rew-bulk-editor-taxonomy.php';
 
-
 function rew_bulk_editor() {
 	$instance = Rew_Bulk_Editor::instance( __FILE__, '1.0.0' );
 

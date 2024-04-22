@@ -110,6 +110,38 @@ class Rew_Bulk_Editor_Settings {
 			}
 			add_action( 'admin_print_styles-' . $page, array( $this, 'settings_assets' ) );
 		}
+		
+		add_submenu_page(
+			$this->parent->_token . '_settings',
+			__( 'Post Types', 'rew-bulk-editor' ),
+			__( 'Post Types', 'rew-bulk-editor' ),
+			'edit_pages',
+			'edit.php?post_type=post-type-task'
+		);
+		
+		add_submenu_page(
+			$this->parent->_token . '_settings',
+			__( 'Taxonomies', 'rew-bulk-editor' ),
+			__( 'Taxonomies', 'rew-bulk-editor' ),
+			'edit_pages',
+			'edit.php?post_type=taxonomy-task'
+		);
+		
+		add_submenu_page(
+			$this->parent->_token . '_settings',
+			__( 'Users', 'rew-bulk-editor' ),
+			__( 'Users', 'rew-bulk-editor' ),
+			'edit_pages',
+			'edit.php?post_type=user-task'
+		);
+		
+		add_submenu_page(
+			$this->parent->_token . '_settings',
+			__( 'CSV', 'rew-bulk-editor' ),
+			__( 'CSV', 'rew-bulk-editor' ),
+			'edit_pages',
+			'edit.php?post_type=csv-task'
+		);
 	}
 
 	/**
@@ -119,22 +151,20 @@ class Rew_Bulk_Editor_Settings {
 	 */
 	private function menu_settings() {
 		
-		/*
 		return apply_filters(
 			$this->base . 'menu_settings',
 			array(
-				'location'    => 'options', // Possible settings: options, menu, submenu.
-				'parent_slug' => 'options-general.php',
-				'page_title'  => __( 'Plugin Settings', 'rew-bulk-editor' ),
-				'menu_title'  => __( 'Plugin Settings', 'rew-bulk-editor' ),
+				'location'    => 'menu', // Possible settings: options, menu, submenu.
+				'parent_slug' => 'admin.php',
+				'page_title'  => __( 'Bulk Editor', 'rew-bulk-editor' ),
+				'menu_title'  => __( 'Bulk Editor', 'rew-bulk-editor' ),
 				'capability'  => 'manage_options',
 				'menu_slug'   => $this->parent->_token . '_settings',
 				'function'    => array( $this, 'settings_page' ),
-				'icon_url'    => '',
-				'position'    => null,
+				'icon_url'    => 'dashicons-list-view',
+				'position'    => 75,
 			)
 		);
-		*/
 	}
 
 	/**
@@ -180,138 +210,25 @@ class Rew_Bulk_Editor_Settings {
 	 */
 	private function settings_fields() {
 		
-		$settings = array();
+		$settings = array(
 		
-		/*
-		$settings['standard'] = array(
-			'title'       => __( 'Standard', 'rew-bulk-editor' ),
-			'description' => __( 'These are fairly standard form input fields.', 'rew-bulk-editor' ),
-			'fields'      => array(
-				array(
-					'id'          => 'text_field',
-					'label'       => __( 'Some Text', 'rew-bulk-editor' ),
-					'description' => __( 'This is a standard text field.', 'rew-bulk-editor' ),
-					'type'        => 'text',
-					'default'     => '',
-					'placeholder' => __( 'Placeholder text', 'rew-bulk-editor' ),
-				),
-				array(
-					'id'          => 'password_field',
-					'label'       => __( 'A Password', 'rew-bulk-editor' ),
-					'description' => __( 'This is a standard password field.', 'rew-bulk-editor' ),
-					'type'        => 'password',
-					'default'     => '',
-					'placeholder' => __( 'Placeholder text', 'rew-bulk-editor' ),
-				),
-				array(
-					'id'          => 'secret_text_field',
-					'label'       => __( 'Some Secret Text', 'rew-bulk-editor' ),
-					'description' => __( 'This is a secret text field - any data saved here will not be displayed after the page has reloaded, but it will be saved.', 'rew-bulk-editor' ),
-					'type'        => 'text_secret',
-					'default'     => '',
-					'placeholder' => __( 'Placeholder text', 'rew-bulk-editor' ),
-				),
-				array(
-					'id'          => 'text_block',
-					'label'       => __( 'A Text Block', 'rew-bulk-editor' ),
-					'description' => __( 'This is a standard text area.', 'rew-bulk-editor' ),
-					'type'        => 'textarea',
-					'default'     => '',
-					'placeholder' => __( 'Placeholder text for this textarea', 'rew-bulk-editor' ),
-				),
-				array(
-					'id'          => 'single_checkbox',
-					'label'       => __( 'An Option', 'rew-bulk-editor' ),
-					'description' => __( 'A standard checkbox - if you save this option as checked then it will store the option as \'on\', otherwise it will be an empty string.', 'rew-bulk-editor' ),
-					'type'        => 'checkbox',
-					'default'     => '',
-				),
-				array(
-					'id'          => 'select_box',
-					'label'       => __( 'A Select Box', 'rew-bulk-editor' ),
-					'description' => __( 'A standard select box.', 'rew-bulk-editor' ),
-					'type'        => 'select',
-					'options'     => array(
-						'drupal'    => 'Drupal',
-						'joomla'    => 'Joomla',
-						'wordpress' => 'WordPress',
-					),
-					'default'     => 'wordpress',
-				),
-				array(
-					'id'          => 'radio_buttons',
-					'label'       => __( 'Some Options', 'rew-bulk-editor' ),
-					'description' => __( 'A standard set of radio buttons.', 'rew-bulk-editor' ),
-					'type'        => 'radio',
-					'options'     => array(
-						'superman' => 'Superman',
-						'batman'   => 'Batman',
-						'ironman'  => 'Iron Man',
-					),
-					'default'     => 'batman',
-				),
-				array(
-					'id'          => 'multiple_checkboxes',
-					'label'       => __( 'Some Items', 'rew-bulk-editor' ),
-					'description' => __( 'You can select multiple items and they will be stored as an array.', 'rew-bulk-editor' ),
-					'type'        => 'checkbox_multi',
-					'options'     => array(
-						'square'    => 'Square',
-						'circle'    => 'Circle',
-						'rectangle' => 'Rectangle',
-						'triangle'  => 'Triangle',
-					),
-					'default'     => array( 'circle', 'triangle' ),
-				),
+			'overview' => array(
+			
+				'title'       => __( 'Overview', 'rew-bulk-editor' ),
+				'description' => '',
+				'fields'      => array(),
 			),
+			'settings' => array(
+			
+				'title'       => __( 'Settings', 'rew-bulk-editor' ),
+				'description' => __( 'Bulk editor settings', 'rew-bulk-editor'),
+				'fields'      => array(),
+			),			
 		);
-
-		$settings['extra'] = array(
-			'title'       => __( 'Extra', 'rew-bulk-editor' ),
-			'description' => __( 'These are some extra input fields that maybe aren\'t as common as the others.', 'rew-bulk-editor' ),
-			'fields'      => array(
-				array(
-					'id'          => 'number_field',
-					'label'       => __( 'A Number', 'rew-bulk-editor' ),
-					'description' => __( 'This is a standard number field - if this field contains anything other than numbers then the form will not be submitted.', 'rew-bulk-editor' ),
-					'type'        => 'number',
-					'default'     => '',
-					'placeholder' => __( '42', 'rew-bulk-editor' ),
-				),
-				array(
-					'id'          => 'colour_picker',
-					'label'       => __( 'Pick a colour', 'rew-bulk-editor' ),
-					'description' => __( 'This uses WordPress\' built-in colour picker - the option is stored as the colour\'s hex code.', 'rew-bulk-editor' ),
-					'type'        => 'color',
-					'default'     => '#21759B',
-				),
-				array(
-					'id'          => 'an_image',
-					'label'       => __( 'An Image', 'rew-bulk-editor' ),
-					'description' => __( 'This will upload an image to your media library and store the attachment ID in the option field. Once you have uploaded an imge the thumbnail will display above these buttons.', 'rew-bulk-editor' ),
-					'type'        => 'image',
-					'default'     => '',
-					'placeholder' => '',
-				),
-				array(
-					'id'          => 'multi_select_box',
-					'label'       => __( 'A Multi-Select Box', 'rew-bulk-editor' ),
-					'description' => __( 'A standard multi-select box - the saved data is stored as an array.', 'rew-bulk-editor' ),
-					'type'        => 'select_multi',
-					'options'     => array(
-						'linux'   => 'Linux',
-						'mac'     => 'Mac',
-						'windows' => 'Windows',
-					),
-					'default'     => array( 'linux' ),
-				),
-			),
-		);
-		*/
-
+		
 		return apply_filters( $this->parent->_token . '_settings_fields', $settings );
 	}
-
+	
 	/**
 	 * Register plugin settings
 	 *
@@ -401,7 +318,7 @@ class Rew_Bulk_Editor_Settings {
 
 		// Build page HTML.
 		$html      = '<div class="wrap" id="' . $this->parent->_token . '_settings">' . "\n";
-			$html .= '<h2>' . __( 'Plugin Settings', 'rew-bulk-editor' ) . '</h2>' . "\n";
+			$html .= '<h2>' . __( 'Bulk Editor', 'rew-bulk-editor' ) . '</h2>' . "\n";
 
 			$tab = '';
 		//phpcs:disable
@@ -433,9 +350,14 @@ class Rew_Bulk_Editor_Settings {
 
 				// Set tab link.
 				$tab_link = add_query_arg( array( 'tab' => $section ) );
-				if ( isset( $_GET['settings-updated'] ) ) { //phpcs:ignore
-					$tab_link = remove_query_arg( 'settings-updated', $tab_link );
-				}
+				
+				$tab_link = remove_query_arg( array(
+					
+					'settings-updated',
+					'pt',
+					'tax',
+					
+				), $tab_link );
 
 				// Output tab.
 				$html .= '<a href="' . $tab_link . '" class="' . esc_attr( $class ) . '">' . esc_html( $data['title'] ) . '</a>' . "\n";
@@ -445,7 +367,58 @@ class Rew_Bulk_Editor_Settings {
 
 			$html .= '</h2>' . "\n";
 		}
-
+		
+		if( empty($tab) || $tab == 'overview' ){
+	
+			$html .= '<div id="dashboard-widgets-wrap">' . "\n";
+				$html .= '<div id="dashboard-widgets" class="metabox-holder">' . "\n";
+					$html .= '<div class="postbox-container">' . "\n";
+						$html .= '<div id="side-sortables" class="meta-box-sortables ui-sortable">' . "\n";
+							
+							$html .= '<div id="dashboard_right_now" class="postbox ">' . "\n";
+								
+								$html .= '<div class="postbox-header">' . "\n";
+									$html .= '<h2 class="hndle ui-sortable-handle">Tasks</h2>' . "\n";
+								$html .= '</div>' . "\n";
+								
+								$html .= '<div class="inside">' . "\n";
+									$html .= '<div class="main">' . "\n";
+									
+										$html .= '<ul>' . "\n";
+											
+											if( !empty($tasks) ){
+											
+												foreach( $tasks as $task ){
+													
+													$html .= '<li>' . "\n";
+													
+														$html .= $task->post_title . "\n";
+													
+													$html .= '</li>' . "\n";
+												}
+											}
+											else{
+												
+												$html .= '<li>' . "\n";
+												
+													$html .= __( 'No pending tasks', 'rew-bulk-editor' );
+												
+												$html .= '</li>' . "\n";
+											}
+										
+										$html .= '</ul>' . "\n";
+									
+									$html .= '</div>' . "\n";
+								$html .= '</div>' . "\n";
+							
+							$html .= '</div>' . "\n";
+						$html .= '</div>' . "\n";
+					$html .= '</div>' . "\n";
+				$html .= '</div>' . "\n";
+			$html .= '</div>' . "\n";
+		}
+		else{
+		
 			$html .= '<form method="post" action="options.php" enctype="multipart/form-data">' . "\n";
 
 				// Get settings fields.
@@ -453,12 +426,15 @@ class Rew_Bulk_Editor_Settings {
 				settings_fields( $this->parent->_token . '_settings' );
 				do_settings_sections( $this->parent->_token . '_settings' );
 				$html .= ob_get_clean();
-
+				
 				$html     .= '<p class="submit">' . "\n";
 					$html .= '<input type="hidden" name="tab" value="' . esc_attr( $tab ) . '" />' . "\n";
 					$html .= '<input name="Submit" type="submit" class="button-primary" value="' . esc_attr( __( 'Save Settings', 'rew-bulk-editor' ) ) . '" />' . "\n";
 				$html     .= '</p>' . "\n";
+			
 			$html         .= '</form>' . "\n";
+		}
+		
 		$html             .= '</div>' . "\n";
 
 		echo wp_kses_normalize_entities($html); //phpcs:ignore
