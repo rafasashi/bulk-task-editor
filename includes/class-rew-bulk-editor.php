@@ -142,8 +142,8 @@ class Rew_Bulk_Editor {
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_styles' ), 10, 1 );
 
 		add_action('wp_ajax_search_taxonomy_terms' , array($this,'search_taxonomy_terms') );
-		add_action('wp_ajax_get_bulk_action_form' , array($this,'get_bulk_action_form') );
-		add_action('wp_ajax_get_task_process' , array($this,'get_task_process') );
+		add_action('wp_ajax_render_post_type_action' , array($this,'render_post_type_action') );
+		add_action('wp_ajax_render_post_type_process' , array($this,'render_post_type_process') );
 
 		// Load API for generic admin functions.
 		if ( is_admin() ) {
@@ -250,14 +250,6 @@ class Rew_Bulk_Editor {
 			
 			$this->admin->add_meta_box (
 				
-				'bulk-editor-post-type',
-				__( 'Post Type', 'rew-bulk-editor' ), 
-				array('post-type-task'),
-				'advanced'
-			);
-			
-			$this->admin->add_meta_box (
-				
 				'bulk-editor-taxonomy',
 				__( 'Taxonomy', 'rew-bulk-editor' ), 
 				array('taxonomy-task'),
@@ -284,48 +276,21 @@ class Rew_Bulk_Editor {
 		add_filter('post-type-task_custom_fields', function($fields=array()){
 			
 			global $post;
+	
+			$post_id = !empty($post->ID) ? $post->ID : 0; 
 			
-			// process
-			
-			$fields[]=array(
-			
-				'metabox' 		=> array('name'=>'bulk-editor-process'),
-				'id'        	=> $this->_base . 'process',
-				'label'       	=> '',
-				'description' 	=> '',
-				'type'        	=> 'html',
-				'data'     		=> '<div id="rewbe_task_process" class="loading"></div>',
-			);
-			
-			// post type
-			
-			$post_types = get_post_types('','objects');
-			
-			$options = array();
+			$slug = get_post_meta($post_id,$this->_base . 'post_type',true);
 
-			foreach( $post_types as $post_type ){
-				
-				if( $post_type->publicly_queryable ){
-					
-					$options[$post_type->name] = $post_type->labels->singular_name;
-				}
-			}
-			
-			$fields[]=array(
-			
-				'metabox' 		=> array('name'=>'bulk-editor-post-type'),
-				'id'          	=> $this->_base . 'post_type',
-				'label'       	=> '',
-				'description' 	=> '',
-				'type'        	=> 'select',
-				'options'	  	=> $options,
-				'default'     	=> '',
-				'placeholder' 	=> '',
-			);	
-			
-			$slug = get_post_meta($post->ID,$this->_base . 'post_type',true);
-			
 			if( $post_type = get_post_type_object($slug) ){
+				
+				// post type
+
+				$fields[]=array(
+				
+					'metabox'	=> array('name'=>'bulk-editor-filters'),
+					'id'		=> $this->_base . 'post_type',
+					'type'      => 'hidden',
+				);
 				
 				// status
 				
@@ -333,7 +298,7 @@ class Rew_Bulk_Editor {
 				
 					'metabox' 		=> array('name'=>'bulk-editor-filters'),
 					'id'          	=> $this->_base . 'post_status',
-					'label'       	=> '<b>Status</b>',
+					'label'       	=> 'Status',
 					'description' 	=> '',
 					'type'        	=> 'checkbox_multi',
 					'options'	  	=> array(
@@ -344,7 +309,6 @@ class Rew_Bulk_Editor {
 						'trash' 	=> 'Trash',
 					),
 					'default'     	=> '',
-					'placeholder' 	=> '',
 				);
 				
 				// filters
@@ -359,8 +323,7 @@ class Rew_Bulk_Editor {
 						
 							'metabox' 		=> array('name'=>'bulk-editor-filters'),
 							'id'          	=> $this->_base . 'tax_' . $taxonomy->name,
-							'label'       	=> '<b>'.$taxonomy->label.'</b>',
-							'description' 	=> '',
+							'label'       	=> $taxonomy->label,
 							'type'        	=> 'terms',
 							'taxonomy'    	=> $taxonomy->name,				
 							'placeholder' 	=> 'One ' . $taxonomy->labels->singular_name . ' name, slug, or ID per line',
@@ -372,11 +335,9 @@ class Rew_Bulk_Editor {
 				
 					'metabox' 		=> array('name'=>'bulk-editor-filters'),
 					'id'        	=> $this->_base . 'meta',
-					'label'       	=> '<b>Meta</b>',
-					'description' 	=> '',
+					'label'       	=> 'Meta',
 					'type'        	=> 'key_value',
 					'default'     	=> '',
-					'placeholder' 	=> '',
 				);
 				
 				// actions 
@@ -433,27 +394,54 @@ class Rew_Bulk_Editor {
 					'type'        	=> 'html',
 					'data'        	=> '<div id="rewbe_action_fields" class="loading"></div>',
 				);
+				
+				// process
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-process'),
+					'id'        	=> $this->_base . 'process',
+					'type'        	=> 'html',
+					'data'     		=> '<div id="rewbe_task_process" class="loading"></div>',
+				);
 			}
 			else{
+
+				$post_types = get_post_types('','objects');
+				
+				$options = array();
+
+				foreach( $post_types as $post_type ){
+					
+					if( $post_type->publicly_queryable ){
+						
+						$options[$post_type->name] = $post_type->labels->singular_name;
+					}
+				}
 				
 				$fields[]=array(
 				
 					'metabox' 		=> array('name'=>'bulk-editor-filters'),
-					'id'          	=> 'notice',
-					'label' 		=> '',
-					'description' 	=> '',
-					'type'        	=> 'html',
-					'data'        	=> '<i>Select a post type</i>',
+					'id'          	=> $this->_base . 'post_type',
+					'label'       	=> 'Type',
+					'type'        	=> 'select',
+					'options'	  	=> $options,
 				);
 				
 				$fields[]=array(
 				
 					'metabox' 		=> array('name'=>'bulk-editor-action'),
 					'id'          	=> 'notice',
-					'label' 		=> '',
-					'description' 	=> '',
 					'type'        	=> 'html',
-					'data'        	=> '<i>Select a post type</i>',
+					'data'        	=> '<i>Select a post type and save</i>',
+				);
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-process'),
+					'id'          	=> 'notice',
+					'type'        	=> 'html',
+					'data'        	=> '<i>Select a post type and save</i>',
 				);
 			}
 				
@@ -742,9 +730,7 @@ class Rew_Bulk_Editor {
 		wp_die();
 	}
 	
-	public function get_task_process(){
-		
-		$html = '';
+	public function render_post_type_process(){
 		
 		if( !empty($_GET['task']) && is_array($_GET['task']) ){
 			
@@ -779,82 +765,57 @@ class Rew_Bulk_Editor {
 			
 			$progress = 0;
 
-			$html .= '<p class="form-field">';
-				
-				$html .= '<label><b>Matching items</b></label>';
-				
-				$html .= '<br>';
+			// render fields
 
-				$html .= $this->admin->display_field(array(
-				
-					'id'        	=> $this->_base . 'per_process',
-					'label'       	=> '',
-					'description' 	=> '',
-					'type'        	=> 'number',
-					'data'      	=> $total_items,
-					'disable'		=> true,
-					'style'			=> 'background:#eee;color:#888;font-weight:bold;',
-				
-				),$post,false);
-
-			$html .= '</p>' . "\n";
+			$this->admin->display_meta_box_field(array(
 			
-			$html .= '<p class="form-field">';
-				
-				$html .= '<label><b>Items per process</b></label>';
-				
-				$html .= $this->admin->display_field(array(
-				
-					'id'        	=> $this->_base . 'per_process',
-					'label'       	=> '',
-					'description' 	=> '',
-					'type'        	=> 'number',
-					'default'       => 10,
-				
-				),$post,false);
-
-			$html .= '</p>' . "\n";
-
-			$html .= '<p class="form-field">';
-				
-				$html .= '<label><b>Calling method</b></label>';
-				$html .= '<br>';
-				$html .= $this->admin->display_field(array(
-				
-					'id'        	=> $this->_base . 'call',
-					'label'       	=> '',
-					'description' 	=> '',
-					'type'        	=> 'radio',
-					'options'       => array(
-					
-						'ajax' 	=> 'AJAX',
-						'cron' 	=> 'CRON',
-					),
-					'default'        => 'ajax',
-				
-				),$post,false);
-
-			$html .= '</p>' . "\n";
+				'id'        	=> $this->_base . 'per_process',
+				'label'       	=> 'Matching items',
+				'type'        	=> 'number',
+				'data'      	=> $total_items,
+				'default'		=> 0,
+				'disable'		=> true,
+				'style'			=> 'background:#eee;color:#888;font-weight:bold;',
 			
-			$html .= '<p class="form-field">';
-				
-				$html .= '<label><b>Progress</b></label>';
-				
-				$html .= '<br>';
-				
-				$html .= $progress . '%';
+			),$post);
 
-			$html .= '</p>' . "\n";
+			$this->admin->display_meta_box_field(array(
+			
+				'id'        	=> $this->_base . 'per_process',
+				'label'       	=> 'Items per process',
+				'type'        	=> 'number',
+				'default'       => 10,
+			
+			),$post);
+
+			$this->admin->display_meta_box_field(array(
+			
+				'id'        	=> $this->_base . 'call',
+				'label'       	=> 'Calling method',
+				'type'        	=> 'radio',
+				'options'       => array(
+				
+					'ajax' 	=> 'AJAX',
+					'cron' 	=> 'CRON',
+				),
+				'default'       => 'ajax',
+			
+			),$post);
+			
+			$this->admin->display_meta_box_field(array(
+			
+				'id'		=> $this->_base . 'progress',
+				'label'     => 'Progress',
+				'type'      => 'html',
+				'data'      => $progress . '%',
+			
+			),$post);
 		}
-		
-		echo $html;
-		
+
 		wp_die();
 	}
 	
-	public function get_bulk_action_form(){
-		
-		$html = '';
+	public function render_post_type_action(){
 		
 		if( current_user_can('edit_posts') ){
 			
@@ -872,27 +833,16 @@ class Rew_Bulk_Editor {
 							
 							if( $bulk_action == $action['id'] && !empty($action['fields']) ){
 								
-								$html .= '<p class="form-field">';
-									
-									foreach( $action['fields'] as $field ){
-										
-										if( !empty($field['label']) ){
-											
-											$html .= '<label for="' . $field['id'] . '"><b>' . $field['label'] . '</b></label>';
-										}
-										
-										$html .= $this->admin->display_field($field,$post,false);
-									}
-								
-								$html .= '</p>' . "\n";
+								foreach( $action['fields'] as $field ){
+
+									$this->admin->display_meta_box_field($field,$post);
+								}
 							}
 						}
 					}
 				}
 			}
 		}
-		
-		echo $html;
 		
 		wp_die();
 	}
@@ -958,5 +908,4 @@ class Rew_Bulk_Editor {
 	private function _log_version_number() { //phpcs:ignore
 		update_option( $this->_token . '_version', $this->_version );
 	} // End _log_version_number ()
-
 }

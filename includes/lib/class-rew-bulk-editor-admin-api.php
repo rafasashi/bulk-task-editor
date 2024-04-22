@@ -306,18 +306,24 @@ class Rew_Bulk_Editor_Admin_API {
 			case 'radio':
 			case 'select_multi':
 				$html .= '<p class="description">' . $field['description'] . '</p>';
-				break;
-
+			break;
 			default:
-				if ( ! $post ) {
-					$html .= '<label for="' . esc_attr( $field['id'] ) . '">' . "\n";
+				
+				if ( !$post ){
+					
+					$html .= '<labelfor="' . esc_attr( $field['id'] ) . '">' . PHP_EOL;
 				}
-
-				$html .= '<span class="description">' . $field['description'] . '</span>' . "\n";
-
-				if ( ! $post ) {
-					$html .= '</label>' . "\n";
+				
+				if( !empty($field['description']) ){
+					
+					$html .= '<span class="description">' . $field['description'] . '</span>' . PHP_EOL;
 				}
+				
+				if ( !$post ){
+					
+					$html .= '</label>' . PHP_EOL;
+				}
+				
 				break;
 		}
 
@@ -430,17 +436,37 @@ class Rew_Bulk_Editor_Admin_API {
 	 * @param  object $post  Post object.
 	 * @return void
 	 */
-	public function display_meta_box_field( $field = array(), $post = null ) {
+	public function display_meta_box_field( $field = array(), $post = null, $echo = true ) {
 
 		if ( ! is_array( $field ) || 0 === count( $field ) || empty($field['type'])  ) {
 			return;
 		}
 
-		$field = '<p class="form-field"><label for="' . $field['id'] . '">' . $field['label'] . '</label>' . $this->display_field( $field, $post, false ) . '</p>' . "\n";
-
-		echo $field; //phpcs:ignore
+		$html = '<p class="form-field">';
+			
+			if( !empty($field['label']) ){
+				
+				$html .= '<label for="' . $field['id'] . '" style="display:block;">';
+					
+					$html .= '<b>' . $field['label'] . '</b>';
+				
+				$html .= '</label>';
+			}
+			
+			$html .= $this->display_field( $field, $post, false );
+		
+		$html .= '</p>' . PHP_EOL;
+		
+		if($echo){
+			
+			echo $html;
+		}
+		else{
+			
+			return $html;
+		}
 	}
-
+	
 	/**
 	 * Save metabox fields.
 	 *

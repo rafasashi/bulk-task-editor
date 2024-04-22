@@ -271,7 +271,7 @@
 					type: "GET",
 					dataType : "html",
 					data : {
-						action 	: "get_task_process",
+						action 	: "render_post_type_process",
 						task 	: $("#post").serializeObject(),
 					},
 				}).done(function( data ) {
@@ -310,7 +310,7 @@
 					type: "GET",
 					dataType : "html",
 					data : {
-						action 	: "get_bulk_action_form",
+						action 	: "render_post_type_action",
 						pid 	: post_id,
 						pt 		: post_type,
 						ba 		: bulk_action,
