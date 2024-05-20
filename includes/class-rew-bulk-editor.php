@@ -871,8 +871,8 @@ class Rew_Bulk_Editor {
 										'operator' 	=> 'in',
 										'children' 	=> 'in',
 									),
-									'hierarchical'	=> $taxonomy->hierarchical,
-									'operator'		=> true,
+									'hierarchical'	=> false,
+									'operator'		=> false,
 								
 								),null,false),
 							);
