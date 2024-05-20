@@ -1043,47 +1043,7 @@ class Rew_Bulk_Editor {
 							
 							$args['taxonomy'] = $taxonomy; 
 							
-							add_action('rewbe_do_post_edit_tax_'.$taxonomy,function($post,$args){
-								
-								if( !empty($args['action']) && !empty($args['taxonomy']) ){
-									
-									$action = sanitize_title($args['action']);
-									
-									$taxonomy = sanitize_title($args['taxonomy']);
-									
-									if( !empty($args['terms']['term']) ){
-										
-										$term_ids = array();
-										
-										foreach( $args['terms']['term'] as $term_id ){
-											
-											$term_id = floatval($term_id);
-											
-											if( $term_id > 0 ){
-												
-												$term_ids[]=$term_id;
-											}
-										}
-										
-										if( !empty($term_ids) ){
-											
-											if( $action == 'add' ){
-											
-												wp_set_post_terms($post->ID, $term_ids, $taxonomy, true);
-											}
-											elseif( $action == 'replace' ){
-											
-												wp_set_post_terms($post->ID, $term_ids, $taxonomy, false);
-											}
-											elseif( $action == 'remove' ){
-												
-												wp_remove_object_terms($post->ID, $term_ids, $taxonomy);
-											}
-										}
-									}
-								}
-								
-							},10,2);
+							add_action('rewbe_do_post_edit_tax_'.$taxonomy,array($this,'edit_post_taxonomy'),10,2);
 						}
 							
 						foreach( $query->posts as $post ){
@@ -1115,6 +1075,51 @@ class Rew_Bulk_Editor {
 		}
 		
 		wp_die();
+	}
+	
+	public function edit_post_taxonomy($post,$args){
+		
+		if( !empty($args['action']) && !empty($args['taxonomy']) ){
+			
+			$action = sanitize_title($args['action']);
+			
+			$taxonomy = sanitize_title($args['taxonomy']);
+			
+			if( !empty($args['terms']['term']) ){
+				
+				$term_ids = array();
+				
+				foreach( $args['terms']['term'] as $term_id ){
+					
+					if( is_numeric($term_id) ){
+						
+						$term_id = intval($term_id);
+						
+						if( $term_id > 0 && term_exists($term_id,$taxonomy) ) {
+							
+							$term_ids[] = $term_id;
+						}
+					}
+				}
+				
+				if( !empty($term_ids) ){
+					
+					if( $action == 'add' ){
+					
+						wp_set_post_terms($post->ID, $term_ids, $taxonomy, true);
+					}
+					elseif( $action == 'replace' ){
+					
+						wp_set_post_terms($post->ID, $term_ids, $taxonomy, false);
+					}
+					elseif( $action == 'remove' ){
+						
+						wp_remove_object_terms($post->ID, $term_ids, $taxonomy);
+					}
+				}
+			}
+		}
+		
 	}
 	
 	public function count_task_items($task){
