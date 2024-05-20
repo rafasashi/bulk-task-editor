@@ -1095,7 +1095,7 @@ class Rew_Bulk_Editor {
 						
 						$term_id = intval($term_id);
 						
-						if( $term_id > 0 && term_exists($term_id,$taxonomy) ) {
+						if( $term_id > 0 && !in_array($term_id,$term_ids) && term_exists($term_id,$taxonomy) ) {
 							
 							$term_ids[] = $term_id;
 						}
