@@ -2,7 +2,7 @@
 /**
  * Plugin Name: REW Bulk Editor
  * Plugin URI: http://www.hughlashbrooke.com/
- * Version: 1.0.0
+ * Version: 1.0.1
  * Description: Bulk Edit posts, terms and users
  * Author: Rafasashi
  * Author URI: https://code.recuweb.com

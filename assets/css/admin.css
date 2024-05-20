@@ -1,13 +1,14 @@
-.tags-input .tag{
-	margin:5px;
+input:disabled{
+    border: 1px solid #8c8f94;
+    background: #eee;
+	font-weight: bold;
 }
-.tags-input .tag .close{
-	padding-left: 4px;
-	cursor: pointer;
+.tags-input .tag {
+    margin-bottom: 5px;
 }
 .tags-input .autocomplete {
 	position: relative;
-	display: inline-block;
+	display: block;
 	margin-top:2px;
 }
 .tags-input .autocomplete input{
@@ -15,21 +16,22 @@
     padding-right: 20px
 }
 
-.tags-input .autocomplete input.loading, div.loading{
+.loading, .tags-input .autocomplete input.loading{
 	
     background-size: 25px;
 	background-repeat: no-repeat;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' style='margin:auto;background:%23fff;display:block;' width='58px' height='58px' viewBox='0 0 100 100' preserveAspectRatio='xMidYMid'%3E%3Crect x='17.5' y='30' width='15' height='40' fill='%236a6a6a'%3E%3Canimate attributeName='y' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='18;30;30' keySplines='0 0.5 0.5 1;0 0.5 0.5 1' begin='-0.19230769230769232s'%3E%3C/animate%3E%3Canimate attributeName='height' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='64;40;40' keySplines='0 0.5 0.5 1;0 0.5 0.5 1' begin='-0.19230769230769232s'%3E%3C/animate%3E%3C/rect%3E%3Crect x='42.5' y='30' width='15' height='40' fill='%23979797'%3E%3Canimate attributeName='y' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='20.999999999999996;30;30' keySplines='0 0.5 0.5 1;0 0.5 0.5 1' begin='-0.09615384615384616s'%3E%3C/animate%3E%3Canimate attributeName='height' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='58.00000000000001;40;40' keySplines='0 0.5 0.5 1;0 0.5 0.5 1' begin='-0.09615384615384616s'%3E%3C/animate%3E%3C/rect%3E%3Crect x='67.5' y='30' width='15' height='40' fill='%23bdbdbd'%3E%3Canimate attributeName='y' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='20.999999999999996;30;30' keySplines='0 0.5 0.5 1;0 0.5 0.5 1'%3E%3C/animate%3E%3Canimate attributeName='height' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='58.00000000000001;40;40' keySplines='0 0.5 0.5 1;0 0.5 0.5 1'%3E%3C/animate%3E%3C/rect%3E%3C/svg%3E");
 }
-.tags-input .autocomplete input.loading{
+
+.loading-right, .tags-input .autocomplete input.loading{
 	
    background-position: center right;
 }
-div.loading{
+
+.loading{
 	
 	min-height:20px;
 }
-
 .tags-input .autocomplete-items {
 	position: absolute;
 	margin-top:1px;
@@ -55,4 +57,19 @@ div.loading{
 .tags-input .autocomplete-active {
 	background-color: DodgerBlue !important;
 	color: #ffffff;
+}
+.tags-input .tag .close, .remove-input-group {
+    color: #555;
+    border-color: #ccc;
+    background: #f7f7f7;
+    box-shadow: 0 1px 0 #ccc;
+    vertical-align: top;
+    padding: 6px 10px;
+    margin: 0 10px;
+    font-size: 12px;
+	font-weight: bold;
+    display: inline-block;
+    text-decoration: none;
+    border-radius: 3px;
+	cursor: pointer;
 }

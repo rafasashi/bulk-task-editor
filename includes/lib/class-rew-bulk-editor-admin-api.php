@@ -62,15 +62,6 @@ class Rew_Bulk_Editor_Admin_API {
 			// Get saved field data.
 			
 			$data = get_post_meta( $post->ID, $option_name, true );
-			
-			if( $field['type'] == 'terms' && !empty($field['taxonomy']) && is_array($data) ){
-				
-				$data = get_terms( array(
-				
-					'taxonomy' 	=> $field['taxonomy'],
-					'include' 	=> array_map('intval',$data),
-				) );
-			}
 		} 
 		else {
 
@@ -202,17 +193,23 @@ class Rew_Bulk_Editor_Admin_API {
 				$html .= '</select> ';
 			break;
 
-			case 'key_value':
+			case 'meta':
 				
-				if( !isset($data['key']) || !isset($data['value']) ){
+				if( !isset($data['key']) || !isset($data['value']) || !isset($data['type']) || !isset($data['compare']) ){
 
 					$data = [
 					
-						'key' 	=> [ 0 => '' ], 
-						'value' => [ 0 => '' ]
+						'key' 		=> [ 0 => '' ], 
+						'value' 	=> [ 0 => '' ],
+						'type' 		=> [ 0 => '' ],
+						'compare' 	=> [ 0 => '' ],
 					];
 				}
-
+				
+				$type_options = $this->get_type_options();
+				
+				$compare_options = $this->get_compare_options();
+				
 				$html .= '<div id="'.$field['id'].'">';
 					
 					$html .= ' <a href="#" class="add-input-group" data-target="'.$field['id'].'" style="line-height:40px;">Add field</a>';
@@ -224,13 +221,65 @@ class Rew_Bulk_Editor_Admin_API {
 							$class='input-group-row';
 
 							$value = str_replace('\\\'','\'',$data['value'][$e]);
+							
+							$type = str_replace('\\\'','\'',$data['type'][$e]);
+							
+							$compare = str_replace('\\\'','\'',$data['compare'][$e]);
 									
 							$html .= '<li class="'.$class.'" style="display:inline-block;width:100%;">';
 								
-								$html .= '<input type="text" placeholder="'.( !empty($field['placeholder']['key']) ? $field['placeholder']['key'] : 'key' ).'" name="'.$option_name.'[key][]" style="width:30%;float:left;" value="'.$data['key'][$e].'">';
+								$html .= '<input placeholder="key" type="text" name="'.$option_name.'[key][]" style="width:30%;float:left;" value="'.$data['key'][$e].'">';
 								
-								$html .= '<input type="text" placeholder="'.( !empty($field['placeholder']['value']) ? $field['placeholder']['value'] : 'value' ).'" name="'.$option_name.'[value][]" style="width:30%;float:left;" value="'.$value.'">';
-
+								$html .= '<input placeholder="value" type="text" name="'.$option_name.'[value][]" style="width:30%;float:left;" value="'.$value.'">';
+								
+								$html .= '<select name="'.$option_name.'[type][]" style="width:80px;float:left;">';
+									
+									foreach ( $type_options as $k => $v ) {
+										
+										$selected = false;
+										
+										if( is_numeric($type) && floatval($k) === floatval($type) ) {
+											
+											$selected = true;
+										}
+										elseif( $k === $type ){
+											
+											$selected = true;
+										}
+										elseif( empty($type) && $k == 'char' ){
+											
+											$selected = true;
+										}
+										
+										$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+									}
+								
+								$html .= '</select> ';
+								
+								$html .= '<select name="'.$option_name.'[compare][]" style="width:100px;float:left;">';
+									
+									foreach ( $compare_options as $k => $v ) {
+										
+										$selected = false;
+										
+										if( is_numeric($compare) && floatval($k) === floatval($compare) ) {
+											
+											$selected = true;
+										}
+										elseif( $k === $compare ){
+											
+											$selected = true;
+										}
+										elseif( empty($type) && $k == 'equal' ){
+											
+											$selected = true;
+										}
+										
+										$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+									}
+								
+								$html .= '</select> ';
+								
 								if( $e > 0 ){
 									
 									$html .= '<a class="remove-input-group" href="#">x</a> ';
@@ -247,36 +296,131 @@ class Rew_Bulk_Editor_Admin_API {
 
 			case 'terms':
 				
-				$html .= '<div class="tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'">';
+				$html .= '<div class="tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-name="'.$option_name.'">';
 					
-					$html .= '<span class="data">';
+					$html .= '<div class="data">';
 						
-						// default empty value
+						$html .= '<input type="hidden" value="-1" name="'.$option_name.'[term][]"/>';
 						
-						$html .= '<input type="hidden" value="-1" name="'.$option_name.'[]"/>';
-						
-						if( !empty($data) ){
+						if( !empty($field['operator']) ){
 							
-							foreach( $data as $term ){
+							$html .= '<input type="hidden" value="in" name="'.$option_name.'[operator][]"/>';
+						}
+						
+						if( !empty($field['hierarchical']) ){
+						
+							$html .= '<input type="hidden" value="in" name="'.$option_name.'[children][]"/>';
+						}
+						
+						if( !empty($data['term']) ){
+							
+							foreach( $data['term'] as $i => $id ){
 								
-								if( !empty($term->name) ){
+								$id = floatval($id);
+								
+								if( $id > 0 ){
 									
-									$html .= '<span class="tag button button-default"><span class="text">' . $term->name . '</span><span class="close m-0 p-0 border-0 bg-transparent">&times;</span><input type="hidden" value="' . $term->term_id . '" name="'.$option_name.'[]"/></span>';
+									$term = get_term($id);
+									
+									if( !empty($term->name) ){
+										
+										$html .= $this->display_field(array(
+									
+											'id'    => $field['id'],
+											'name'  => $option_name,
+											'type' 	=> 'term',
+											'data' 	=> array(
+											
+												'term' 		=> $term,
+												'operator' 	=> !empty($data['operator'][$i]) ? str_replace('\\\'','\'',$data['operator'][$i]) : 'in',
+												'children' 	=> !empty($data['children'][$i]) ? str_replace('\\\'','\'',$data['children'][$i]) : 'in',
+											),
+											'operator' 		=> !empty($field['operator']) ? true : false,
+											'hierarchical' 	=> !empty($field['hierarchical']) ? true : false,
+											
+										),null,false);
+									}
 								}
 							}
 						}
 						
-					$html .= '</span>';
-
-					$html .= '<span class="autocomplete">';
-						$html .= '<input style="border:none;" type="text" placeholder="add item...">';
+					$html .= '</div>';
+					
+					$html .= '<div class="autocomplete">';
+						
+						$html .= '<input style="width:30%;border:none;" type="text" placeholder="add term...">';
+						
 						$html .= '<div class="autocomplete-items"></div>';
-					$html .= '</span>';
+					
+					$html .= '</div>';
 					
 				$html .= '</div>';
 				
 			break;
+			case 'term':
 			
+				$html .= '<div class="tag">';
+					
+					$html .= '<input style="width:30%;float:left;" type="text" value="' . $data['term']->name . '" disabled="disabled"/>';
+
+					$html .= '<input type="hidden" value="' . $data['term']->term_id . '" name="'.$option_name.'[term][]"/>';
+					
+					if( !empty($field['operator']) ){
+						
+						$operators 	= $this->get_operator_options();
+						$operator = $data['operator'];
+						
+						$html .= '<select name="'.$option_name.'[operator][]" style="width:80px;float:left;">';
+
+							foreach ( $operators as $k => $v ) {
+								
+								$selected = false;
+								
+								if( $k === $operator ){
+									
+									$selected = true;
+								}
+								elseif( empty($operator) && $k == 'in' ){
+									
+									$selected = true;
+								}
+								
+								$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+							}
+							
+						$html .= '</select> ';
+					}
+					
+					if( !empty($field['hierarchical']) ){
+					
+						$children = $this->get_children_options();
+					
+						$html .= '<select name="'.$option_name.'[children][]" style="width:150px;float:left;">';
+
+							foreach ( $children as $k => $v ) {
+								
+								$selected = false;
+								
+								if( $k === $data['children'] ){
+									
+									$selected = true;
+								}
+								elseif( empty($data['children']) && $k == 'in' ){
+									
+									$selected = true;
+								}
+								
+								$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+							}
+							
+						$html .= '</select> ';
+					}
+					
+					$html .= '<span class="close m-0 p-0 border-0 bg-transparent">x</span>';
+					
+				$html .= '</div>';
+					
+			break;
 			case 'image':
 				$image_thumb = '';
 				if ( $data ) {
@@ -305,13 +449,16 @@ class Rew_Bulk_Editor_Admin_API {
 			case 'checkbox_multi':
 			case 'radio':
 			case 'select_multi':
-				$html .= '<p class="description">' . $field['description'] . '</p>';
+				if( !empty($field['description']) ){
+				
+					$html .= '<p class="description">' . $field['description'] . '</p>';
+				}
 			break;
 			default:
 				
 				if ( !$post ){
 					
-					$html .= '<labelfor="' . esc_attr( $field['id'] ) . '">' . PHP_EOL;
+					$html .= '<label for="' . esc_attr( $field['id'] ) . '">' . PHP_EOL;
 				}
 				
 				if( !empty($field['description']) ){
@@ -334,6 +481,77 @@ class Rew_Bulk_Editor_Admin_API {
 
 		echo wp_kses_normalize_entities($html); //phpcs:ignore
 
+	}
+
+	public function get_operator_options(){
+		
+		return array(
+			
+			'in' 		=> 'IN',
+			'not-in'	=> 'NOT IN',
+			//'and' 	=> 'AND',
+			//'exists' 	=> 'EXISTS',
+			//'not-exists'=> 'NOT EXISTS',
+		);
+	}
+	
+	public function get_relation_options(){
+		
+		return array(
+
+			'and' 	=> 'AND',
+			'or'	=> 'OR',
+		);
+	}
+	
+	public function get_children_options(){
+		
+		return array(
+			
+			'in' 	=> 'Including Children',
+			'ex'	=> 'Excluding Children',
+		);
+	}
+		
+	public function get_type_options(){
+		
+		return array(
+			
+			'char' 		=> 'CHAR',
+			'numeric' 	=> 'NUMERIC',
+			'binary' 	=> 'BINARY',
+			'date' 		=> 'DATE',
+			'datetime' 	=> 'DATETIME',
+			'decimal' 	=> 'DECIMAL',
+			'signed' 	=> 'SIGNED',
+			'time' 		=> 'TIME',
+			'unsigned' 	=> 'UNSIGNED',
+		);
+	}
+	
+	public function get_compare_options(){
+		
+		return array(
+			
+			'equal' 		=> '=',
+			'not-equal' 	=> '!=',
+			'greater' 		=> '>',
+			'greater-equal' => '>=',
+			'less' 			=> '<',
+			'less-equal' 	=> '<=',
+			'like' 			=> 'LIKE',
+			'not-like' 		=> 'NOT LIKE',
+			'in' 			=> 'IN',
+			'not-in' 		=> 'NOT IN',
+			'between' 		=> 'BETWEEN',
+			'not-between' 	=> 'NOT BETWEEN',
+			'exists' 		=> 'EXISTS',
+			'not-exists' 	=> 'NOT EXISTS',
+			'regexp' 		=> 'REGEXP',
+			'not-regexp' 	=> 'NOT REGEXP',
+			'rlike' 		=> 'RLIKE',
+			'not-rlike' 	=> 'NOT RLIKE',
+		);
 	}
 
 	/**
@@ -483,7 +701,7 @@ class Rew_Bulk_Editor_Admin_API {
 		$post_type = get_post_type( $post_id );
 
 		$fields = apply_filters( $post_type . '_custom_fields', array(), $post_type );
-
+		
 		if ( ! is_array( $fields ) || 0 === count( $fields ) ) {
 			
 			return;
@@ -504,5 +722,4 @@ class Rew_Bulk_Editor_Admin_API {
 			}
 		}
 	}
-
 }

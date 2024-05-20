@@ -6,7 +6,7 @@
 
 ;(function($){
     
-	 $.fn.serializeObject = function(){
+	$.fn.serializeObject = function(){
 
         var self = this,
             jsonData = {},
@@ -72,6 +72,53 @@
     };
 	
 	$(document).ready(function(){
+
+		// requests handler
+		
+		var ajaxQueue = $({});
+
+		$.ajaxQueue = function( ajaxOpts ) {
+			
+			var jqXHR,
+				dfd = $.Deferred(),
+				promise = dfd.promise();
+
+			// queue our ajax request
+			ajaxQueue.queue( doRequest );
+
+			// add the abort method
+			promise.abort = function( statusText ) {
+
+				// proxy abort to the jqXHR if it is active
+				if ( jqXHR ) {
+					return jqXHR.abort( statusText );
+				}
+
+				// if there wasnt already a jqXHR we need to remove from queue
+				var queue = ajaxQueue.queue(),
+					index = $.inArray( doRequest, queue );
+
+				if ( index > -1 ) {
+					queue.splice( index, 1 );
+				}
+
+				// and then reject the deferred
+				dfd.rejectWith( ajaxOpts.context || ajaxOpts,
+					[ promise, statusText, "" ] );
+
+				return promise;
+			};
+
+			// run the actual query
+			function doRequest( next ) {
+				jqXHR = $.ajax( ajaxOpts )
+					.done( dfd.resolve )
+					.fail( dfd.reject )
+					.then( next, next );
+			}
+
+			return promise;
+		};
 		
 		//input group add row
 
@@ -114,26 +161,23 @@
 		$(".input-group").on('click', ".remove-input-group", function(e){
 
 			e.preventDefault();
+			
 			$(this).closest('.input-group-row').remove();
+			
+			load_task_process();
 		});	
 		
 		// taxonomy fields
-
+		
 		function set_dynamic_field(id){
 			
-			// Handle click of the input area
-			 
-			$(id).click(function () {
-				
-				$(this).find("input").focus();
-			
-			});
-
 			// handle the click of close button on the tags
 
 			$(document).on("click", id + " .data .tag .close", function() {
 				
 				$(this).parent().remove();
+				
+				load_task_process();
 			});
 
 			// Handle the click of one suggestion
@@ -144,10 +188,9 @@
 				let data=_tag_input_suggestions_data[index];
 				let data_holder = $(this).parents().eq(4).find(id + " .data")
 				let name = $(id + " .data input:first").attr("name");
-				let template="<span class=\"tag button button-default\"><span class=\"text\">"+data.name+"</span><span class=\"close\">&times;</span><input type=\"hidden\" value=\'"+data.id+"\' name=\'"+name+"\'/></span>\n";
 				
-				$(data_holder).parents().eq(2).find(id + " .data").append(template);
-				$(data_holder).val("")
+				$(data_holder).parents().eq(2).find(id + " .data").append(data.html);
+				$(data_holder).val("");
 				
 				$(id + " .autocomplete-items").html("");
 
@@ -210,6 +253,8 @@
 				
 				let taxonomy = $(id).attr("data-taxonomy");
 				
+				let name = $(id).attr("data-name");
+				
 				typing = setTimeout(function() {
 
 					// using ajax to populate suggestions
@@ -222,8 +267,9 @@
 						dataType : "json",
 						data : {
 							
-							action 		: "search_taxonomy_terms",
+							action 		: "render_taxonomy_terms",
 							taxonomy 	: taxonomy,
+							name		: name,
 							s 			: query,
 						},
 					}).done(function( data ) {
@@ -290,6 +336,90 @@
 			
 			load_task_process();
 		});
+		
+		function load_task_schedule(){
+			
+			if( $('#rewbe_task_scheduled').length > 0 ){
+				
+				$("#rewbe_task_scheduled").addClass("loading loading-right");
+				
+				var steps 	= $('#rewbe_task_scheduled').data('steps');
+				
+				var post_id = $("#post_ID").val();
+				
+				for(var step = 1; step <= steps; step++){
+					
+					$.ajaxQueue({
+						
+						url : ajaxurl,
+						type: 'GET',
+						data: {
+							action 	: "render_post_type_schedule",
+							pid 	: post_id,
+							step	: step
+						},
+						success: function(prog){
+							
+							$('#rewbe_task_scheduled').empty().html( prog + '%' );
+						
+							if( prog == 100 ){
+								
+								$("#rewbe_task_scheduled").removeClass("loading loading-right");
+								
+								load_task_progess();
+							}
+						},
+						error: function(xhr, status, error){
+							
+							console.error('Error loading step ' + step + ': ' + error);
+						}
+					});
+				}
+			}
+			else{
+			
+				load_task_progess();
+			}
+		}
+		
+		function load_task_progess(){
+			
+			if( $('#rewbe_task_processed').length > 0 ){
+				
+				$("#rewbe_task_processed").addClass("loading loading-right");
+				
+				var post_id = $("#post_ID").val();
+				
+				$.ajaxQueue({
+					
+					url : ajaxurl,
+					type: 'GET',
+					data: {
+						action 	: "render_post_type_progress",
+						pid 	: post_id
+					},
+					success: function(prog){
+						
+						$('#rewbe_task_processed').empty().html( prog + '%' );
+					
+						if( prog < 100 ){
+							
+							load_task_progess();
+						}
+						else{
+							
+							$("#rewbe_task_processed").removeClass("loading loading-right");
+						}
+					},
+					error: function(xhr, status, error){
+						
+						console.error('Error processing task: ' + error);
+					}
+				});
+			}
+		}		
+		
+		load_task_schedule();
 		
 		// action fields
 		
