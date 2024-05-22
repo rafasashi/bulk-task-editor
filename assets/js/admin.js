@@ -255,6 +255,10 @@
 				
 				let name = $(id).attr("data-name");
 				
+				let hierarchical = $(id).attr("data-hierarchical");
+				
+				let operator = $(id).attr("data-operator");
+				
 				typing = setTimeout(function() {
 
 					// using ajax to populate suggestions
@@ -270,6 +274,8 @@
 							action 		: "render_taxonomy_terms",
 							taxonomy 	: taxonomy,
 							name		: name,
+							h			: hierarchical,
+							o			: operator,
 							s 			: query,
 						},
 					}).done(function( data ) {

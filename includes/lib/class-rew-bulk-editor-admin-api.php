@@ -296,18 +296,22 @@ class Rew_Bulk_Editor_Admin_API {
 
 			case 'terms':
 				
-				$html .= '<div class="tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-name="'.$option_name.'">';
+				$hierarchical = !empty($field['hierarchical']) ? filter_var($field['hierarchical'], FILTER_VALIDATE_BOOLEAN) : false;
+				
+				$operator = !empty($field['operator']) ? filter_var($field['operator'], FILTER_VALIDATE_BOOLEAN) : false;
+				
+				$html .= '<div class="tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-name="'.$option_name.'" data-hierarchical="'.$hierarchical.'" data-operator="'.$operator.'">';
 					
 					$html .= '<div class="data">';
 						
 						$html .= '<input type="hidden" value="-1" name="'.$option_name.'[term][]"/>';
 						
-						if( !empty($field['operator']) ){
+						if( !empty($operator) ){
 							
 							$html .= '<input type="hidden" value="in" name="'.$option_name.'[operator][]"/>';
 						}
 						
-						if( !empty($field['hierarchical']) ){
+						if( !empty($hierarchical) ){
 						
 							$html .= '<input type="hidden" value="in" name="'.$option_name.'[children][]"/>';
 						}
@@ -335,8 +339,8 @@ class Rew_Bulk_Editor_Admin_API {
 												'operator' 	=> !empty($data['operator'][$i]) ? str_replace('\\\'','\'',$data['operator'][$i]) : 'in',
 												'children' 	=> !empty($data['children'][$i]) ? str_replace('\\\'','\'',$data['children'][$i]) : 'in',
 											),
-											'operator' 		=> !empty($field['operator']) ? true : false,
-											'hierarchical' 	=> !empty($field['hierarchical']) ? true : false,
+											'operator' 		=> $operator,
+											'hierarchical' 	=> $hierarchical,
 											
 										),null,false);
 									}

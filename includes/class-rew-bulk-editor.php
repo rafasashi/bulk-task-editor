@@ -841,6 +841,10 @@ class Rew_Bulk_Editor {
 				$taxonomy = sanitize_title($_GET['taxonomy']);
 				
 				$name = sanitize_title($_GET['name']);
+
+				$hierarchical = !empty($_GET['h']) ? filter_var($_GET['h'], FILTER_VALIDATE_BOOLEAN) : false;
+				
+				$operator = !empty($_GET['o']) ? filter_var($_GET['o'], FILTER_VALIDATE_BOOLEAN) : false;
 				
 				if( $taxonomy = get_taxonomy($taxonomy) ){
 					
@@ -871,8 +875,8 @@ class Rew_Bulk_Editor {
 										'operator' 	=> 'in',
 										'children' 	=> 'in',
 									),
-									'hierarchical'	=> false,
-									'operator'		=> false,
+									'hierarchical'	=> $hierarchical,
+									'operator'		=> $operator,
 								
 								),null,false),
 							);
