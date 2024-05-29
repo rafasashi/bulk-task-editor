@@ -143,6 +143,7 @@ class Rew_Bulk_Editor {
 		add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
 		add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_styles' ), 10, 1 );
 
+		add_action('wp_ajax_render_authors' , array($this,'render_authors') );
 		add_action('wp_ajax_render_taxonomy_terms' , array($this,'render_taxonomy_terms') );
 		add_action('wp_ajax_render_post_type_action' , array($this,'render_post_type_action') );
 		add_action('wp_ajax_render_post_type_process' , array($this,'render_post_type_process') );
@@ -242,7 +243,7 @@ class Rew_Bulk_Editor {
 			'menu_icon' 			=> '',
 		));	
 
-		add_action( 'add_meta_boxes', function(){
+		add_action('add_meta_boxes', function(){
 			
 			$this->admin->add_meta_box (
 				
@@ -305,18 +306,59 @@ class Rew_Bulk_Editor {
 					'id'		=> $this->_base . 'post_type',
 					'type'      => 'hidden',
 				);
+
+				// id
 				
-				// search
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-filters'),
+					'id'          	=> $this->_base . 'post_ids_op',
+					'label'     	=> $post_type->label . ' ID',
+					'type'        	=> 'radio',
+					'options'		=> array(
+						
+						'in' 		=> 'IN',
+						'not-in' 	=> 'NOT IN',
+					),
+					'default' 		=> 'in',
+				);
 				
 				$fields[]=array(
 				
 					'metabox'		=> array('name'=>'bulk-editor-filters'),
-					'id'			=> $this->_base . 'search',
-					'label'     	=> 'Content',
+					'id'			=> $this->_base . 'post_ids',
 					'type'      	=> 'text',
-					'placeholder'	=> 'Search keyword',
+					'placeholder'	=> 'Comma separated IDs',
 					'style'			=> 'width:60%;',
 				);
+
+				// parent
+				
+				if( $post_type->hierarchical ){
+					
+					$fields[]=array(
+					
+						'metabox' 		=> array('name'=>'bulk-editor-filters'),
+						'id'          	=> $this->_base . 'post_parent_op',
+						'label'     	=> 'Parent ID',
+						'type'        	=> 'radio',
+						'options'		=> array(
+							
+							'in' 		=> 'IN',
+							'not-in' 	=> 'NOT IN',
+						),
+						'default' 		=> 'in',
+					);
+					
+					$fields[]=array(
+					
+						'metabox'		=> array('name'=>'bulk-editor-filters'),
+						'id'			=> $this->_base . 'post_parent',
+						'type'      	=> 'text',
+						'placeholder'	=> 'Comma separated IDs',
+						'style'			=> 'width:60%;',
+					);
+				}
 				
 				// status
 				
@@ -327,19 +369,53 @@ class Rew_Bulk_Editor {
 					'label'       	=> 'Status',
 					'description' 	=> '',
 					'type'        	=> 'checkbox_multi',
-					'options'	  	=> array(
-					
-						'publish' 	=> 'Publish',
-						'pending' 	=> 'Pending',
-						'draft' 	=> 'Draft',
-						'trash' 	=> 'Trash',
-					),
+					'options'	  	=> $this->get_post_type_statuses($post_type->name),
 					'default'     	=> '',
 				);
+
+				// content
+				
+				if( post_type_supports($post_type->name, 'editor')){
+					
+					$fields[]=array(
+					
+						'metabox'		=> array('name'=>'bulk-editor-filters'),
+						'id'			=> $this->_base . 'search',
+						'label'     	=> 'Content',
+						'type'      	=> 'text',
+						'placeholder'	=> 'Search keyword',
+						'style'			=> 'width:60%;',
+					);
+				}
+				
+				// authors
+				
+				if( post_type_supports($post_type->name, 'author')){
+					
+					$fields[]=array(
+					
+						'metabox' 		=> array('name'=>'bulk-editor-filters'),
+						'id'          	=> $this->_base . 'post_authors_op',
+						'label'       	=> 'Authors',
+						'type'        	=> 'radio',
+						'options'		=> array(
+							
+							'in' 		=> 'IN',
+							'not-in' 	=> 'NOT IN',
+						),
+						'default' 		=> 'in',
+					);
+					
+					$fields[]=array(
+					
+						'metabox' 		=> array('name'=>'bulk-editor-filters'),
+						'id'          	=> $this->_base . 'post_authors',
+						'type'        	=> 'authors',
+						'multi'			=> true,
+					);
+				}
 				
 				// TODO: date
-				// TODO: author IN/NOT IN
-				// TODO: parent IN/NOT IN
 				// TODO: comment count
 				// TODO: stickyness
 				
@@ -390,6 +466,7 @@ class Rew_Bulk_Editor {
 					'metabox' 		=> array('name'=>'bulk-editor-filters'),
 					'id'        	=> $this->_base . 'meta',
 					'type'        	=> 'meta',
+					'operator'		=> true,
 				);
 				
 				// actions 
@@ -546,7 +623,69 @@ class Rew_Bulk_Editor {
 
 		add_action('rewbe_post_type_actions',function($actions,$post_type){
 			
-			$taxonomies = get_object_taxonomies($post_type);
+			$post_type = get_post_type_object($post_type);
+			
+			// status
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Edit Status',
+				'id' 		=> 'edit_status',
+				'fields' 	=> array(
+					array(
+						
+						'name' 		=> 'name',
+						'type'		=> 'select',
+						'options'	=> $this->get_post_type_statuses($post_type->name),
+					),
+				),
+			);
+			
+			// parent
+			
+			if( $post_type->hierarchical ){
+				
+				$actions[] = array(
+				
+					'label' 	=> 'Edit Parent',
+					'id' 		=> 'edit_parent',
+					'fields' 	=> array(
+						array(			
+							
+							'name'			=> 'id',
+							'type'      	=> 'number',
+							'min'      		=> 1,
+							'min'      		=> 0,
+							'max'      		=> 1000000000000,
+							'style'			=> 'width:120px;',
+							'default' 		=> 0,
+						),
+					),
+				);
+			}
+					
+			// author
+			
+			if( post_type_supports($post_type->name,'author') ){
+				
+				$actions[] = array(
+					
+					'label' 	=> 'Edit Author',
+					'id' 		=> 'edit_author',
+					'fields' 	=> array(
+						array(
+							
+							'name' 		=> 'ids',
+							'type'		=> 'authors',
+							'multi'		=> false,
+						),
+					),
+				);
+			}
+			
+			// taxonomies
+			
+			$taxonomies = get_object_taxonomies($post_type->name);
 			
 			foreach( $taxonomies as $taxonomy ){
 				
@@ -559,7 +698,7 @@ class Rew_Bulk_Editor {
 						'fields' 	=> array(
 							array(
 								
-								'id' 		=> 'action', // dynamic field
+								'name' 		=> 'action',
 								'type'		=> 'radio',
 								'options' 	=> array(
 								
@@ -571,7 +710,7 @@ class Rew_Bulk_Editor {
 							),
 							array(
 								
-								'id' 			=> 'terms', // dynamic field
+								'name' 			=> 'terms',
 								'label' 		=> $taxonomy->label,
 								'type'			=> 'terms',
 								'taxonomy' 		=> $taxonomy->name,
@@ -582,6 +721,33 @@ class Rew_Bulk_Editor {
 					);
 				}
 			}
+			
+			// meta
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Edit Meta',
+				'id' 		=> 'edit_meta',
+				'fields' 	=> array(
+					array(
+						
+						'name' 		=> 'action',
+						'type'		=> 'radio',
+						'options' 	=> array(
+						
+							'edit' 		=> 'Edit',
+							'remove' 	=> 'Remove',
+						),
+						'default' => 'edit',
+					),				
+					array(
+						
+						'name' 		=> 'data',
+						'type'		=> 'meta',
+						'operator'	=> false,
+					),					
+				),
+			);
 			
 			return $actions;
 			
@@ -624,6 +790,18 @@ class Rew_Bulk_Editor {
 		
 	} // End __construct ()
 
+	public function get_post_type_statuses($post_type){
+		
+		return apply_filters('rewbe_post_type_statuses',array(
+					
+			'publish' 	=> 'Published',
+			'pending' 	=> 'Pending',
+			'draft' 	=> 'Draft',
+			'trash' 	=> 'Trash',
+		
+		),$post_type);
+	}
+
 	public function get_task_meta($post_id){
 		
 		$meta = array();
@@ -658,9 +836,11 @@ class Rew_Bulk_Editor {
 				
 				foreach( $action['fields'] as $j => $field ){
 				
-					$field_id = sanitize_title($field['id']);
-				
-					$actions[$i]['fields'][$j]['name'] = 'rewbe_act_' . $action_id . '__' . $field_id;
+					$field_id = 'rewbe_act_' . $action_id . '__' . sanitize_title($field['name']);
+					
+					$actions[$i]['fields'][$j]['id'] = $field_id;
+					
+					$actions[$i]['fields'][$j]['name'] = $field_id;
 				}
 			}
 			else{
@@ -829,6 +1009,51 @@ class Rew_Bulk_Editor {
 		load_textdomain( $domain, WP_LANG_DIR . '/' . $domain . '/' . $domain . '-' . $locale . '.mo' );
 		load_plugin_textdomain( $domain, false, dirname( plugin_basename( $this->file ) ) . '/lang/' );
 	} // End load_plugin_textdomain ()
+
+	public function render_authors(){
+		
+		$results = array();
+		
+		if( current_user_can('edit_posts') ){
+			
+			if( $s =  apply_filters( 'get_search_query', $_GET['s'] ) ){
+				
+				$args = array(
+					'search' 			=> '*' . $s . '*',
+					'search_columns' 	=> array( 'user_login', 'user_email', 'user_nicename', 'ID' ),
+					//'who' 			=> 'authors',
+					'number' 			=> 10,
+				);
+				
+				$user_query = new WP_User_Query( $args );
+				
+				foreach ( (array) $user_query->results as $user ) {
+					
+					$name = $user->display_name . ' (' . $user->user_email . ')';
+					
+					$results[] = array(
+					
+						'id' 	=> $user->ID,
+						'name'	=> $name,
+						'html'	=> $this->admin->display_field(array(
+							
+							'id' 	=> 'rewbe_act_edit_author__ids',
+							'type' 	=> 'author',
+							'data' 	=> array(
+							
+								'id'		=> $user->ID,
+								'name' 		=> $name,
+							),
+						
+						),null,false),
+					);
+				}
+			}
+		}
+	
+		wp_send_json($results);
+		wp_die();
+	}
 	
 	public function render_taxonomy_terms(){
 		
@@ -840,8 +1065,6 @@ class Rew_Bulk_Editor {
 				
 				$taxonomy = sanitize_title($_GET['taxonomy']);
 				
-				$name = sanitize_title($_GET['name']);
-
 				$hierarchical = !empty($_GET['h']) ? filter_var($_GET['h'], FILTER_VALIDATE_BOOLEAN) : false;
 				
 				$operator = !empty($_GET['o']) ? filter_var($_GET['o'], FILTER_VALIDATE_BOOLEAN) : false;
@@ -867,7 +1090,7 @@ class Rew_Bulk_Editor {
 								'html'	=> $this->admin->display_field(array(
 									
 									'id'    => 'rewbe_tax_' . $term->taxonomy,
-									'name'	=> $name,
+									'name'	=> 'rewbe_act_edit_tax_' . $term->taxonomy . '__terms',
 									'type' 	=> 'term',
 									'data' 	=> array(
 									
@@ -958,28 +1181,35 @@ class Rew_Bulk_Editor {
 
 			$ids = $query->posts;
 			
-			foreach( $ids as $id ){
+			if( !empty($ids) ){
 				
-				/**	schedule task 
-				*	0: scheduled
-				*	t: processing
-				*	1: done
-				*/
+				foreach( $ids as $id ){
+					
+					/**	schedule task 
+					*	0: scheduled
+					*	t: processing
+					*	1: done
+					*/
+					
+					update_post_meta($id,$this->_base.$task_id,0);
+				}
 				
-				update_post_meta($id,$this->_base.$task_id,0);
-			}
-			
-			$sc_steps = ceil( $query->found_posts / $this->sc_items );
+				$sc_steps = ceil( $query->found_posts / $this->sc_items );
 
-			$prog = ceil( $step / $sc_steps * 100 );
-			
+				$prog = ceil( $step / $sc_steps * 100 );
+			}
+			else{
+				
+				$prog = 100;
+			}
+				
 			if( $prog == 100 ){
 				
 				// scheduled
 				
 				update_post_meta($task_id,$this->_base.'scheduled',$query->found_posts);
 			}
-			
+				
 			echo $prog;
 		}
 		
@@ -1041,7 +1271,23 @@ class Rew_Bulk_Editor {
 						
 						// register default actions
 						
-						if( strpos($action,'edit_tax_') === 0 ){
+						if( $action == 'edit_status' ){
+							
+							add_action('rewbe_do_post_edit_status',array($this,'edit_post_status'),10,2);
+						}						
+						elseif( $action == 'edit_parent' ){
+							
+							add_action('rewbe_do_post_edit_parent',array($this,'edit_post_parent'),10,2);
+						}						
+						elseif( $action == 'edit_author' ){
+							
+							add_action('rewbe_do_post_edit_author',array($this,'edit_post_author'),10,2);
+						}
+						elseif( $action == 'edit_meta' ){
+							
+							add_action('rewbe_do_post_edit_meta',array($this,'edit_post_meta'),10,2);
+						}
+						elseif( strpos($action,'edit_tax_') === 0 ){
 							
 							$taxonomy =  substr($action,strlen('edit_tax_'));
 							
@@ -1049,7 +1295,7 @@ class Rew_Bulk_Editor {
 							
 							add_action('rewbe_do_post_edit_tax_'.$taxonomy,array($this,'edit_post_taxonomy'),10,2);
 						}
-							
+						
 						foreach( $query->posts as $post ){
 							
 							//update_post_meta($post->ID,$this->_base.$task_id,time());
@@ -1080,7 +1326,104 @@ class Rew_Bulk_Editor {
 		
 		wp_die();
 	}
+
+	public function edit_post_status($post,$args){
+		
+		if( !empty($args['name']) ){
+			
+			$post_status = sanitize_title($args['name']);
+			
+			$statuses = $this->get_post_type_statuses($post->post_type);
+			
+			if( isset($statuses[$post_status]) ){
+				
+				wp_update_post(array(
+					
+					'ID' 			=> $post->ID,
+					'post_status' 	=> $post_status,
+				));
+			}
+		}
+	}
 	
+	public function edit_post_parent($post,$args){
+		
+		if( isset($args['id']) && is_numeric($args['id']) ){
+			
+			$parent_id = intval($args['id']);
+			
+			if( $parent_id > 0 ){
+				
+				$parent = get_post($parent_id);
+				
+				if( !empty($parent) && $post->post_type == $parent->post_type ){
+					
+					wp_update_post(array(
+						
+						'ID' 			=> $post->ID,
+						'post_parent' 	=> $parent->ID,
+					));
+				}
+			}
+			else{
+				
+				// remove parent
+				
+				wp_update_post(array(
+					
+					'ID' 			=> $post->ID,
+					'post_parent' 	=> $parent_id,
+				));
+			}
+		}
+	}
+		
+	public function edit_post_author($post,$args){
+		
+		if( !empty($args['ids'][1]) && is_numeric($args['ids'][1]) ){
+			
+			$author_id = intval($args['ids'][1]);
+			
+			if( $author_id > 0 ){
+				
+				wp_update_post(array(
+					
+					'ID' 			=> $post->ID,
+					'post_author' 	=> $author_id,
+				));
+			}
+		}
+	}
+	
+	public function edit_post_meta($post,$args){
+		
+		if( !empty($args['action']) && !empty($args['data']['key']) ){
+			
+			$action = sanitize_title($args['action']);
+			
+			$data = array();
+			
+			foreach( $args['data']['key'] as $i => $key ){
+				
+				if( isset($args['data']['value'][$i]) ){
+					
+					$key = sanitize_title($key);
+
+					$value = sanitize_text_field($args['data']['value'][$i]);
+					
+					if( $action == 'edit' ){
+						
+						update_post_meta($post->ID,$key,$value);
+					}
+					elseif( $action == 'remove' ){
+					
+						delete_post_meta($post->ID,$key,$value);
+					}
+				}
+			}
+		}
+	}
+
 	public function edit_post_taxonomy($post,$args){
 		
 		if( !empty($args['action']) && !empty($args['taxonomy']) ){
@@ -1132,7 +1475,6 @@ class Rew_Bulk_Editor {
 				}
 			}
 		}
-		
 	}
 	
 	public function woo_add_product_attributes($post,$term_ids,$taxonomy,$args){
@@ -1193,7 +1535,7 @@ class Rew_Bulk_Editor {
 			
 			$product->save();
 		}
-	}
+	}	
 	
 	public function count_task_items($task){
 		
@@ -1215,13 +1557,21 @@ class Rew_Bulk_Editor {
 		
 		$args = array(
 			
-			'post_type'			=> $post_type,
-			'posts_per_page' 	=> $number,
-			'paged' 			=> $paged,
-			'order'				=> 'ASC',
-			'orderby'			=> 'ID',
-			'fields'			=> 'ids',
+			'post_type'				=> $post_type,
+			'posts_per_page' 		=> $number,
+			'paged' 				=> $paged,
+			'order'					=> 'ASC',
+			'orderby'				=> 'ID',
+			'fields'				=> 'ids',
+			'ignore_sticky_posts' 	=> true,
 		);
+		
+		// filter search
+		
+		if( !empty($task['rewbe_search']) ){
+		
+			$args['s'] = apply_filters( 'get_search_query', sanitize_text_field($task['rewbe_search']) );
+		}
 		
 		// filter post_status
 
@@ -1232,11 +1582,73 @@ class Rew_Bulk_Editor {
 			$args['post_status'] = $post_status;
 		}
 		
-		// filter search
+		// filters ids
 		
-		if( !empty($task['rewbe_search']) ){
+		if( !empty($task['rewbe_post_ids']) ){
 		
-			$args['s'] = apply_filters( 'get_search_query', sanitize_text_field($task['rewbe_search']) );
+			$ids = array_filter(array_map('intval',explode(',',$task['rewbe_post_ids'])), function($id){
+				
+				return ( $id > 0 );
+			});
+			
+			if( !empty($ids) ){
+				
+				$operator = !empty($task['rewbe_post_ids_op']) ? sanitize_title($task['rewbe_post_ids_op']) : 'in';
+				
+				if( $operator == 'in' ){
+				
+					$args['post__in'] = $ids;
+				}
+				else{
+					
+					$args['post__not_in'] = $ids;
+				}
+			}
+		}
+
+		// filters parent
+		
+		if( !empty($task['rewbe_post_parent']) ){
+		
+			$ids = array_filter(array_map('intval',explode(',',$task['rewbe_post_parent'])), function($id){
+				
+				return ( $id > 0 );
+			});
+			
+			if( !empty($ids) ){
+				
+				$operator = !empty($task['rewbe_post_parent_op']) ? sanitize_title($task['rewbe_post_parent_op']) : 'in';
+				
+				if( $operator == 'in' ){
+				
+					$args['post_parent__in'] = $ids;
+				}
+				else{
+					
+					$args['post_parent__not_in'] = $ids;
+				}
+			}
+		}
+		
+		// filter authors
+		
+		if( !empty($task['rewbe_post_authors']) && is_array($task['rewbe_post_authors']) ){
+
+			$authors = array_filter(array_map('intval',$task['rewbe_post_authors']), function($id){
+				
+				return ( $id > 0 );
+			});
+			
+			$operator = !empty($task['rewbe_post_authors_op']) ? sanitize_title($task['rewbe_post_authors_op']) : 'in';
+			
+			if( $operator == 'in' ){
+			
+				$args['author__in'] = $authors;
+			}
+			else{
+				
+				$args['author__not_in'] = $authors;
+			}
 		}
 		
 		// filter taxonomies
@@ -1250,26 +1662,26 @@ class Rew_Bulk_Editor {
 		foreach( $taxonomies as $taxonomy ){
 
 			if( !empty($task['rewbe_tax_'.$taxonomy]['term']) && is_array($task['rewbe_tax_'.$taxonomy]['term']) ){
-				
-				$term_ids = array_map('floatval', $task['rewbe_tax_'.$taxonomy]['term']);
+
+				$term_ids = array_filter(array_map('intval',$task['rewbe_tax_'.$taxonomy]['term']), function($id){
+					
+					return ( $id > 0 );
+				});
 				
 				$terms = array();
 				
 				foreach( $term_ids as $k => $v ){
+
+					$operator = isset($task['rewbe_tax_'.$taxonomy]['operator'][$k]) ? sanitize_text_field($task['rewbe_tax_'.$taxonomy]['operator'][$k]) : 'in';
 					
-					if( $v > 0 ){
-						
-						$operator = isset($task['rewbe_tax_'.$taxonomy]['operator'][$k]) ? sanitize_text_field($task['rewbe_tax_'.$taxonomy]['operator'][$k]) : 'in';
-						
-						$children = isset($task['rewbe_tax_'.$taxonomy]['children'][$k]) ? sanitize_text_field($task['rewbe_tax_'.$taxonomy]['children'][$k]) : 'in';
-						
-						$terms[] = array(
-						
-							'id' 		=> $v,
-							'operator' 	=> isset($operators[$operator]) ? $operators[$operator] : 'IN',
-							'children'	=> $children == 'ex' ? false : true,
-						);
-					}
+					$children = isset($task['rewbe_tax_'.$taxonomy]['children'][$k]) ? sanitize_text_field($task['rewbe_tax_'.$taxonomy]['children'][$k]) : 'in';
+					
+					$terms[] = array(
+					
+						'id' 		=> $v,
+						'operator' 	=> isset($operators[$operator]) ? $operators[$operator] : 'IN',
+						'children'	=> $children == 'ex' ? false : true,
+					);
 				}
 				
 				if( !empty($terms) ){
@@ -1344,19 +1756,39 @@ class Rew_Bulk_Editor {
 		
 		$args = array();
 		
-		$action = $task[$this->_base.'action'];
+		$curr_action = $task[$this->_base.'action'];
 		
-		if( $action != 'none' ){
+		if( $curr_action != 'none' ){
 			
-			$prefix = 'rewbe_act_' . $action . '__';
+			$post_type = $task[$this->_base.'post_type'];
+
+			$actions = $this->get_post_type_actions($post_type);
 			
-			foreach( $task as $key => $value ){
-				
-				if( strpos($key,$prefix) === 0 ){
-					
-					$slug = substr($key,strlen($prefix));
-					
-					$args[$slug] = $value;
+			if( !empty($actions) ){
+			
+				foreach( $actions as $action ){
+			
+					if( $action['id'] == $curr_action ){
+						
+						if( !empty($action['fields']) ){
+							
+							$prefix = 'rewbe_act_' . $curr_action . '__';
+							
+							foreach( $action['fields'] as $field ){
+								
+								if( isset($task[$field['id']]) ){
+									
+									$key = substr($field['id'],strlen($prefix));
+									
+									$value = $task[$field['id']];
+									
+									$args[$key] = $value;
+								}
+							}
+						}
+						
+						break;
+					}
 				}
 			}
 		}

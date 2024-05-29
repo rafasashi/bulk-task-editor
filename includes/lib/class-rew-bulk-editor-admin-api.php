@@ -109,16 +109,30 @@ class Rew_Bulk_Editor_Admin_API {
 			case 'password':
 			case 'number':
 			case 'hidden':
+				
 				$min = '';
+				
 				if ( isset( $field['min'] ) ) {
+					
 					$min = ' min="' . esc_attr( $field['min'] ) . '"';
 				}
 
 				$max = '';
+				
 				if ( isset( $field['max'] ) ) {
+					
 					$max = ' max="' . esc_attr( $field['max'] ) . '"';
 				}
-				$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" placeholder="' . $placeholder . '" value="' . esc_attr( $data ) . '"' . $min . $max . $style . $required . $disabled . '/>' . "\n";
+				
+				$step = '';
+				
+				if ( isset( $field['step'] ) ) {
+					
+					$step = ' step="' . esc_attr( $field['step'] ) . '"';
+				}
+				
+				$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" placeholder="' . $placeholder . '" value="' . esc_attr( $data ) . '"' . $min . $max . $step . $style . $required . $disabled . '/>' . "\n";
+			
 			break;
 
 			case 'text_secret':
@@ -143,7 +157,7 @@ class Rew_Bulk_Editor_Admin_API {
 					if ( in_array( $k, (array) $data, true ) ) {
 						$checked = true;
 					}
-					$html .= '<p><label for="' . esc_attr( $field['id'] . '_' . $k ) . '" class="checkbox_multi"><input type="checkbox" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '[]" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label></p> ';
+					$html .= '<label for="' . esc_attr( $field['id'] . '_' . $k ) . '" class="checkbox_multi" style="margin-right:5px;"><input type="checkbox" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '[]" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label> ';
 				}
 			break;
 
@@ -195,22 +209,26 @@ class Rew_Bulk_Editor_Admin_API {
 
 			case 'meta':
 				
-				if( !isset($data['key']) || !isset($data['value']) || !isset($data['type']) || !isset($data['compare']) ){
+				if( !isset($data['key']) || !isset($data['value']) ){
 
 					$data = [
 					
-						'key' 		=> [ 0 => '' ], 
-						'value' 	=> [ 0 => '' ],
-						'type' 		=> [ 0 => '' ],
-						'compare' 	=> [ 0 => '' ],
+						'key' 	=> [ 0 => '' ], 
+						'value' => [ 0 => '' ],
 					];
+					
+					if( !empty($field['operator']) ){
+						
+						$data['type'] = [ 0 => '' ];
+						$data['compare'] = [ 0 => '' ];
+					}
 				}
 				
 				$type_options = $this->get_type_options();
 				
 				$compare_options = $this->get_compare_options();
 				
-				$html .= '<div id="'.$field['id'].'">';
+				$html .= '<div id="'.$field['id'].'" class="meta-input">';
 					
 					$html .= ' <a href="#" class="add-input-group" data-target="'.$field['id'].'" style="line-height:40px;">Add field</a>';
 				
@@ -222,63 +240,69 @@ class Rew_Bulk_Editor_Admin_API {
 
 							$value = str_replace('\\\'','\'',$data['value'][$e]);
 							
-							$type = str_replace('\\\'','\'',$data['type'][$e]);
+							if( !empty($field['operator']) ){
 							
-							$compare = str_replace('\\\'','\'',$data['compare'][$e]);
-									
+								$type = str_replace('\\\'','\'',$data['type'][$e]);
+							
+								$compare = str_replace('\\\'','\'',$data['compare'][$e]);
+							}
+							
 							$html .= '<li class="'.$class.'" style="display:inline-block;width:100%;">';
 								
-								$html .= '<input placeholder="key" type="text" name="'.$option_name.'[key][]" style="width:30%;float:left;" value="'.$data['key'][$e].'">';
+								$html .= '<input placeholder="key" type="text" name="'.$option_name.'[key][]" style="width:20%;float:left;" value="'.$data['key'][$e].'">';
 								
-								$html .= '<input placeholder="value" type="text" name="'.$option_name.'[value][]" style="width:30%;float:left;" value="'.$value.'">';
+								$html .= '<input placeholder="value" type="text" name="'.$option_name.'[value][]" style="width:20%;float:left;" value="'.$value.'">';
 								
-								$html .= '<select name="'.$option_name.'[type][]" style="width:80px;float:left;">';
+								if( !empty($field['operator']) ){
 									
-									foreach ( $type_options as $k => $v ) {
+									$html .= '<select name="'.$option_name.'[type][]" style="width:80px;float:left;">';
 										
-										$selected = false;
-										
-										if( is_numeric($type) && floatval($k) === floatval($type) ) {
+										foreach ( $type_options as $k => $v ) {
 											
-											$selected = true;
-										}
-										elseif( $k === $type ){
+											$selected = false;
 											
-											$selected = true;
-										}
-										elseif( empty($type) && $k == 'char' ){
+											if( is_numeric($type) && floatval($k) === floatval($type) ) {
+												
+												$selected = true;
+											}
+											elseif( $k === $type ){
+												
+												$selected = true;
+											}
+											elseif( empty($type) && $k == 'char' ){
+												
+												$selected = true;
+											}
 											
-											$selected = true;
+											$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
 										}
-										
-										$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
-									}
-								
-								$html .= '</select> ';
-								
-								$html .= '<select name="'.$option_name.'[compare][]" style="width:100px;float:left;">';
 									
-									foreach ( $compare_options as $k => $v ) {
+									$html .= '</select> ';
+									
+									$html .= '<select name="'.$option_name.'[compare][]" style="width:70px;float:left;">';
 										
-										$selected = false;
-										
-										if( is_numeric($compare) && floatval($k) === floatval($compare) ) {
+										foreach ( $compare_options as $k => $v ) {
 											
-											$selected = true;
-										}
-										elseif( $k === $compare ){
+											$selected = false;
 											
-											$selected = true;
-										}
-										elseif( empty($type) && $k == 'equal' ){
+											if( is_numeric($compare) && floatval($k) === floatval($compare) ) {
+												
+												$selected = true;
+											}
+											elseif( $k === $compare ){
+												
+												$selected = true;
+											}
+											elseif( empty($type) && $k == 'equal' ){
+												
+												$selected = true;
+											}
 											
-											$selected = true;
+											$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
 										}
-										
-										$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
-									}
-								
-								$html .= '</select> ';
+									
+									$html .= '</select> ';
+								}
 								
 								if( $e > 0 ){
 									
@@ -293,14 +317,13 @@ class Rew_Bulk_Editor_Admin_API {
 				$html .= '</div>';
 
 			break;
-
 			case 'terms':
 				
 				$hierarchical = !empty($field['hierarchical']) ? filter_var($field['hierarchical'], FILTER_VALIDATE_BOOLEAN) : false;
 				
 				$operator = !empty($field['operator']) ? filter_var($field['operator'], FILTER_VALIDATE_BOOLEAN) : false;
 				
-				$html .= '<div class="tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-name="'.$option_name.'" data-hierarchical="'.$hierarchical.'" data-operator="'.$operator.'">';
+				$html .= '<div class="auto-input tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-hierarchical="'.$hierarchical.'" data-operator="'.$operator.'">';
 					
 					$html .= '<div class="data">';
 						
@@ -316,11 +339,11 @@ class Rew_Bulk_Editor_Admin_API {
 							$html .= '<input type="hidden" value="in" name="'.$option_name.'[children][]"/>';
 						}
 						
-						if( !empty($data['term']) ){
+						if( !empty($data['term'])  && is_array($data['term']) ){
 							
 							foreach( $data['term'] as $i => $id ){
 								
-								$id = floatval($id);
+								$id = intval($id);
 								
 								if( $id > 0 ){
 									
@@ -363,7 +386,7 @@ class Rew_Bulk_Editor_Admin_API {
 			break;
 			case 'term':
 			
-				$html .= '<div class="tag">';
+				$html .= '<div class="item">';
 					
 					$html .= '<input style="width:30%;float:left;" type="text" value="' . $data['term']->name . '" disabled="disabled"/>';
 
@@ -419,6 +442,67 @@ class Rew_Bulk_Editor_Admin_API {
 							
 						$html .= '</select> ';
 					}
+					
+					$html .= '<span class="close m-0 p-0 border-0 bg-transparent">x</span>';
+					
+				$html .= '</div>';
+					
+			break;
+			case 'authors':
+				
+				$html .= '<div class="auto-input authors-input" id="'.$field['id'].'" data-multi="'.( !empty($field['multi']) ? 'true' : 'false' ).'">';
+					
+					$html .= '<div class="data">';
+						
+						$html .= '<input type="hidden" value="-1" name="'.$option_name.'[]"/>';
+						
+						if( !empty($data) && is_array($data) ){
+							
+							foreach( $data as $i => $id ){
+								
+								$id = intval($id);
+								
+								if( $id > 0 ){
+									
+									if( $user = get_user_by('id',$id) ){
+										
+										$html .= $this->display_field(array(
+									
+											'id'    => $field['id'],
+											'name'  => $option_name,
+											'type' 	=> 'author',
+											'data'	=> array(
+											
+												'id' 	=> $user->ID,
+												'name' 	=> $user->display_name . ' (' . $user->user_email . ')',
+											)
+											
+										),null,false);
+									}
+								}
+							}
+						}
+						
+					$html .= '</div>';
+					
+					$html .= '<div class="autocomplete">';
+						
+						$html .= '<input style="width:60%;border:none;" type="text" placeholder="add author...">';
+						
+						$html .= '<div class="autocomplete-items"></div>';
+					
+					$html .= '</div>';
+					
+				$html .= '</div>';
+				
+			break;
+			case 'author':
+			
+				$html .= '<div class="item">';
+					
+					$html .= '<input style="width:60%;float:left;" type="text" value="' . $data['name'] . '" disabled="disabled"/>';
+
+					$html .= '<input type="hidden" value="' . $data['id'] . '" name="'.$option_name.'[]"/>';
 					
 					$html .= '<span class="close m-0 p-0 border-0 bg-transparent">x</span>';
 					

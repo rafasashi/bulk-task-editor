@@ -121,59 +121,69 @@
 		};
 		
 		//input group add row
-
-		$(".add-input-group").on('click', function(e){
-			
-			e.preventDefault();
-			
-			var target 	= "#" + $(this).data("target");
-			
-			if( typeof $(this).data("html") != typeof undefined ){
-				
-				var html = $(this).data("html");
 		
-				var $block = $($.parseHTML(html));
+		function set_meta_field(id){
 			
-				$(target + " .input-group").append($block);				
-			}
-			else{
+			$(id + " .add-input-group").on('click', function(e){
+				
+				e.preventDefault();
+				
+				var target 	= "#" + $(this).data("target");
+				
+				if( typeof $(this).data("html") != typeof undefined ){
 					
-				var $clone 	= $(target + " .input-group-row").eq(0).clone().removeClass('ui-state-disabled');
+					var html = $(this).data("html");
+			
+					var $block = $($.parseHTML(html));
 				
-				$clone.find('input,textarea,select,radio').val('');
-				
-				var $rands	= $clone.find('input[data-value="random"]');
-				
-				if( $rands.length > 0 ){
+					$(target + " .input-group").append($block);				
+				}
+				else{
+						
+					var $clone 	= $(target + " .input-group-row").eq(0).clone().removeClass('ui-state-disabled');
 					
-					$rands.val(Math.floor(Math.random()*1000000000));
+					$clone.find('input,textarea,select,radio').val('');
+					
+					var $rands	= $clone.find('input[data-value="random"]');
+					
+					if( $rands.length > 0 ){
+						
+						$rands.val(Math.floor(Math.random()*1000000000));
+					}
+					
+					if( $clone.find('a.remove-input-group').length < 1 ){
+					
+						$clone.append('<a class="remove-input-group" href="#">x</a>');
+					}
+					
+					$(this).next(".input-group").append($clone);
 				}
+			});
+			
+			$(id + " .input-group").on('click', ".remove-input-group", function(e){
+
+				e.preventDefault();
 				
-				if( $clone.find('a.remove-input-group').length < 1 ){
+				$(this).closest('.input-group-row').remove();
 				
-					$clone.append('<a class="remove-input-group" href="#">x</a>');
-				}
-				
-				$(this).next(".input-group").append($clone);
-			}
+				load_task_process();
+			});	
+		}
+		
+		$(".meta-input").each(function(e){
+			
+			var id = "#" + $(this).attr('id');
+			
+			set_meta_field(id);
 		});
-		
-		$(".input-group").on('click', ".remove-input-group", function(e){
-
-			e.preventDefault();
-			
-			$(this).closest('.input-group-row').remove();
-			
-			load_task_process();
-		});	
 		
 		// taxonomy fields
 		
-		function set_dynamic_field(id){
+		function set_taxonomy_field(id){
 			
 			// handle the click of close button on the tags
 
-			$(document).on("click", id + " .data .tag .close", function() {
+			$(document).on("click", id + " .data .item .close", function() {
 				
 				$(this).parent().remove();
 				
@@ -188,12 +198,11 @@
 				let data=_tag_input_suggestions_data[index];
 				let data_holder = $(this).parents().eq(4).find(id + " .data")
 				let name = $(id + " .data input:first").attr("name");
-				
+
 				$(data_holder).parents().eq(2).find(id + " .data").append(data.html);
 				$(data_holder).val("");
 				
 				$(id + " .autocomplete-items").html("");
-
 			});
 
 			// detect enter on the input
@@ -205,9 +214,7 @@
 					e.preventDefault();
 					
 					return false;
-					
 				}
-
 			});
 
 			$(id + " input").on( "focusout", function(event) {
@@ -253,8 +260,6 @@
 				
 				let taxonomy = $(id).attr("data-taxonomy");
 				
-				let name = $(id).attr("data-name");
-				
 				let hierarchical = $(id).attr("data-hierarchical");
 				
 				let operator = $(id).attr("data-operator");
@@ -273,25 +278,32 @@
 							
 							action 		: "render_taxonomy_terms",
 							taxonomy 	: taxonomy,
-							name		: name,
 							h			: hierarchical,
 							o			: operator,
 							s 			: query,
 						},
 					}).done(function( data ) {
 						
-						element.removeClass('loading');
+						let val = element.val();
 						
-						_tag_input_suggestions_data = data;
-						
-						$.each(data,function (key,value) {
+						if( query == val ){
 							
-							let template = $("<div>"+value.name+"</div>").hide()
-							sug_area.append(template)
-							template.show()
+							element.removeClass('loading');
+							
+							_tag_input_suggestions_data = data;
+							
+							$.each(data,function (key,value) {
+								
+								let template = $("<div>"+value.name+"</div>").hide()
+								sug_area.append(template)
+								template.show()
 
-						})
-						
+							});
+						}
+						else if( val.length < 3 ){
+							
+							element.removeClass('loading');
+						}
 					});
 
 				},500);
@@ -305,7 +317,156 @@
 			
 			var id = "#" + $(this).attr('id');
 			
-			set_dynamic_field(id);
+			set_taxonomy_field(id);
+		});
+		
+		// authors
+
+		function set_author_field(id){
+			
+			let multi = $(id).attr("data-multi");
+			
+			if( $(id + " .item").length > 0 && multi == 'false' ){
+				
+				$(id + " .autocomplete").hide();
+			}
+			
+			// handle the click of close button on the tags
+
+			$(document).on("click", id + " .data .item .close", function() {
+
+				if( multi == 'false' ){
+					
+					$(id + " .autocomplete").show();
+				}
+				
+				$(this).parent().remove();
+				
+				load_task_process();
+			});
+
+			// Handle the click of one suggestion
+
+			$(document).on("click", id + " .autocomplete-items div", function() {
+				
+				let index=$(this).index()
+				let data=_authors_input_suggestions_data[index];
+				let data_holder = $(this).parents().eq(4).find(id + " .data")
+				let name = $(id + " .data input:first").attr("name");
+
+				$(data_holder).parents().eq(2).find(id + " .data").append(data.html);
+				$(data_holder).val("");
+				
+				$(id + " .autocomplete-items").html("");
+				
+				if( multi == 'false' ){
+					
+					$(id + " .autocomplete").hide();
+				}
+			});
+
+			// detect enter on the input
+			 
+			$(id + " input").on( "keydown", function(e) {
+				
+				if(e.which == 13){
+				
+					e.preventDefault();
+					
+					return false;
+				}
+			});
+
+			$(id + " input").on( "focusout", function(event) {
+				
+				$(this).val("")
+				var that = this;
+				setTimeout(function(){ $(that).parents().eq(2).find(".autocomplete .autocomplete-items").html(""); }, 500);
+			
+			});
+			
+			var typing;
+			
+			$(id + " input").on( "keyup", function(event) {
+				
+				clearTimeout(typing);
+
+				var query = $(this).val();
+
+				if(event.which == 8) {
+					
+					if(query==""){
+						
+						// clear suggestions
+					
+						$(id + " .autocomplete-items").html("");
+						
+						return;
+					
+					}
+				}
+				
+				if( query.length < 3 ){
+					
+					return false;
+				}
+				
+				$(id + " .autocomplete-items").html("");
+
+				var element = $(this);
+				
+				let sug_area = element.parent().find(".autocomplete-items");
+				
+				typing = setTimeout(function() {
+
+					// using ajax to populate suggestions
+					
+					element.addClass('loading');
+					
+					$.ajax({
+						url : ajaxurl,
+						type: "GET",
+						dataType : "json",
+						data : {
+							
+							action 		: "render_authors",
+							s 			: query,
+						},
+					}).done(function( data ) {
+						
+						let val = element.val();
+						
+						if( query == val ){
+							
+							element.removeClass('loading');
+						
+							_authors_input_suggestions_data = data;
+							
+							$.each(data,function (key,value) {
+								
+								let template = $("<div>"+value.name+"</div>").hide()
+								sug_area.append(template)
+								template.show()
+							});
+						}
+						else if( val.length < 3 ){
+							
+							element.removeClass('loading');
+						}
+					});
+
+				},500);
+				
+			});
+		}
+		
+		let _authors_input_suggestions_data = null;
+		
+		$(".authors-input").each(function(e){
+			
+			var id = "#" + $(this).attr('id');
+			
+			set_author_field(id);
 		});
 		
 		// task process
@@ -455,11 +616,25 @@
 					
 					$("#rewbe_action_fields").empty().removeClass("loading").html(data);
 					
+					$("#rewbe_action_fields").find('.authors-input').each(function(e){
+						
+						var id = "#" + $(this).attr('id');
+						
+						set_author_field(id);
+					});	
+					
+					$("#rewbe_action_fields").find('.meta-input').each(function(e){
+						
+						var id = "#" + $(this).attr('id');
+						
+						set_meta_field(id);
+					});
+					
 					$("#rewbe_action_fields").find('.tags-input').each(function(e){
 						
 						var id = "#" + $(this).attr('id');
 						
-						set_dynamic_field(id);
+						set_taxonomy_field(id);
 					});
 				});
 
