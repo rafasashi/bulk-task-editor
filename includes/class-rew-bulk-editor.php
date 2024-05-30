@@ -796,6 +796,7 @@ class Rew_Bulk_Editor {
 					
 			'publish' 	=> 'Published',
 			'pending' 	=> 'Pending',
+			'private' 	=> 'Private',
 			'draft' 	=> 'Draft',
 			'trash' 	=> 'Trash',
 		

@@ -562,8 +562,9 @@
 					url : ajaxurl,
 					type: 'GET',
 					data: {
-						action 	: "render_post_type_progress",
-						pid 	: post_id
+						action 		: "render_post_type_progress",
+						pid 		: post_id,
+						bulk_edit 	: "" // prevent meta update
 					},
 					success: function(prog){
 						
