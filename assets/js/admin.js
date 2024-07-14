@@ -583,7 +583,7 @@
 					},
 					error: function(xhr, status, error){
 						
-						if (xhr.status === 500) {
+						if( xhr.status === 500 || xhr.status === 504 ) {
 							 
 							console.log('Retrying after 10 seconds...');
 							

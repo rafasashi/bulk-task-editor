@@ -2,7 +2,7 @@
 /**
  * Plugin Name: REW Bulk Editor
  * Plugin URI: https://code.recuweb.com
- * Version: 1.0.1.10
+ * Version: 1.0.1.11
  * Description: Bulk Edit posts, terms and users
  * Author: Rafasashi
  * Author URI: https://code.recuweb.com
