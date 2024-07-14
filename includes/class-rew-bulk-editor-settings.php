@@ -137,10 +137,10 @@ class Rew_Bulk_Editor_Settings {
 		
 		add_submenu_page(
 			$this->parent->_token . '_settings',
-			__( 'CSV', 'rew-bulk-editor' ),
-			__( 'CSV', 'rew-bulk-editor' ),
+			__( 'Data', 'rew-bulk-editor' ),
+			__( 'Data', 'rew-bulk-editor' ),
 			'edit_pages',
-			'edit.php?post_type=csv-task'
+			'edit.php?post_type=data-task'
 		);
 	}
 

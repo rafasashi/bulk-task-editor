@@ -708,7 +708,7 @@ class Rew_Bulk_Editor_Admin_API {
 	 */
 	public function meta_box_content( $post, $args ) {
 
-		$fields = apply_filters( $post->post_type . '_custom_fields', array(), $post->post_type );
+		$fields = apply_filters( 'rewbe_' . $post->post_type . '_custom_fields', array(), $post->post_type );
 
 		if ( ! is_array( $fields ) || 0 === count( $fields ) ) {
 			return;
@@ -788,7 +788,7 @@ class Rew_Bulk_Editor_Admin_API {
 		
 		$post_type = get_post_type( $post_id );
 
-		$fields = apply_filters( $post_type . '_custom_fields', array(), $post_type );
+		$fields = apply_filters( 'rewbe_' . $post_type . '_custom_fields', array(), $post_type );
 		
 		if ( ! is_array( $fields ) || 0 === count( $fields ) ) {
 			

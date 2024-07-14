@@ -484,7 +484,7 @@
 					type: "GET",
 					dataType : "html",
 					data : {
-						action 	: "render_post_type_process",
+						action 	: "render_task_process",
 						task 	: $("#post").serializeObject(),
 					},
 				}).done(function( data ) {
@@ -508,39 +508,42 @@
 			
 			if( $('#rewbe_task_scheduled').length > 0 ){
 				
-				$("#rewbe_task_scheduled").addClass("loading loading-right");
-				
 				var steps 	= $('#rewbe_task_scheduled').data('steps');
 				
-				var post_id = $("#post_ID").val();
-				
-				for(var step = 1; step <= steps; step++){
+				if( steps > 0 ){
 					
-					$.ajaxQueue({
+					$("#rewbe_task_scheduled").addClass("loading loading-right");
+					
+					var post_id = $("#post_ID").val();
+					
+					for(var step = 1; step <= steps; step++){
 						
-						url : ajaxurl,
-						type: 'GET',
-						data: {
-							action 	: "render_post_type_schedule",
-							pid 	: post_id,
-							step	: step
-						},
-						success: function(prog){
+						$.ajaxQueue({
 							
-							$('#rewbe_task_scheduled').empty().html( prog + '%' );
-						
-							if( prog == 100 ){
+							url : ajaxurl,
+							type: 'GET',
+							data: {
+								action 	: "render_task_schedule",
+								pid 	: post_id,
+								step	: step
+							},
+							success: function(prog){
 								
-								$("#rewbe_task_scheduled").removeClass("loading loading-right");
+								$('#rewbe_task_scheduled').empty().html( prog + '%' );
+							
+								if( prog == 100 ){
+									
+									$("#rewbe_task_scheduled").removeClass("loading loading-right");
+									
+									load_task_progess();
+								}
+							},
+							error: function(xhr, status, error){
 								
-								load_task_progess();
+								console.error('Error loading step ' + step + ': ' + error);
 							}
-						},
-						error: function(xhr, status, error){
-							
-							console.error('Error loading step ' + step + ': ' + error);
-						}
-					});
+						});
+					}
 				}
 			}
 			else{
@@ -562,9 +565,8 @@
 					url : ajaxurl,
 					type: 'GET',
 					data: {
-						action 		: "render_post_type_progress",
-						pid 		: post_id,
-						bulk_edit 	: "" // prevent meta update
+						action 	: "render_task_progress",
+						pid 	: post_id,
 					},
 					success: function(prog){
 						
@@ -594,11 +596,12 @@
 		function load_action_fields(){
 			
 			$("#rewbe_action_fields").empty().addClass("loading");
-				
+			
 			clearTimeout(selecting);
+				
+			var type = $('#rewbe_action_fields').data('type');
 			
 			var post_id 	= $("#post_ID").val();
-			var post_type 	= $("#rewbe_post_type").val();
 			var bulk_action = $("#rewbe_action").val();
 			
 			selecting = setTimeout(function() {
@@ -608,9 +611,8 @@
 					type: "GET",
 					dataType : "html",
 					data : {
-						action 	: "render_post_type_action",
+						action 	: "render_task_action",
 						pid 	: post_id,
-						pt 		: post_type,
 						ba 		: bulk_action,
 					},
 				}).done(function( data ) {

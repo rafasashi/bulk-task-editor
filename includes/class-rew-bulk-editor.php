@@ -143,13 +143,18 @@ class Rew_Bulk_Editor {
 		add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
 		add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_styles' ), 10, 1 );
 
-		add_action('wp_ajax_render_authors' , array($this,'render_authors') );
-		add_action('wp_ajax_render_taxonomy_terms' , array($this,'render_taxonomy_terms') );
-		add_action('wp_ajax_render_post_type_action' , array($this,'render_post_type_action') );
-		add_action('wp_ajax_render_post_type_process' , array($this,'render_post_type_process') );
-		add_action('wp_ajax_render_post_type_schedule' , array($this,'render_post_type_schedule') );
-		add_action('wp_ajax_render_post_type_progress' , array($this,'render_post_type_progress') );
+		add_action('wp_loaded',function(){
 
+			add_action('wp_ajax_render_authors', array($this,'render_authors') );
+			add_action('wp_ajax_render_taxonomy_terms', array($this,'render_taxonomy_terms') );
+			
+			add_action('wp_ajax_render_task_action', array($this,'render_task_action') );
+			add_action('wp_ajax_render_task_process', array($this,'render_task_process') );
+			add_action('wp_ajax_render_task_schedule', array($this,'render_task_schedule') );
+			add_action('wp_ajax_render_task_progress', array($this,'render_task_progress') );
+			
+		});
+		
 		// Load API for generic admin functions.
 		if ( is_admin() ) {
 			$this->admin = new Rew_Bulk_Editor_Admin_API($this);
@@ -222,7 +227,7 @@ class Rew_Bulk_Editor {
 			'menu_icon' 			=> '',
 		));	
 
-		$this->register_post_type( 'csv-task', __( 'CSV tasks', 'rew-bulk-editor' ), __( 'CSV task', 'rew-bulk-editor' ), '', array(
+		$this->register_post_type( 'data-task', __( 'Data tasks', 'rew-bulk-editor' ), __( 'Data task', 'rew-bulk-editor' ), '', array(
 
 			'public' 				=> false,
 			'publicly_queryable' 	=> false,
@@ -243,13 +248,132 @@ class Rew_Bulk_Editor {
 			'menu_icon' 			=> '',
 		));	
 
+		add_filter('manage_post-type-task_posts_columns',array($this,'add_default_columns'));
+		add_filter('manage_taxonomy-task_posts_columns',array($this,'add_default_columns'));
+		add_filter('manage_user-task_posts_columns',array($this,'add_default_columns'));
+		add_filter('manage_data-task_posts_columns',array($this,'add_default_columns'));
+		
+		add_action('manage_post-type-task_posts_custom_column',array($this,'filter_default_columns'),10,2);
+		add_action('manage_taxonomy-task_posts_custom_column',array($this,'filter_default_columns'),10,2);
+		add_action('manage_user-task_posts_custom_column',array($this,'filter_default_columns'),10,2);
+		add_action('manage_data-task_posts_custom_column',array($this,'filter_default_columns'),10,2);
+		
+		add_filter('manage_post-type-task_posts_columns',function($columns){
+			
+			$new_columns = array(
+				
+				'post-type' => __('Post Type', 'rew-bulk-editor'),
+			);
+
+			$first_part  = array_slice($columns, 0, 2, true);
+			
+			$second_part = array_slice($columns, 2, null, true);
+
+			$columns = array_merge($first_part, $new_columns, $second_part);
+			
+			return $columns;
+			
+		},99999);
+		
+		add_action('manage_post-type-task_posts_custom_column',function($column, $post_id){
+			
+			$task = $this->get_task_meta($post_id);
+			
+			if( $column == 'post-type' ){
+				
+				if( !empty($task['rewbe_post_type']) ){
+				
+					$post_type = get_post_type_object($task['rewbe_post_type']);
+				
+					if( !empty($post_type) ){
+						
+						echo $post_type->label;
+					}
+				}
+			}
+			
+			return $column;
+			
+		},10,2);
+		
+		add_filter('manage_taxonomy-task_posts_columns',function($columns){
+			
+			$new_columns = array(
+				
+				'taxonomy' 	=> __('Taxonomy', 'rew-bulk-editor'),
+			);
+
+			$first_part  = array_slice($columns, 0, 2, true);
+			
+			$second_part = array_slice($columns, 2, null, true);
+
+			$columns = array_merge($first_part, $new_columns, $second_part);
+			
+			return $columns;
+			
+		},99999);
+		
+		add_action('manage_taxonomy-task_posts_custom_column',function($column, $post_id){
+			
+			$task = $this->get_task_meta($post_id);
+			
+			if( $column == 'taxonomy' ){
+				
+				if( !empty($task['rewbe_taxonomy']) ){
+				
+					$taxonomy = get_taxonomy($task['rewbe_taxonomy']);
+				
+					if( !empty($taxonomy) ){
+						
+						echo $taxonomy->label;
+					}
+				}
+			}
+			
+			return $column;
+			
+		},10,2);
+
+		add_filter('manage_data-type-task_posts_columns',function($columns){
+			
+			$new_columns = array(
+				
+				'data-type' => __('Data Type', 'rew-bulk-editor'),
+			);
+
+			$first_part  = array_slice($columns, 0, 2, true);
+			
+			$second_part = array_slice($columns, 2, null, true);
+
+			$columns = array_merge($first_part, $new_columns, $second_part);
+			
+			return $columns;
+			
+		},99999);
+		
+		add_action('manage_data-type-task_posts_custom_column',function($column, $post_id){
+			
+			$task = $this->get_task_meta($post_id);
+			
+			if( $column == 'data-type' ){
+				
+				if( !empty($task['rewbe_data_type']) ){
+				
+					echo strtoupper($task['rewbe_post_type']);
+				}
+			}
+			
+			return $column;
+			
+		},10,2);
+		
 		add_action('add_meta_boxes', function(){
 			
 			$this->admin->add_meta_box (
 				
 				'bulk-editor-process',
 				__( 'Process', 'rew-bulk-editor' ), 
-				array('post-type-task','taxonomy-task','user-task','csv-task'),
+				array('post-type-task','taxonomy-task','user-task','data-task'),
 				'side'
 			);
 			
@@ -257,18 +381,10 @@ class Rew_Bulk_Editor {
 				
 				'bulk-editor-progress',
 				__( 'Progress', 'rew-bulk-editor' ), 
-				array('post-type-task','taxonomy-task','user-task','csv-task'),
+				array('post-type-task','taxonomy-task','user-task','data-task'),
 				'side'
 			);
 
-			$this->admin->add_meta_box (
-				
-				'bulk-editor-taxonomy',
-				__( 'Taxonomy', 'rew-bulk-editor' ), 
-				array('taxonomy-task'),
-				'advanced'
-			);
-			
 			$this->admin->add_meta_box (
 				
 				'bulk-editor-filters',
@@ -286,7 +402,7 @@ class Rew_Bulk_Editor {
 			);
 		});
 		
-		add_filter('post-type-task_custom_fields', function($fields=array()){
+		add_filter('rewbe_post-type-task_custom_fields', function($fields=array()){
 			
 			global $post;
 	
@@ -510,7 +626,7 @@ class Rew_Bulk_Editor {
 					'metabox' 		=> array('name'=>'bulk-editor-action'),
 					'id'          	=> 'action_fields',
 					'type'        	=> 'html',
-					'data'        	=> '<div id="rewbe_action_fields" class="loading"></div>',
+					'data'        	=> '<div id="rewbe_action_fields" data-type="post_type" class="loading"></div>',
 				);
 				
 				// process
@@ -520,7 +636,7 @@ class Rew_Bulk_Editor {
 					'metabox' 		=> array('name'=>'bulk-editor-process'),
 					'id'        	=> $this->_base . 'process',
 					'type'        	=> 'html',
-					'data'     		=> '<div id="rewbe_task_process" class="loading"></div>',
+					'data'     		=> '<div id="rewbe_task_process" data-type="post_type" class="loading"></div>',
 				);
 				
 				$fields[]=array(
@@ -535,9 +651,9 @@ class Rew_Bulk_Editor {
 					'id'        	=> $this->_base . 'call',
 				);
 				
-				if( $task[$this->_base.'action'] != 'none' ){
+				if( !empty($task[$this->_base.'action']) && $task[$this->_base.'action'] != 'none' ){
 					
-					$total = $this->count_task_items($task);
+					$total = $this->count_task_items($post->post_type,$task);
 					
 					$sc_steps = ceil($total/$this->sc_items);
 					
@@ -547,7 +663,7 @@ class Rew_Bulk_Editor {
 						'id'		=> $this->_base . 'scheduled',
 						'label'		=> 'Scheduled',
 						'type'      => 'html',
-						'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
+						'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-type="post_type" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
 					);
 					
 					$fields[]=array(
@@ -556,7 +672,7 @@ class Rew_Bulk_Editor {
 						'id'		=> $this->_base . 'processed',
 						'label'		=> 'Processed',
 						'type'      => 'html',
-						'data'      => !empty($progress) ? '100%' : '<span id="rewbe_task_processed" style="width:65px;display:block;">0%</span>',
+						'data'      => !empty($progress) ? '100%' : '<span id="rewbe_task_processed" data-type="post_type" style="width:65px;display:block;">0%</span>',
 					);
 				}
 				else{
@@ -753,6 +869,551 @@ class Rew_Bulk_Editor {
 			
 		},0,2);
 		
+		add_filter('rewbe_taxonomy-task_custom_fields', function($fields=array()){
+			
+			global $post;
+	
+			$post_id = !empty($post->ID) ? $post->ID : 0; 
+			
+			$task = $this->get_task_meta($post_id);
+			
+			if( !empty($task[$this->_base.'taxonomy']) ){
+				
+				// taxonomy
+				
+				$taxonomy = get_taxonomy($task[$this->_base.'taxonomy']);
+				
+				$fields[]=array(
+				
+					'metabox'	=> array('name'=>'bulk-editor-filters'),
+					'id'		=> $this->_base . 'taxonomy',
+					'type'      => 'hidden',
+				);
+
+				// id
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-filters'),
+					'id'          	=> $this->_base . 'term_ids_op',
+					'label'     	=> $taxonomy->label . ' ID',
+					'type'        	=> 'radio',
+					'options'		=> array(
+						
+						'in' 		=> 'IN',
+						'not-in' 	=> 'NOT IN',
+					),
+					'default' 		=> 'in',
+				);
+				
+				$fields[]=array(
+				
+					'metabox'		=> array('name'=>'bulk-editor-filters'),
+					'id'			=> $this->_base . 'term_ids',
+					'type'      	=> 'text',
+					'placeholder'	=> 'Comma separated IDs',
+					'style'			=> 'width:60%;',
+				);
+
+				// parent
+				
+				if( $taxonomy->hierarchical ){
+					
+					$fields[]=array(
+					
+						'metabox' 		=> array('name'=>'bulk-editor-filters'),
+						'id'          	=> $this->_base . 'term_parent_op',
+						'label'     	=> 'Parent ID',
+						'type'        	=> 'radio',
+						'options'		=> array(
+							
+							'in' 		=> 'IN',
+							//'not-in' 	=> 'NOT IN', // does not exists yet
+						),
+						'default' 		=> 'in',
+					);
+					
+					$fields[]=array(
+					
+						'metabox'		=> array('name'=>'bulk-editor-filters'),
+						'id'			=> $this->_base . 'term_parent',
+						'type'      	=> 'text',
+						'placeholder'	=> 'Comma separated IDs',
+						'style'			=> 'width:60%;',
+					);
+				}
+				
+				// search
+
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-filters'),
+					'id'          	=> $this->_base . 'search_loc',
+					'label'     	=> 'Search',
+					'type'        	=> 'radio',
+					'options'		=> array(
+						
+						'name' 			=> 'Name',
+						'description' 	=> 'Description',
+					),
+					'default' 		=> 'name',
+				);
+				
+				$fields[]=array(
+				
+					'metabox'		=> array('name'=>'bulk-editor-filters'),
+					'id'			=> $this->_base . 'search',
+					'type'      	=> 'text',
+					'placeholder'	=> 'Search keyword',
+					'style'			=> 'width:60%;',
+				);
+			
+				// meta
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-filters'),
+					'id'          	=> $this->_base . 'meta_rel',
+					'label'       	=> 'Meta',
+					'type'        	=> 'radio',
+					'default'		=> 'and',
+					'options'		=> $this->admin->get_relation_options(),
+				);
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-filters'),
+					'id'        	=> $this->_base . 'meta',
+					'type'        	=> 'meta',
+					'operator'		=> true,
+				);
+				
+				// actions 
+				
+				$actions = $this->get_taxonomy_actions($taxonomy->name);
+				
+				$options = array('none' => 'None');
+			
+				foreach( $actions as $action ){
+					
+					$options[$action['id']] = $action['label'];
+					
+					if( $action['id'] = $task[$this->_base.'action'] ){
+						
+						if( !empty($action['fields']) ){
+							
+							foreach( $action['fields'] as $field ){
+								
+								// register without field
+								
+								$fields[]=array(
+								
+									'metabox' 	=> array('name'=>'bulk-editor-action'),
+									'id'        => $field['name'],
+								);
+							}
+						}
+					}
+				}
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-action'),
+					'id'          	=> $this->_base . 'action',
+					'type'        	=> 'select',
+					'options'     	=> $options,
+				);
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-action'),
+					'id'          	=> 'action_fields',
+					'type'        	=> 'html',
+					'data'        	=> '<div id="rewbe_action_fields" data-type="taxonomy" class="loading"></div>',
+				);
+				
+				// process
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-process'),
+					'id'        	=> $this->_base . 'process',
+					'type'        	=> 'html',
+					'data'     		=> '<div id="rewbe_task_process" data-type="taxonomy" class="loading"></div>',
+				);
+				
+				$fields[]=array(
+					
+					'metabox' 		=> array('name'=>'bulk-editor-process'),
+					'id'        	=> $this->_base . 'per_process',
+				);
+				
+				$fields[]=array(
+					
+					'metabox' 		=> array('name'=>'bulk-editor-process'),
+					'id'        	=> $this->_base . 'call',
+				);
+				
+				if( !empty($task[$this->_base.'action']) && $task[$this->_base.'action'] != 'none' ){
+					
+					$total = $this->count_task_items($post->post_type,$task);
+					
+					$sc_steps = ceil($total/$this->sc_items);
+					
+					$fields[]=array(
+						
+						'metabox' 		=> array('name'=>'bulk-editor-progress'),
+						'id'		=> $this->_base . 'scheduled',
+						'label'		=> 'Scheduled',
+						'type'      => 'html',
+						'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-type="taxonomy" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
+					);
+					
+					$fields[]=array(
+						
+						'metabox' 		=> array('name'=>'bulk-editor-progress'),
+						'id'		=> $this->_base . 'processed',
+						'label'		=> 'Processed',
+						'type'      => 'html',
+						'data'      => !empty($progress) ? '100%' : '<span id="rewbe_task_processed" data-type="taxonomy" style="width:65px;display:block;">0%</span>',
+					);
+				}
+				else{
+					
+					$fields[]=array(
+					
+						'metabox' 		=> array('name'=>'bulk-editor-progress'),
+						'id'          	=> 'progress-notice',
+						'type'        	=> 'html',
+						'data'        	=> '<i>Select an action and update</i>',
+					);
+				}
+			}
+			else{
+
+				$taxonomies = get_taxonomies(array(),'objects');
+				
+				$options = array();
+
+				foreach( $taxonomies as $taxonomy ){
+					
+					if( $taxonomy->publicly_queryable ){
+						
+						$options[$taxonomy->name] = $taxonomy->label;
+					}
+				}
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-filters'),
+					'id'          	=> $this->_base . 'taxonomy',
+					'label'       	=> 'Type',
+					'type'        	=> 'select',
+					'options'	  	=> $options,
+				);
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-action'),
+					'id'          	=> 'action-notice',
+					'type'        	=> 'html',
+					'data'        	=> '<i>Select a taxonomy and save</i>',
+				);
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-process'),
+					'id'          	=> 'process-notice',
+					'type'        	=> 'html',
+					'data'        	=> '<i>Select a taxonomy and save</i>',
+				);
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-progress'),
+					'id'          	=> 'progress-notice',
+					'type'        	=> 'html',
+					'data'        	=> '<i>Select a taxonomy and save</i>',
+				);
+			}
+				
+			return $fields;
+		});
+		
+		add_action('rewbe_taxonomy_actions',function($actions,$taxonomy){
+			
+			$taxonomy = get_taxonomy($taxonomy);
+			
+			// parent
+			
+			if( $taxonomy->hierarchical ){
+				
+				$actions[] = array(
+				
+					'label' 	=> 'Edit Parent',
+					'id' 		=> 'edit_parent',
+					'fields' 	=> array(
+						array(			
+							
+							'name'			=> 'id',
+							'type'      	=> 'number',
+							'min'      		=> 1,
+							'min'      		=> 0,
+							'max'      		=> 1000000000000,
+							'style'			=> 'width:120px;',
+							'default' 		=> 0,
+						),
+					),
+				);
+			}
+			
+			// meta
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Edit Meta',
+				'id' 		=> 'edit_meta',
+				'fields' 	=> array(
+					array(
+						
+						'name' 		=> 'action',
+						'type'		=> 'radio',
+						'options' 	=> array(
+						
+							'edit' 		=> 'Edit',
+							'remove' 	=> 'Remove',
+						),
+						'default' => 'edit',
+					),				
+					array(
+						
+						'name' 		=> 'data',
+						'type'		=> 'meta',
+						'operator'	=> false,
+					),					
+				),
+			);
+			
+			return $actions;
+			
+		},0,2);
+
+		add_filter('rewbe_user-task_custom_fields', function($fields=array()){
+			
+			global $post;
+	
+			$post_id = !empty($post->ID) ? $post->ID : 0; 
+			
+			$task = $this->get_task_meta($post_id);
+			
+			// id
+			
+			$fields[]=array(
+			
+				'metabox' 		=> array('name'=>'bulk-editor-filters'),
+				'id'          	=> $this->_base . 'user_ids_op',
+				'label'     	=> 'User ID',
+				'type'        	=> 'radio',
+				'options'		=> array(
+					
+					'in' 		=> 'IN',
+					'not-in' 	=> 'NOT IN',
+				),
+				'default' 		=> 'in',
+			);
+			
+			$fields[]=array(
+			
+				'metabox'		=> array('name'=>'bulk-editor-filters'),
+				'id'			=> $this->_base . 'user_ids',
+				'type'      	=> 'text',
+				'placeholder'	=> 'Comma separated IDs',
+				'style'			=> 'width:60%;',
+			);
+			
+			// search
+			/*
+			$fields[]=array(
+			
+				'metabox' 		=> array('name'=>'bulk-editor-filters'),
+				'id'          	=> $this->_base . 'search_loc',
+				'label'     	=> 'Search',
+				'type'        	=> 'radio',
+				'options'		=> array(
+					
+					'name' 			=> 'Name',
+					'description' 	=> 'Description',
+				),
+				'default' 		=> 'name',
+			);
+			
+			$fields[]=array(
+			
+				'metabox'		=> array('name'=>'bulk-editor-filters'),
+				'id'			=> $this->_base . 'search',
+				'type'      	=> 'text',
+				'placeholder'	=> 'Search keyword',
+				'style'			=> 'width:60%;',
+			);
+			*/
+
+			// meta
+			
+			$fields[]=array(
+			
+				'metabox' 		=> array('name'=>'bulk-editor-filters'),
+				'id'          	=> $this->_base . 'meta_rel',
+				'label'       	=> 'Meta',
+				'type'        	=> 'radio',
+				'default'		=> 'and',
+				'options'		=> $this->admin->get_relation_options(),
+			);
+			
+			$fields[]=array(
+			
+				'metabox' 		=> array('name'=>'bulk-editor-filters'),
+				'id'        	=> $this->_base . 'meta',
+				'type'        	=> 'meta',
+				'operator'		=> true,
+			);
+			
+			// actions 
+			
+			$actions = $this->get_user_actions();
+			
+			$options = array('none' => 'None');
+		
+			foreach( $actions as $action ){
+				
+				$options[$action['id']] = $action['label'];
+				
+				if( $action['id'] = $task[$this->_base.'action'] ){
+					
+					if( !empty($action['fields']) ){
+						
+						foreach( $action['fields'] as $field ){
+							
+							// register without field
+							
+							$fields[]=array(
+							
+								'metabox' 	=> array('name'=>'bulk-editor-action'),
+								'id'        => $field['name'],
+							);
+						}
+					}
+				}
+			}
+			
+			$fields[]=array(
+			
+				'metabox' 		=> array('name'=>'bulk-editor-action'),
+				'id'          	=> $this->_base . 'action',
+				'type'        	=> 'select',
+				'options'     	=> $options,
+			);
+			
+			$fields[]=array(
+			
+				'metabox' 		=> array('name'=>'bulk-editor-action'),
+				'id'          	=> 'action_fields',
+				'type'        	=> 'html',
+				'data'        	=> '<div id="rewbe_action_fields" data-type="user" class="loading"></div>',
+			);
+			
+			// process
+			
+			$fields[]=array(
+			
+				'metabox' 		=> array('name'=>'bulk-editor-process'),
+				'id'        	=> $this->_base . 'process',
+				'type'        	=> 'html',
+				'data'     		=> '<div id="rewbe_task_process" data-type="user" class="loading"></div>',
+			);
+			
+			$fields[]=array(
+				
+				'metabox' 		=> array('name'=>'bulk-editor-process'),
+				'id'        	=> $this->_base . 'per_process',
+			);
+			
+			$fields[]=array(
+				
+				'metabox' 		=> array('name'=>'bulk-editor-process'),
+				'id'        	=> $this->_base . 'call',
+			);
+			
+			if( !empty($task[$this->_base.'action']) && $task[$this->_base.'action'] != 'none' ){
+				
+				$total = $this->count_task_items($post->post_type,$task);
+				
+				$sc_steps = ceil($total/$this->sc_items);
+				
+				$fields[]=array(
+					
+					'metabox' 		=> array('name'=>'bulk-editor-progress'),
+					'id'		=> $this->_base . 'scheduled',
+					'label'		=> 'Scheduled',
+					'type'      => 'html',
+					'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-type="user" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
+				);
+				
+				$fields[]=array(
+					
+					'metabox' 		=> array('name'=>'bulk-editor-progress'),
+					'id'		=> $this->_base . 'processed',
+					'label'		=> 'Processed',
+					'type'      => 'html',
+					'data'      => !empty($progress) ? '100%' : '<span id="rewbe_task_processed" data-type="user" style="width:65px;display:block;">0%</span>',
+				);
+			}
+			else{
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-progress'),
+					'id'          	=> 'progress-notice',
+					'type'        	=> 'html',
+					'data'        	=> '<i>Select an action and update</i>',
+				);
+			}
+				
+			return $fields;
+		});
+		
+		add_action('rewbe_user_actions',function($actions){
+			
+			// meta
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Edit Meta',
+				'id' 		=> 'edit_meta',
+				'fields' 	=> array(
+					array(
+						
+						'name' 		=> 'action',
+						'type'		=> 'radio',
+						'options' 	=> array(
+						
+							'edit' 		=> 'Edit',
+							'remove' 	=> 'Remove',
+						),
+						'default' => 'edit',
+					),				
+					array(
+						
+						'name' 		=> 'data',
+						'type'		=> 'meta',
+						'operator'	=> false,
+					),					
+				),
+			);
+			
+			return $actions;
+			
+		},0,2);
+		
 		add_action('save_post', function($post_id,$post,$update){
 				
 			if( !defined('DOING_AUTOSAVE') || DOING_AUTOSAVE === false ){
@@ -762,7 +1423,7 @@ class Rew_Bulk_Editor {
 					'post-type-task',
 					'taxonomy-task',
 					'user-task',
-					'csv-task',
+					'data-task',
 				))){
 					
 					// delete schedule marks
@@ -780,7 +1441,7 @@ class Rew_Bulk_Editor {
 					
 					// reset progress
 					
-					update_post_meta($post_id,$this->_base.'processed',0);
+					update_post_meta($post_id,$this->_base.'progress',0);
 				}
 			}
 			
@@ -789,7 +1450,44 @@ class Rew_Bulk_Editor {
 		},99999,3);
 		
 	} // End __construct ()
+	
+	public function add_default_columns($columns){
+		
+		$new_columns = array(
+			
+			'action'    => __('Action', 'rew-bulk-editor'),
+			'progress'	=> __('Progress', 'rew-bulk-editor'),
+		);
 
+		$first_part  = array_slice($columns, 0, 2, true);
+		
+		$second_part = array_slice($columns, 2, null, true);
+
+		$columns = array_merge($first_part, $new_columns, $second_part);
+		
+		return $columns;
+	}
+	
+	public function filter_default_columns($column, $post_id){
+		
+		$task = $this->get_task_meta($post_id);
+		
+		if( $column == 'action' ){
+			
+			if( !empty($task['rewbe_action']) ){
+				
+				echo '<code>'. $task['rewbe_action'] . '</code>';
+			}
+		}
+		elseif( $column == 'progress' ){
+			
+			
+			echo $task['rewbe_progress'] . '%';
+		}
+		
+		return $column;
+	}
+	
 	public function get_post_type_statuses($post_type){
 		
 		return apply_filters('rewbe_post_type_statuses',array(
@@ -802,10 +1500,14 @@ class Rew_Bulk_Editor {
 		
 		),$post_type);
 	}
-
+	
 	public function get_task_meta($post_id){
 		
-		$meta = array();
+		$meta = array(
+		
+			'rewbe_action' 		=> 'none',
+			'rewbe_progress' 	=> 0,
+		);
 		
 		if( $data = get_metadata('post',$post_id) ){
 			
@@ -820,10 +1522,28 @@ class Rew_Bulk_Editor {
 		
 		return $meta;
 	}
-
+	
 	public function get_post_type_actions($slug){
 		
-		$actions = apply_filters('rewbe_post_type_actions',array(),$slug);
+		return $this->sanitize_actions(apply_filters('rewbe_post_type_actions',array(),$slug));
+	}
+	
+	public function get_taxonomy_actions($slug){
+		
+		return $this->sanitize_actions(apply_filters('rewbe_taxonomy_actions',array(),$slug));
+	}
+	
+	public function get_user_actions(){
+		
+		return $this->sanitize_actions(apply_filters('rewbe_user_actions',array()));
+	}
+	
+	public function get_data_actions($slug){
+		
+		return $this->sanitize_actions(apply_filters('rewbe_data_actions',array(),$slug));
+	}
+	
+	public function sanitize_actions($actions){
 		
 		// validate & sanitize actions
 		
@@ -851,16 +1571,6 @@ class Rew_Bulk_Editor {
 		}
 		
 		return $actions;
-	}
-	
-	public function get_taxonomy_actions($slug){
-		
-		return apply_filters('rewbe_'.$slug.'_tax_actions',array());
-	}
-	
-	public function get_user_actions(){
-		
-		return apply_filters('rewbe_user_actions',array());
 	}
 	
 	/**
@@ -947,7 +1657,7 @@ class Rew_Bulk_Editor {
 			'post-type-task',
 			'taxonomy-task',
 			'user-task',
-			'csv-task',
+			'data-task',
 		))){
 			
 			wp_register_style( $this->_token . '-admin', esc_url( $this->assets_url ) . 'css/admin.css', array(), $this->_version . time() );
@@ -975,7 +1685,7 @@ class Rew_Bulk_Editor {
 			'post-type-task',
 			'taxonomy-task',
 			'user-task',
-			'csv-task',
+			'data-task',
 		))){
 		
 			wp_register_script( $this->_token . '-admin', esc_url( $this->assets_url ) . 'js/admin.js', array( 'jquery' ), $this->_version . time(), true );
@@ -1026,9 +1736,9 @@ class Rew_Bulk_Editor {
 					'number' 			=> 10,
 				);
 				
-				$user_query = new WP_User_Query( $args );
+				$query = new WP_User_Query( $args );
 				
-				foreach ( (array) $user_query->results as $user ) {
+				foreach ( (array) $query->results as $user ) {
 					
 					$name = $user->display_name . ' (' . $user->user_email . ')';
 					
@@ -1114,7 +1824,7 @@ class Rew_Bulk_Editor {
 		wp_die();
 	}
 	
-	public function render_post_type_process(){
+	public function render_task_process(){
 		
 		if( !empty($_GET['task']) && is_array($_GET['task']) ){
 			
@@ -1124,7 +1834,7 @@ class Rew_Bulk_Editor {
 			
 			$post = get_post($post_id);
 			
-			$total_items = $this->count_task_items($task);
+			$total_items = $this->count_task_items($post->post_type,$task);
 			
 			// render fields
 
@@ -1166,7 +1876,235 @@ class Rew_Bulk_Editor {
 		wp_die();
 	}
 	
-	public function render_post_type_schedule(){
+	public function render_task_progress(){
+		
+		if( !empty($_GET['pid']) && is_numeric($_GET['pid']) ){
+			
+			$task_id = intval($_GET['pid']);
+			
+			if( $post = get_post($task_id) ){
+				
+				$task = $this->get_task_meta($task_id);
+				
+				$per_process = $task[$this->_base.'per_process'];
+				
+				$call_method = $task[$this->_base.'call'];
+				
+				$scheduled = $task[$this->_base.'scheduled'];
+				
+				$action = $task[$this->_base.'action'];
+
+				if( 1==1 || $call_method == 'ajax' ){
+					
+					if( $action != 'none' ){
+						
+						if( $post->post_type == 'post-type-task' ){
+							
+							$post_type = $task[$this->_base.'post_type'];
+					
+							$query = new WP_Query(array(
+							
+								'post_type' 		=> $post_type,
+								'posts_per_page' 	=> $per_process,
+								'order'				=> 'ASC',
+								'orderby'			=> 'ID',
+								'meta_query' 		=> array(
+							
+									array(
+										
+										'key'     	=> $this->_base.$task_id,
+										'value'   	=> 1,
+										'type' 		=> 'NUMERIC',
+										'compare' 	=> '!=',
+									)
+								),
+							));
+							
+							$total_items = $query->found_posts;
+							
+							if( $total_items > $per_process ){
+							
+								$remaining = $total_items - $per_process;
+							}
+							else{
+								
+								$remaining = $total_items;
+							}
+							
+							if( !empty($query->posts) ){
+								
+								$args = $this->parse_action_parameters($task);
+								
+								// register default actions
+								
+								if( $action == 'edit_status' ){
+									
+									add_action('rewbe_do_post_edit_status',array($this,'edit_post_status'),10,2);
+								}						
+								elseif( $action == 'edit_parent' ){
+									
+									add_action('rewbe_do_post_edit_parent',array($this,'edit_post_parent'),10,2);
+								}						
+								elseif( $action == 'edit_author' ){
+									
+									add_action('rewbe_do_post_edit_author',array($this,'edit_post_author'),10,2);
+								}
+								elseif( $action == 'edit_meta' ){
+									
+									add_action('rewbe_do_post_edit_meta',array($this,'edit_post_meta'),10,2);
+								}
+								elseif( strpos($action,'edit_tax_') === 0 ){
+									
+									$taxonomy =  substr($action,strlen('edit_tax_'));
+									
+									$args['taxonomy'] = $taxonomy; 
+									
+									add_action('rewbe_do_post_edit_tax_'.$taxonomy,array($this,'edit_post_taxonomy'),10,2);
+								}
+								
+								foreach( $query->posts as $post ){
+									
+									//update_post_meta($post->ID,$this->_base.$task_id,time());
+					
+									apply_filters('rewbe_do_post_'.$action,$post,$args);
+									
+									delete_post_meta($post->ID,$this->_base.$task_id);
+								}
+							}
+						}
+						elseif( $post->post_type == 'taxonomy-task' ){
+							
+							$taxonomy = $task[$this->_base.'taxonomy'];
+							
+							$args = array(
+								
+								'taxonomy'			=> $taxonomy,
+								'number'			=> $per_process,
+								'order'				=> 'ASC',
+								'orderby'			=> 'ID',
+								'meta_query' 		=> array(
+							
+									array(
+										
+										'key'     	=> $this->_base.$task_id,
+										'value'   	=> 1,
+										'type' 		=> 'NUMERIC',
+										'compare' 	=> '!=',
+									)
+								),
+							);
+							
+							$total_items = wp_count_terms($args);
+							
+							if( $total_items > $per_process ){
+							
+								$remaining = $total_items - $per_process;
+							}
+							else{
+								
+								$remaining = $total_items;
+							}
+							
+							if( $terms = get_terms($args) ){
+								
+								$args = $this->parse_action_parameters($task);
+								
+								// register default actions
+								
+								if( $action == 'edit_parent' ){
+									
+									add_action('rewbe_do_term_edit_parent',array($this,'edit_term_parent'),10,2);
+								}						
+								elseif( $action == 'edit_meta' ){
+									
+									add_action('rewbe_do_term_edit_meta',array($this,'edit_term_meta'),10,2);
+								}
+								
+								foreach( $terms as $term ){
+									
+									//update_term_meta($term->term_id,$this->_base.$task_id,time());
+					
+									apply_filters('rewbe_do_term_'.$action,$term,$args);
+									 
+									delete_term_meta($term->term_id,$this->_base.$task_id);
+								}
+							}
+						}
+						elseif( $post->post_type == 'user-task' ){
+							
+							$query = new WP_User_Query(array(
+							
+								'number' 			=> $per_process,
+								'order'				=> 'ASC',
+								'orderby'			=> 'ID',
+								'count_total'		=> true,
+								'meta_query' 		=> array(
+							
+									array(
+										
+										'key'     	=> $this->_base.$task_id,
+										'value'   	=> 1,
+										'type' 		=> 'NUMERIC',
+										'compare' 	=> '!=',
+									)
+								),
+							));
+
+							$total_items = $query->get_total();
+							
+							if( $total_items > $per_process ){
+							
+								$remaining = $total_items - $per_process;
+							}
+							else{
+								
+								$remaining = $total_items;
+							}
+							
+							if( $users = $query->get_results() ){
+								
+								$args = $this->parse_action_parameters($task);
+								
+								// register default actions
+								
+								if( $action == 'edit_meta' ){
+									
+									add_action('rewbe_do_user_edit_meta',array($this,'edit_user_meta'),10,2);
+								}
+								
+								foreach ( $users as $user ){
+									
+									//update_user_meta($user->ID,$this->_base.$task_id,time());
+					
+									apply_filters('rewbe_do_user_'.$action,$user,$args);
+									
+									delete_user_meta($user->ID,$this->_base.$task_id);
+								}
+							}
+						}
+						elseif( $post->post_type == 'data-task' ){
+							
+							
+						}
+						
+						$prog = round( ( $scheduled - $remaining ) / $scheduled * 100,2);
+					}
+					else{
+						
+						$prog = 100;
+					}
+					
+					update_post_meta($task_id,$this->_base.'progress',$prog);
+					
+					echo $prog;
+				}
+			}
+		}
+		
+		wp_die();
+	}
+	
+	public function render_task_schedule(){
 		
 		if( !empty($_GET['step']) && is_numeric($_GET['step']) && !empty($_GET['pid']) && is_numeric($_GET['pid']) ){
 			
@@ -1174,41 +2112,73 @@ class Rew_Bulk_Editor {
 			
 			$task_id = intval($_GET['pid']);
 			
+			$post = get_post($task_id);
+			
 			$task = $this->get_task_meta($task_id);
 			
-			$args = $this->parse_task_parameters($task,$this->sc_items,$step);
-
-			$query = new WP_Query($args);
-
-			$ids = $query->posts;
+			$prog = 100;
 			
-			if( !empty($ids) ){
+			if( $total_items = $this->count_task_items($post->post_type,$task) ){
 				
-				foreach( $ids as $id ){
+				/**	schedule task 
+				*	0: scheduled
+				*	t: processing
+				*	1: done
+				*/
+				
+				if( $post->post_type == 'post-type-task' ){
 					
-					/**	schedule task 
-					*	0: scheduled
-					*	t: processing
-					*	1: done
-					*/
+					$args = $this->parse_post_task_parameters($task,$this->sc_items,$step);
+
+					$query = new WP_Query($args);
+
+					if( $ids = $query->posts ){
+						
+						foreach( $ids as $id ){
+							
+							update_post_meta($id,$this->_base.$task_id,0);
+						}
+					}
+				}
+				elseif( $post->post_type == 'taxonomy-task' ){
+
+					if( $ids = get_terms($args) ){
+						
+						foreach( $ids as $id ){
+							
+							update_term_meta($id,$this->_base.$task_id,0);
+						}
+					}
+				}
+				elseif( $post->post_type == 'user-task' ){
 					
-					update_post_meta($id,$this->_base.$task_id,0);
+					$args = $this->parse_user_task_parameters($task,$this->sc_items,$step);
+				
+					$query = new WP_User_Query($args);
+					
+					if( $ids = $query->get_results() ){
+						
+						foreach( $ids as $id ){
+							
+							update_user_meta($id,$this->_base.$task_id,0);
+						}
+					}
+				}
+				elseif( $post->post_type == 'data-task' ){
+					
+					
 				}
 				
-				$sc_steps = ceil( $query->found_posts / $this->sc_items );
+				$sc_steps = ceil( $total_items / $this->sc_items );
 
 				$prog = ceil( $step / $sc_steps * 100 );
-			}
-			else{
-				
-				$prog = 100;
 			}
 				
 			if( $prog == 100 ){
 				
 				// scheduled
 				
-				update_post_meta($task_id,$this->_base.'scheduled',$query->found_posts);
+				update_post_meta($task_id,$this->_base.'scheduled',$total_items);
 			}
 				
 			echo $prog;
@@ -1216,118 +2186,48 @@ class Rew_Bulk_Editor {
 		
 		wp_die();
 	}
-
-	public function render_post_type_progress(){
+	
+	public function update_post($args) {
 		
-		if( !empty($_GET['pid']) && is_numeric($_GET['pid']) ){
-			
-			$task_id = intval($_GET['pid']);
-			
-			$task = $this->get_task_meta($task_id);
-			
-			$post_type = $task[$this->_base.'post_type'];
-			
-			$per_process = $task[$this->_base.'per_process'];
-			
-			$call_method = $task[$this->_base.'call'];
-			
-			$scheduled = $task[$this->_base.'scheduled'];
-			
-			$action = $task[$this->_base.'action'];
+		// unregister save_post
+		
+		global $wp_filter;
+		
+		$actions = array();
 
-			if( 1==1 || $call_method == 'ajax' ){
-				
-				if( $action != 'none' ){
-					
-					$query = new WP_Query(array(
-					
-						'post_type' 		=> $post_type,
-						'posts_per_page' 	=> $per_process,
-						'order'				=> 'ASC',
-						'orderby'			=> 'ID',
-						'meta_query' 		=> array(
-					
-							array(
-								
-								'key'     	=> $this->_base.$task_id,
-								'value'   	=> 1,
-								'type' 		=> 'NUMERIC',
-								'compare' 	=> '!=',
-							)
-						),
-					));
-					
-					if( $query->found_posts > $per_process ){
-					
-						$remaining = $query->found_posts - $per_process;
-					}
-					else{
-						
-						$remaining = $query->found_posts;
-					}
-					
-					if( !empty($query->posts) ){
-						
-						$args = $this->parse_action_parameters($task);
-						
-						// register default actions
-						
-						if( $action == 'edit_status' ){
-							
-							add_action('rewbe_do_post_edit_status',array($this,'edit_post_status'),10,2);
-						}						
-						elseif( $action == 'edit_parent' ){
-							
-							add_action('rewbe_do_post_edit_parent',array($this,'edit_post_parent'),10,2);
-						}						
-						elseif( $action == 'edit_author' ){
-							
-							add_action('rewbe_do_post_edit_author',array($this,'edit_post_author'),10,2);
-						}
-						elseif( $action == 'edit_meta' ){
-							
-							add_action('rewbe_do_post_edit_meta',array($this,'edit_post_meta'),10,2);
-						}
-						elseif( strpos($action,'edit_tax_') === 0 ){
-							
-							$taxonomy =  substr($action,strlen('edit_tax_'));
-							
-							$args['taxonomy'] = $taxonomy; 
-							
-							add_action('rewbe_do_post_edit_tax_'.$taxonomy,array($this,'edit_post_taxonomy'),10,2);
-						}
-						
-						foreach( $query->posts as $post ){
-							
-							//update_post_meta($post->ID,$this->_base.$task_id,time());
+		if (isset($wp_filter['save_post'])) {
 			
-							apply_filters('rewbe_do_post_'.$action,$post,$args);
-							
-							delete_post_meta($post->ID,$this->_base.$task_id);
-						}
-					}
-					
-					$prog = round( ( $scheduled - $remaining ) / $scheduled * 100,2);
-				}
-				else{
-					
-					$prog = 100;
-				}
+			foreach ($wp_filter['save_post']->callbacks as $priority => $callbacks) {
 				
-				if( $prog == 100 ){
+				foreach ($callbacks as $callback) {
 					
-					// processed
-				
-					update_post_meta($task_id,$this->_base.'processed',$scheduled);
+					$actions[$priority][] = $callback;
+					
+					remove_action('save_post', $callback['function'], $priority);
 				}
-				
-				echo $prog;
 			}
 		}
-		
-		wp_die();
-	}
 
+		// update post
+
+		$result = wp_update_post($args);
+
+		// re-register save_post
+		
+		if (!empty($actions)) {
+			
+			foreach ($actions as $priority => $callbacks) {
+				
+				foreach ($callbacks as $callback) {
+
+					add_action('save_post', $callback['function'], $priority, $callback['accepted_args']);
+				}
+			}
+		}
+
+		return $result;
+	}
+	
 	public function edit_post_status($post,$args){
 		
 		if( !empty($args['name']) ){
@@ -1338,7 +2238,7 @@ class Rew_Bulk_Editor {
 			
 			if( isset($statuses[$post_status]) ){
 				
-				wp_update_post(array(
+				$this->update_post(array(
 					
 					'ID' 			=> $post->ID,
 					'post_status' 	=> $post_status,
@@ -1359,7 +2259,7 @@ class Rew_Bulk_Editor {
 				
 				if( !empty($parent) && $post->post_type == $parent->post_type ){
 					
-					wp_update_post(array(
+					$this->update_post(array(
 						
 						'ID' 			=> $post->ID,
 						'post_parent' 	=> $parent->ID,
@@ -1370,7 +2270,7 @@ class Rew_Bulk_Editor {
 				
 				// remove parent
 				
-				wp_update_post(array(
+				$this->update_post(array(
 					
 					'ID' 			=> $post->ID,
 					'post_parent' 	=> $parent_id,
@@ -1387,7 +2287,7 @@ class Rew_Bulk_Editor {
 			
 			if( $author_id > 0 ){
 				
-				wp_update_post(array(
+				$this->update_post(array(
 					
 					'ID' 			=> $post->ID,
 					'post_author' 	=> $author_id,
@@ -1478,6 +2378,65 @@ class Rew_Bulk_Editor {
 		}
 	}
 	
+	public function edit_term_parent($term,$args){
+		
+		if( isset($args['id']) && is_numeric($args['id']) ){
+			
+			$parent_id = intval($args['id']);
+			
+			if( $parent_id > 0 ){
+				
+				$parent = get_term($parent_id);
+				
+				if( !empty($parent) && $term->taxonomy == $parent->taxonomy ){
+					
+					wp_update_term($term->term_id,$term->taxonomy,array(
+						
+						'parent' => $parent_id
+					));
+				}
+			}
+			else{
+				
+				// remove parent
+				
+				wp_update_term($term->term_id,$term->taxonomy,array(
+					
+					'parent' => $parent_id
+				));
+			}
+		}
+	}	
+
+	public function edit_term_meta($term,$args){
+		
+		if( !empty($args['action']) && !empty($args['data']['key']) ){
+			
+			$action = sanitize_title($args['action']);
+			
+			$data = array();
+			
+			foreach( $args['data']['key'] as $i => $key ){
+				
+				if( isset($args['data']['value'][$i]) ){
+					
+					$key = sanitize_title($key);
+
+					$value = sanitize_text_field($args['data']['value'][$i]);
+					
+					if( $action == 'edit' ){
+						
+						update_term_meta($term->term_id,$key,$value);
+					}
+					elseif( $action == 'remove' ){
+					
+						delete_term_meta($term->term_id,$key,$value);
+					}
+				}
+			}
+		}
+	}
+
 	public function woo_add_product_attributes($post,$term_ids,$taxonomy,$args){
 		
 		$existing_terms = wp_get_post_terms($post->ID,$taxonomy,array('fields' => 'ids'));
@@ -1537,22 +2496,83 @@ class Rew_Bulk_Editor {
 			$product->save();
 		}
 	}	
+
+	public function edit_user_meta($user,$args){
+		
+		if( !empty($args['action']) && !empty($args['data']['key']) ){
+			
+			$action = sanitize_title($args['action']);
+			
+			$data = array();
+			
+			foreach( $args['data']['key'] as $i => $key ){
+				
+				if( isset($args['data']['value'][$i]) ){
+					
+					$key = sanitize_title($key);
+
+					$value = sanitize_text_field($args['data']['value'][$i]);
+					
+					if( $action == 'edit' ){
+						
+						update_user_meta($user->ID,$key,$value);
+					}
+					elseif( $action == 'remove' ){
+					
+						delete_user_meta($user->ID,$key,$value);
+					}
+				}
+			}
+		}
+	}
 	
-	public function count_task_items($task){
+	public function count_task_items($type,$task){
 		
 		$items = 0;
 		
-		if( $args = $this->parse_task_parameters($task) ){
+		if( $type == 'post-type-task' ){
 			
-			$query = new WP_Query($args);
+			if( $args = $this->parse_post_task_parameters($task) ){
+				
+				$query = new WP_Query($args);
+				
+				$items = $query->found_posts;
+			}
+		}
+		elseif( $type == 'taxonomy-task' ){
 			
-			$items = $query->found_posts;
+			if( $args = $this->parse_term_task_parameters($task) ){
+
+				$items = wp_count_terms($args);
+			}
+		}
+		elseif( $type == 'user-task' ){
+			
+			if( $args = $this->parse_user_task_parameters($task) ){
+				
+				$query = new WP_User_Query($args);
+				
+				if( isset($args['meta_query']['relation']) ){
+					
+					// fix counting bug
+					
+					$items = count($query->get_results());
+				}
+				else{
+					
+					$items = $query->get_total();
+				}
+			}
+		}
+		elseif( $type == 'data-task' ){
+			
+			
 		}
 		
 		return $items;
 	}
 	
-	public function parse_task_parameters($task,$number=1,$paged=0){
+	public function parse_post_task_parameters($task,$number=1,$paged=0){
 		
 		$post_type = sanitize_text_field($task['rewbe_post_type']);
 		
@@ -1711,14 +2731,188 @@ class Rew_Bulk_Editor {
 		
 		// filter meta
 		
-		if( !empty($task['rewbe_meta']) && is_array($task['rewbe_meta']) ){
-	
-			$meta_rel = isset($task['rewbe_meta_rel']) ? sanitize_text_field($task['rewbe_meta_rel']) : 'or';
+		if( $meta_query = $this->parse_task_meta_query($task) ){
 			
-			$args['meta_query'] = array( 
+			$args['meta_query'] = $meta_query;
+		}
+		
+		return $args;
+	}
+
+	public function parse_term_task_parameters($task,$number=1,$paged=0,$per_page=10){
+		
+		$taxonomy = sanitize_text_field($task['rewbe_taxonomy']);
+		
+		$args = array(
+			
+			'taxonomy'		=> $taxonomy,
+			'number' 		=> $number,
+			'offset ' 		=> $paged > 0 ? ($paged - 1) * $per_page : 0,
+			'order'			=> 'ASC',
+			'orderby'		=> 'id',
+			'fields'		=> 'ids',
+			'hide_empty' 	=> false,
+		);
+		
+		// filter search
+		
+		if( !empty($task['rewbe_search']) ){
+		
+			$search = apply_filters('get_search_query', sanitize_text_field($task['rewbe_search']));
+			
+			$location = !empty($task['rewbe_search_loc']) ? sanitize_title($task['rewbe_search_loc']) : 'name';
+			
+			if( $location == 'description' ){
 				
-				'relation' => isset($relation[$meta_rel]) ? $relation[$meta_rel] : 'OR',
+				$args['description__like'] = $search;
+			}
+			else{
+				
+				$args['name__like'] = $search;
+			}
+		}
+		
+		// filters ids
+		
+		if( !empty($task['rewbe_term_ids']) ){
+		
+			$ids = array_filter(array_map('intval',explode(',',$task['rewbe_term_ids'])), function($id){
+				
+				return ( $id > 0 );
+			});
+			
+			if( !empty($ids) ){
+				
+				$operator = !empty($task['rewbe_term_ids_op']) ? sanitize_title($task['rewbe_term_ids_op']) : 'in';
+				
+				if( $operator == 'in' ){
+				
+					$args['include'] = $ids;
+				}
+				else{
+					
+					$args['exclude'] = $ids;
+				}
+			}
+		}
+
+		// filters parent
+		
+		if( !empty($task['rewbe_term_parent']) ){
+		
+			$ids = array_filter(array_map('intval',explode(',',$task['rewbe_term_parent'])), function($id){
+				
+				return ( $id > 0 );
+			});
+			
+			if( !empty($ids) ){
+				
+				$operator = !empty($task['rewbe_term_parent_op']) ? sanitize_title($task['rewbe_term_parent_op']) : 'in';
+				
+				if( $operator == 'in' ){
+				
+					$args['parent'] = $ids;
+				}
+				else{
+					
+					//does not exist yet
+				}
+			}
+		}
+		
+		// filter meta
+		
+		if( $meta_query = $this->parse_task_meta_query($task) ){
+			
+			$args['meta_query'] = $meta_query;
+		}
+		
+		return $args;
+	}
+
+	public function parse_user_task_parameters($task,$number=-1,$paged=1){
+		
+		$args = array(
+			
+			'number' 		=> $number,
+			'order'			=> 'ASC',
+			'orderby'		=> 'ID',
+			'fields'		=> 'ids',
+		);
+		
+		if( $number > 0 ){
+			
+			$args['paged'] 			= $paged;
+			$args['count_total'] 	= false;
+		}
+		else {
+			
+			$args['count_total'] = true;
+		}
+		
+		// filter search
+		
+		if( !empty($task['rewbe_search']) ){
+		
+			$args['search'] = apply_filters( 'get_search_query', sanitize_text_field($task['rewbe_search']) );
+		
+			$args['search_columns'] = array(
+				
+				'ID',
+				'user_login',
+				'user_email',
+				'user_url',
+				'user_nicename',
+				'display_name',
 			);
+		}
+		
+		// filters ids
+		
+		if( !empty($task['rewbe_user_ids']) ){
+		
+			$ids = array_filter(array_map('intval',explode(',',$task['rewbe_user_ids'])), function($id){
+				
+				return ( $id > 0 );
+			});
+			
+			if( !empty($ids) ){
+				
+				$operator = !empty($task['rewbe_user_ids_op']) ? sanitize_title($task['rewbe_user_ids_op']) : 'in';
+				
+				if( $operator == 'in' ){
+				
+					$args['include'] = $ids;
+				}
+				else{
+					
+					$args['exclude'] = $ids;
+				}
+			}
+		}
+		
+		// filter meta
+		
+		if( $meta_query = $this->parse_task_meta_query($task) ){
+			
+			$args['meta_query'] = $meta_query;
+		}
+		
+		return $args;
+	}
+	
+	public function parse_task_meta_query($task){
+		
+		$meta_query = array();
+		
+		if( !empty($task['rewbe_meta']) && is_array($task['rewbe_meta']) ){
+
+			$meta_rel = isset($task['rewbe_meta_rel']) ? sanitize_text_field($task['rewbe_meta_rel']) : 'or';
+
+			if( count($task['rewbe_meta']['key']) > 1 ){
+				
+				$meta_query['relation'] = isset($relation[$meta_rel]) ? $relation[$meta_rel] : 'OR';
+			}
 			
 			foreach( $task['rewbe_meta']['key'] as $i => $key ){
 				
@@ -1738,19 +2932,30 @@ class Rew_Bulk_Editor {
 						
 						$compare_options = $this->admin->get_compare_options();
 						
-						$args['meta_query'][] = array(
+						$meta = array(
 							
 							'key'     	=> $key,
-							'value'   	=> $value,
 							'type' 		=> isset($type_options[$type]) ? $type_options[$type] : 'CHAR',
 							'compare' 	=> isset($compare_options[$compare]) ? $compare_options[$compare] : '=',
 						);
+						
+						if( !in_array($compare,array(
+						
+							'exists',
+							'not-exists'
+						
+						))){
+							
+							$meta['value'] = $value;
+						}
+						
+						$meta_query[] = $meta;
 					}
 				}
 			}
 		}
 		
-		return $args;
+		return $meta_query;
 	}
 	
 	public function parse_action_parameters($task){
@@ -1797,22 +3002,39 @@ class Rew_Bulk_Editor {
 		return $args;
 	}
 	
-	public function render_post_type_action(){
+	public function render_task_action(){
 		
-		if( current_user_can('edit_posts') ){
+		if( current_user_can('edit_posts') && !empty($_GET['pid']) && !empty($_GET['ba']) ){
 			
 			if( $post_id = intval($_GET['pid']) ){
 				
 				$post = get_post($post_id);
 				
-				if( $post_type = sanitize_title($_GET['pt']) ){
-				
-					if( $bulk_action = sanitize_title($_GET['ba']) ){
+				if( $bulk_action = sanitize_title($_GET['ba']) ){
 					
-						$actions = $this->get_post_type_actions($post_type);
+					$task = $this->get_task_meta($post_id);
+					
+					if( $post->post_type == 'post-type-task' ){
+					
+						$actions = $this->get_post_type_actions($task[$this->_base.'post_type']);
+					}
+					elseif( $post->post_type == 'taxonomy-task' ){
+					
+						$actions = $this->get_taxonomy_actions($task[$this->_base.'taxonomy']);
+					}
+					elseif( $post->post_type == 'user-task' ){
+						
+						$actions = $this->get_user_actions();
+					}
+					elseif( $post->post_type == 'data-task' ){
+						
+						$actions = $this->get_data_actions($task[$this->_base.'data_type']);
+					}
+					
+					if( !empty($actions) ){
 						
 						foreach( $actions as $action ){
-							
+						
 							if( $bulk_action == $action['id'] && !empty($action['fields']) ){
 								
 								foreach( $action['fields'] as $field ){
