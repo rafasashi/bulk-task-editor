@@ -672,7 +672,7 @@ class Rew_Bulk_Editor {
 						'id'		=> $this->_base . 'processed',
 						'label'		=> 'Processed',
 						'type'      => 'html',
-						'data'      => !empty($progress) ? '100%' : '<span id="rewbe_task_processed" data-type="post_type" style="width:65px;display:block;">0%</span>',
+						'data'      => '<span id="rewbe_task_processed" style="width:65px;display:block;">' . $task['rewbe_progress'] . '%</span>',
 					);
 				}
 				else{
@@ -1075,7 +1075,7 @@ class Rew_Bulk_Editor {
 						'id'		=> $this->_base . 'processed',
 						'label'		=> 'Processed',
 						'type'      => 'html',
-						'data'      => !empty($progress) ? '100%' : '<span id="rewbe_task_processed" data-type="taxonomy" style="width:65px;display:block;">0%</span>',
+						'data'      => '<span id="rewbe_task_processed" style="width:65px;display:block;">' . $task['rewbe_progress'] . '%</span>',
 					);
 				}
 				else{
@@ -1364,7 +1364,7 @@ class Rew_Bulk_Editor {
 					'id'		=> $this->_base . 'processed',
 					'label'		=> 'Processed',
 					'type'      => 'html',
-					'data'      => !empty($progress) ? '100%' : '<span id="rewbe_task_processed" data-type="user" style="width:65px;display:block;">0%</span>',
+					'data'      => '<span id="rewbe_task_processed" style="width:65px;display:block;">' . $task['rewbe_progress'] . '%</span>',
 				);
 			}
 			else{

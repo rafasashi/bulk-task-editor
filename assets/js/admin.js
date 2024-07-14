@@ -583,7 +583,22 @@
 					},
 					error: function(xhr, status, error){
 						
-						console.error('Error processing task: ' + error);
+						if (xhr.status === 500) {
+							 
+							console.log('Retrying after 10 seconds...');
+							
+							setTimeout(function(){
+								
+								$.ajaxQueue(this);
+								
+							}.bind(this),10000);
+						}
+						else{
+							
+							console.error('Error processing task: ' + error);
+							
+							$("#rewbe_task_processed").removeClass("loading loading-right");
+						}
 					}
 				});
 			}
