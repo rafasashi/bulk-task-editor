@@ -323,7 +323,9 @@ class Rew_Bulk_Editor_Admin_API {
 				
 				$operator = !empty($field['operator']) ? filter_var($field['operator'], FILTER_VALIDATE_BOOLEAN) : false;
 				
-				$html .= '<div class="auto-input tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-hierarchical="'.$hierarchical.'" data-operator="'.$operator.'">';
+				$context = !empty($field['context']) ? $field['context'] : 'filter';
+				
+				$html .= '<div class="auto-input tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-hierarchical="'.$hierarchical.'" data-operator="'.$operator.'" data-context="'.$field['context'].'">';
 					
 					$html .= '<div class="data">';
 						

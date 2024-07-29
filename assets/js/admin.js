@@ -264,6 +264,8 @@
 				
 				let operator = $(id).attr("data-operator");
 				
+				let context = $(id).attr("data-context");
+				
 				typing = setTimeout(function() {
 
 					// using ajax to populate suggestions
@@ -281,6 +283,7 @@
 							h			: hierarchical,
 							o			: operator,
 							s 			: query,
+							c			: context,
 						},
 					}).done(function( data ) {
 						

@@ -134,7 +134,7 @@ class Rew_Bulk_Editor_Settings {
 			'edit_pages',
 			'edit.php?post_type=user-task'
 		);
-		
+		/*
 		add_submenu_page(
 			$this->parent->_token . '_settings',
 			__( 'Data', 'rew-bulk-editor' ),
@@ -142,6 +142,7 @@ class Rew_Bulk_Editor_Settings {
 			'edit_pages',
 			'edit.php?post_type=data-task'
 		);
+		*/
 	}
 
 	/**
@@ -156,8 +157,8 @@ class Rew_Bulk_Editor_Settings {
 			array(
 				'location'    => 'menu', // Possible settings: options, menu, submenu.
 				'parent_slug' => 'admin.php',
-				'page_title'  => __( 'Bulk Editor', 'rew-bulk-editor' ),
-				'menu_title'  => __( 'Bulk Editor', 'rew-bulk-editor' ),
+				'page_title'  => __( 'Bulk Task Editor', 'rew-bulk-editor' ),
+				'menu_title'  => __( 'Tasks', 'rew-bulk-editor' ),
 				'capability'  => 'manage_options',
 				'menu_slug'   => $this->parent->_token . '_settings',
 				'function'    => array( $this, 'settings_page' ),
@@ -218,12 +219,14 @@ class Rew_Bulk_Editor_Settings {
 				'description' => '',
 				'fields'      => array(),
 			),
+			/*
 			'settings' => array(
 			
 				'title'       => __( 'Settings', 'rew-bulk-editor' ),
 				'description' => __( 'Bulk editor settings', 'rew-bulk-editor'),
 				'fields'      => array(),
-			),			
+			),
+			*/			
 		);
 		
 		return apply_filters( $this->parent->_token . '_settings_fields', $settings );
@@ -318,7 +321,7 @@ class Rew_Bulk_Editor_Settings {
 
 		// Build page HTML.
 		$html      = '<div class="wrap" id="' . $this->parent->_token . '_settings">' . "\n";
-			$html .= '<h2>' . __( 'Bulk Editor', 'rew-bulk-editor' ) . '</h2>' . "\n";
+			$html .= '<h2>' . __( 'Bulk Task Editor', 'rew-bulk-editor' ) . '</h2>' . "\n";
 
 			$tab = '';
 		//phpcs:disable
@@ -372,13 +375,14 @@ class Rew_Bulk_Editor_Settings {
 	
 			$html .= '<div id="dashboard-widgets-wrap">' . "\n";
 				$html .= '<div id="dashboard-widgets" class="metabox-holder">' . "\n";
+					
 					$html .= '<div class="postbox-container">' . "\n";
-						$html .= '<div id="side-sortables" class="meta-box-sortables ui-sortable">' . "\n";
+						$html .= '<div class="meta-box-sortables ui-sortable">' . "\n";
 							
-							$html .= '<div id="dashboard_right_now" class="postbox ">' . "\n";
+							$html .= '<div class="postbox ">' . "\n";
 								
 								$html .= '<div class="postbox-header">' . "\n";
-									$html .= '<h2 class="hndle ui-sortable-handle">Tasks</h2>' . "\n";
+									$html .= '<h2 class="hndle ui-sortable-handle">Processing Tasks</h2>' . "\n";
 								$html .= '</div>' . "\n";
 								
 								$html .= '<div class="inside">' . "\n";
@@ -386,13 +390,105 @@ class Rew_Bulk_Editor_Settings {
 									
 										$html .= '<ul>' . "\n";
 											
+											$tasks = get_posts(array(
+											
+												'post_type' 		=> array('post-type-task','taxonomy-task','user-task','data-task'),
+												'posts_per_page' 	=> -1,
+												'order'				=> 'DESC',
+												'orderby'			=> 'date',
+												'meta_query'		=> array(
+													
+													'relation'	=> 'AND',
+													array(
+													
+														'key' 		=> 'rewbe_scheduled',
+														'value'		=> 0,
+														'type' 		=> 'NUMERIC',
+														'compare'	=> '>',
+													),
+													array(
+													
+														'key' 		=> 'rewbe_progress',
+														'value'		=> 100,
+														'type' 		=> 'NUMERIC',
+														'compare'	=> '<',
+													),
+												)
+											));
+											
+											if( !empty($tasks) ){
+												
+												foreach( $tasks as $task ){
+													
+													$html .= '<li>' . "\n";
+													
+														$html .= '<code>' . floatval(get_post_meta($task->ID,'rewbe_progress',true)) . '%</code> ' . "\n";
+														
+														$html .= '<a href="' . admin_url('post.php?post='.$task->ID.'&action=edit') . '">' . $task->post_title . '</a>' . "\n";
+													
+													$html .= '</li>' . "\n";
+												}
+											}
+											else{
+												
+												$html .= '<li>' . "\n";
+												
+													$html .= __( 'No processing tasks', 'rew-bulk-editor' );
+												
+												$html .= '</li>' . "\n";
+											}
+										
+										$html .= '</ul>' . "\n";
+									
+									$html .= '</div>' . "\n";
+								$html .= '</div>' . "\n";
+							
+							$html .= '</div>' . "\n";
+							
+
+							$html .= '<div class="postbox ">' . "\n";
+								
+								$html .= '<div class="postbox-header">' . "\n";
+									$html .= '<h2 class="hndle ui-sortable-handle">Pending Tasks</h2>' . "\n";
+								$html .= '</div>' . "\n";
+								
+								$html .= '<div class="inside">' . "\n";
+									$html .= '<div class="main">' . "\n";
+									
+										$html .= '<ul>' . "\n";
+											
+											$tasks = get_posts(array(
+											
+												'post_type' 		=> array('post-type-task','taxonomy-task','user-task','data-task'),
+												'posts_per_page' 	=> -1,
+												'order'				=> 'DESC',
+												'orderby'			=> 'date',
+												'meta_query'		=> array(
+													'relation'	=> 'OR',
+													array(
+													
+														'key' 		=> 'rewbe_scheduled',
+														'value'		=> 0,
+														'type' 		=> 'NUMERIC',
+														'compare'	=> '=',
+													),
+													array(
+													
+														'key' 		=> 'rewbe_scheduled',
+														'compare'	=> 'NOT EXISTS',
+													),
+												)
+											));
+											
 											if( !empty($tasks) ){
 											
 												foreach( $tasks as $task ){
 													
 													$html .= '<li>' . "\n";
 													
-														$html .= $task->post_title . "\n";
+														$html .= '<code>' . floatval(get_post_meta($task->ID,'rewbe_progress',true)) . '%</code> ' . "\n";
+														
+														$html .= '<a href="' . admin_url('post.php?post='.$task->ID.'&action=edit') . '">' . $task->post_title . '</a>' . "\n";
 													
 													$html .= '</li>' . "\n";
 												}
@@ -412,6 +508,115 @@ class Rew_Bulk_Editor_Settings {
 								$html .= '</div>' . "\n";
 							
 							$html .= '</div>' . "\n";
+							
+							$html .= '<div class="postbox ">' . "\n";
+								
+								$html .= '<div class="postbox-header">' . "\n";
+									$html .= '<h2 class="hndle ui-sortable-handle">Completed Tasks</h2>' . "\n";
+								$html .= '</div>' . "\n";
+								
+								$html .= '<div class="inside">' . "\n";
+									$html .= '<div class="main">' . "\n";
+									
+										$html .= '<ul>' . "\n";
+											
+											$tasks = get_posts(array(
+											
+												'post_type' 		=> array('post-type-task','taxonomy-task','user-task','data-task'),
+												'posts_per_page' 	=> 10,
+												'order'				=> 'DESC',
+												'orderby'			=> 'date',
+												'meta_query'		=> array(
+ 													array(
+													
+														'key' 		=> 'rewbe_progress',
+														'value'		=> 100,
+														'type' 		=> 'NUMERIC',
+														'compare'	=> '=',
+													),
+												)
+											));
+											
+											if( !empty($tasks) ){
+											
+												foreach( $tasks as $task ){
+													
+													$html .= '<li>' . "\n";
+													
+														$html .= '<code>' . floatval(get_post_meta($task->ID,'rewbe_progress',true)) . '%</code> ' . "\n";
+														
+														$html .= '<a href="' . admin_url('post.php?post='.$task->ID.'&action=edit') . '">' . $task->post_title . '</a>' . "\n";
+													
+													$html .= '</li>' . "\n";
+												}
+											}
+											else{
+												
+												$html .= '<li>' . "\n";
+												
+													$html .= __( 'No completed tasks', 'rew-bulk-editor' );
+												
+												$html .= '</li>' . "\n";
+											}
+										
+										$html .= '</ul>' . "\n";
+									
+									$html .= '</div>' . "\n";
+								$html .= '</div>' . "\n";
+							
+							$html .= '</div>' . "\n";
+						
+						$html .= '</div>' . "\n";
+					$html .= '</div>' . "\n";
+					
+					$html .= '<div class="postbox-container">' . "\n";
+						$html .= '<div class="meta-box-sortables ui-sortable">' . "\n";
+							
+							$html .= '<div class="postbox ">' . "\n";
+								
+								$html .= '<div class="postbox-header">' . "\n";
+									$html .= '<h2 class="hndle ui-sortable-handle">New Task</h2>' . "\n";
+								$html .= '</div>' . "\n";
+								
+								$html .= '<div class="inside">' . "\n";
+									$html .= '<div class="main">' . "\n";
+									
+										$html .= '<ul>' . "\n";
+											
+											$html .= '<li>' . "\n";
+											
+												$html .= '<a href="'.admin_url('post-new.php?post_type=post-type-task').'">'.__('Post Type Task', 'rew-bulk-editor').'</a>' . "\n";
+											
+											$html .= '</li>' . "\n";
+											
+											$html .= '<li>' . "\n";
+											
+												$html .= '<a href="'.admin_url('post-new.php?post_type=taxonomy-task').'">'.__('Taxonomy Task', 'rew-bulk-editor').'</a>' . "\n";
+											
+											$html .= '</li>' . "\n";
+											
+											$html .= '<li>' . "\n";
+											
+												$html .= '<a href="'.admin_url('post-new.php?post_type=user-task').'">'.__('User Task', 'rew-bulk-editor').'</a>' . "\n";
+											
+											$html .= '</li>' . "\n";
+											
+											/*
+											$html .= '<li>' . "\n";
+											
+												$html .= '<a href="'.admin_url('post-new.php?post_type=data-task').'">'.__('Imported Data', 'rew-bulk-editor').'</a>' . "\n";
+											
+											$html .= '</li>' . "\n";
+											*/
+											
+										$html .= '</ul>' . "\n";
+									
+									$html .= '</div>' . "\n";
+								$html .= '</div>' . "\n";
+							
+							$html .= '</div>' . "\n";
+							
+							
 						$html .= '</div>' . "\n";
 					$html .= '</div>' . "\n";
 				$html .= '</div>' . "\n";

@@ -1,8 +1,8 @@
 <?php 
 /**
- * Plugin Name: REW Bulk Editor
+ * Plugin Name: Bulk Task Editor
  * Plugin URI: https://code.recuweb.com
- * Version: 1.0.1.11
+ * Version: 1.0.1.12
  * Description: Bulk Edit posts, terms and users
  * Author: Rafasashi
  * Author URI: https://code.recuweb.com
