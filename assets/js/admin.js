@@ -262,7 +262,7 @@
 				
 				let hierarchical = $(id).attr("data-hierarchical");
 				
-				let operator = $(id).attr("data-operator");
+				let operator = $(id).attr("data-operator"); 
 				
 				let context = $(id).attr("data-context");
 				
