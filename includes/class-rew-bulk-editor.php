@@ -1450,16 +1450,43 @@ class Rew_Bulk_Editor {
 		$post_types = get_post_types('','objects');
 		
 		$options = array();
-
+		
 		foreach( $post_types as $post_type ){
 			
-			if( $post_type->publicly_queryable ){
+			if( !in_array($post_type->name,array(
+				
+				'post-type-task',
+				'taxonomy-task',
+				'user-task',
+				'data-task',
+				'revision',
+				'oembed_cache',
+				'custom_css',
+				'customize_changeset',
+				'nav_menu_item',
+				'user_request',
+				'wp_block',
+				'wp_template',
+				'wp_template_part',
+				'wp_global_styles',
+				'wp_navigation',
+				'wp_font_family',
+				'wp_font_face',
+				'patterns_ai_data',
+				'product',
+				'product_variation',
+				'shop_order',
+				'shop_order_refund',
+				'shop_coupon',
+				'shop_order_placehold',
+			
+			))){
 				
 				$options[$post_type->name] = $post_type->labels->singular_name;
 			}
 		}
 		
-		return $options;
+		return apply_filters('rewbe_post_type_options',$options);
 	}
 	
 	public function get_taxonomy_options(){
@@ -2430,13 +2457,6 @@ class Rew_Bulk_Editor {
 						wp_remove_object_terms($post->ID, $term_ids, $taxonomy);
 					}
 					
-					if( $post->post_type == 'product' && strpos($taxonomy,'pa_') === 0 && function_exists('wc_get_product') ){
-					
-						add_action('rewbe_add_product_terms',array($this,'woo_add_product_attributes'),10,4);
-						add_action('rewbe_replace_product_terms',array($this,'woo_replace_product_attributes'),10,4);
-						add_action('rewbe_remove_product_terms',array($this,'woo_remove_product_attributes'),10,4);
-					}
-					
 					do_action($this->_base.$action.'_'.$post->post_type.'_terms', $post, $term_ids, $taxonomy, $args);
 				}
 			}
@@ -2501,67 +2521,7 @@ class Rew_Bulk_Editor {
 			}
 		}
 	}
-
-	public function woo_add_product_attributes($post,$term_ids,$taxonomy,$args){
-		
-		$existing_terms = wp_get_post_terms($post->ID,$taxonomy,array('fields' => 'ids'));
-
-		$merged_terms = array_merge($existing_terms,$term_ids);
-
-		$merged_terms = array_unique($merged_terms);
-		
-		$this->woo_set_product_attributes($post->ID,$merged_terms,$taxonomy);
-	}
 	
-	public function woo_replace_product_attributes($post,$term_ids,$taxonomy,$args){
-		
-		$this->woo_set_product_attributes($post->ID,$term_ids,$taxonomy);
-	}
-	
-	public function woo_remove_product_attributes($post,$term_ids,$taxonomy,$args){
-		
-		$existing_terms = wp_get_post_terms($post->ID,$taxonomy,array('fields' => 'ids'));
-		
-		$diff_terms = array_diff($existing_terms,$term_ids);
-		
-		$this->woo_set_product_attributes($post->ID,$diff_terms,$taxonomy);
-	}
-	
-	public function woo_set_product_attributes($post_id,$term_ids,$taxonomy){
-		
-		$product = wc_get_product($post_id);
-		
-		$atts = $product->get_attributes();
-
-		if( isset($atts[$taxonomy]) ){
-			
-			$att = $atts[$taxonomy];
-		}
-		elseif( $tax_id = wc_attribute_taxonomy_id_by_name($taxonomy) ){
-			
-			$pos = count($atts) + 1;
-			
-			$att = new WC_Product_Attribute();
-			
-			$att->set_id($tax_id);
-			$att->set_name($taxonomy);
-			$att->set_position($pos);
-			$att->set_visible(true);
-			$att->set_variation(false);
-		}
-		
-		if( !empty($att) ){
-		
-			$att->set_options($term_ids);
-			
-			$atts[$taxonomy] = $att;
-			
-			$product->set_attributes($atts);
-			
-			$product->save();
-		}
-	}	
-
 	public function edit_user_meta($user,$args){
 		
 		if( !empty($args['action']) && !empty($args['data']['key']) ){
