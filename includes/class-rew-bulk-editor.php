@@ -689,25 +689,13 @@ class Rew_Bulk_Editor {
 			}
 			else{
 
-				$post_types = get_post_types('','objects');
-				
-				$options = array();
-
-				foreach( $post_types as $post_type ){
-					
-					if( $post_type->publicly_queryable ){
-						
-						$options[$post_type->name] = $post_type->labels->singular_name;
-					}
-				}
-				
 				$fields[]=array(
 				
 					'metabox' 		=> array('name'=>'bulk-editor-filters'),
 					'id'          	=> $this->_base . 'post_type',
 					'label'       	=> 'Type',
 					'type'        	=> 'select',
-					'options'	  	=> $options,
+					'options'	  	=> $this->get_post_type_options(),
 				);
 				
 				$fields[]=array(
@@ -741,6 +729,22 @@ class Rew_Bulk_Editor {
 		add_action('rewbe_post_type_actions',function($actions,$post_type){
 			
 			$post_type = get_post_type_object($post_type);
+			
+			// post type
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Edit Post Type',
+				'id' 		=> 'edit_post_type',
+				'fields' 	=> array(
+					array(
+						
+						'name' 		=> 'name',
+						'type'		=> 'select',
+						'options'	=> $this->get_post_type_options(),
+					),
+				),
+			);
 			
 			// status
 			
@@ -1092,18 +1096,6 @@ class Rew_Bulk_Editor {
 				}
 			}
 			else{
-
-				$taxonomies = get_taxonomies(array(),'objects');
-				
-				$options = array();
-
-				foreach( $taxonomies as $taxonomy ){
-					
-					if( $taxonomy->publicly_queryable ){
-						
-						$options[$taxonomy->name] = $taxonomy->label;
-					}
-				}
 				
 				$fields[]=array(
 				
@@ -1111,7 +1103,7 @@ class Rew_Bulk_Editor {
 					'id'          	=> $this->_base . 'taxonomy',
 					'label'       	=> 'Type',
 					'type'        	=> 'select',
-					'options'	  	=> $options,
+					'options'	  	=> $this->get_taxonomy_options(),
 				);
 				
 				$fields[]=array(
@@ -1452,6 +1444,40 @@ class Rew_Bulk_Editor {
 		},99999,3);
 		
 	} // End __construct ()
+	
+	public function get_post_type_options(){
+		
+		$post_types = get_post_types('','objects');
+		
+		$options = array();
+
+		foreach( $post_types as $post_type ){
+			
+			if( $post_type->publicly_queryable ){
+				
+				$options[$post_type->name] = $post_type->labels->singular_name;
+			}
+		}
+		
+		return $options;
+	}
+	
+	public function get_taxonomy_options(){
+	
+		$taxonomies = get_taxonomies(array(),'objects');
+		
+		$options = array();
+
+		foreach( $taxonomies as $taxonomy ){
+			
+			if( $taxonomy->publicly_queryable ){
+				
+				$options[$taxonomy->name] = $taxonomy->label;
+			}
+		}
+		
+		return $options;
+	}
 	
 	public function add_default_columns($columns){
 		
@@ -1953,7 +1979,11 @@ class Rew_Bulk_Editor {
 								
 								// register default actions
 								
-								if( $action == 'edit_status' ){
+								if( $action == 'edit_post_type' ){
+									
+									add_action('rewbe_do_post_edit_post_type',array($this,'edit_post_type'),10,2);
+								}	
+								elseif( $action == 'edit_status' ){
 									
 									add_action('rewbe_do_post_edit_status',array($this,'edit_post_status'),10,2);
 								}						
@@ -2242,6 +2272,25 @@ class Rew_Bulk_Editor {
 		}
 
 		return $result;
+	}
+	
+	public function edit_post_type($post,$args){
+		
+		if( !empty($args['name']) ){
+			
+			$post_type = sanitize_title($args['name']);
+			
+			$types = $this->get_post_type_options();
+			
+			if( isset($types[$post_type]) ){
+				
+				$this->update_post(array(
+					
+					'ID' 			=> $post->ID,
+					'post_type' 	=> $post_type,
+				));
+			}
+		}
 	}
 	
 	public function edit_post_status($post,$args){
