@@ -1382,34 +1382,37 @@ class Rew_Bulk_Editor {
 		
 		add_action('rewbe_user_actions',function($actions){
 			
-			// role
-			
-			$actions[] = array(
+			if( current_user_can('edit_users') ){
 				
-				'label' 	=> 'Edit Role',
-				'id' 		=> 'edit_role',
-				'fields' 	=> array(
-					array(
-						
-						'name' 		=> 'action',
-						'type'		=> 'radio',
-						'options' 	=> array(
-						
-							'add' 		=> 'Add',
-							'replace' 	=> 'Replace',
-							'remove' 	=> 'Remove',
-						),
-						'default' => 'add',
-					),				
-					array(
-						
-						'name' 		=> 'roles',
-						'type'		=> 'checkbox_multi',
-						'options'	=> $this->get_roles_options(),
-						'style'		=> 'display:block;',
-					),					
-				),
-			);
+				// role
+				
+				$actions[] = array(
+					
+					'label' 	=> 'Edit Role',
+					'id' 		=> 'edit_role',
+					'fields' 	=> array(
+						array(
+							
+							'name' 		=> 'action',
+							'type'		=> 'radio',
+							'options' 	=> array(
+							
+								'add' 		=> 'Add',
+								'replace' 	=> 'Replace',
+								'remove' 	=> 'Remove',
+							),
+							'default' => 'add',
+						),				
+						array(
+							
+							'name' 		=> 'roles',
+							'type'		=> 'checkbox_multi',
+							'options'	=> $this->get_roles_options(),
+							'style'		=> 'display:block;',
+						),					
+					),
+				);
+			}
 			
 			// meta
 			
@@ -1544,11 +1547,32 @@ class Rew_Bulk_Editor {
 		
 		$options = array();
 		
-		$roles = get_editable_roles();
-		
-		foreach ($roles as $slug => $role ){
-
-			$options[$slug] = $role['name'];
+		if( current_user_can('edit_users') ){
+			
+			$roles = get_editable_roles();
+			
+			foreach( $roles as $slug => $role ){
+				
+				$can_manage_role = true;
+				
+				if( !current_user_can('administrator') ){
+				
+					foreach( $role['capabilities'] as $capability => $enabled ){
+						
+						if( !current_user_can($capability) ){
+							
+							$can_manage_role = false;
+							
+							break;
+						}
+					}
+				}
+				
+				if( $can_manage_role ){
+				
+					$options[$slug] = $role['name'];
+				}
+			}
 		}
 		
 		return $options;
