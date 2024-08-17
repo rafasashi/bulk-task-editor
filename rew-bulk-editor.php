@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bulk Task Editor
  * Plugin URI: https://code.recuweb.com
- * Version: 1.0.1.14
+ * Version: 1.0.1.15
  * Description: Bulk Edit posts, terms and users
  * Author: Rafasashi
  * Author URI: https://code.recuweb.com
@@ -14,8 +14,6 @@
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Requires WP: 6.4.3
  */
-
-
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

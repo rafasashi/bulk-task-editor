@@ -487,6 +487,7 @@ class Rew_Bulk_Editor {
 					'type'        	=> 'checkbox_multi',
 					'options'	  	=> $this->get_post_type_statuses($post_type->name),
 					'default'     	=> '',
+					'style'			=> 'margin-right:5px;',
 				);
 
 				// content
@@ -1226,31 +1227,35 @@ class Rew_Bulk_Editor {
 			);
 			
 			// search
-			/*
-			$fields[]=array(
-			
-				'metabox' 		=> array('name'=>'bulk-editor-filters'),
-				'id'          	=> $this->_base . 'search_loc',
-				'label'     	=> 'Search',
-				'type'        	=> 'radio',
-				'options'		=> array(
-					
-					'name' 			=> 'Name',
-					'description' 	=> 'Description',
-				),
-				'default' 		=> 'name',
-			);
-			
+
 			$fields[]=array(
 			
 				'metabox'		=> array('name'=>'bulk-editor-filters'),
 				'id'			=> $this->_base . 'search',
+				'label'     	=> 'Search',
 				'type'      	=> 'text',
-				'placeholder'	=> 'Search keyword',
+				'placeholder'	=> 'Search terms',
 				'style'			=> 'width:60%;',
 			);
-			*/
-
+			
+			$fields[]=array(
+			
+				'metabox' 		=> array('name'=>'bulk-editor-filters'),
+				'id'          	=> $this->_base . 'search_col',
+				'type'        	=> 'checkbox_multi',
+				'options'		=> array(
+					
+					'user_login' 	=> 'Login',
+					'user_nicename' => 'Nicename',
+					'user_email' 	=> 'Email',
+					'ID' 			=> 'ID',
+					'user_url' 		=> 'URL',
+					
+				),
+				'default' 		=> array('user_login','user_nicename'),
+				'style'			=> 'margin-right:5px;',
+			);
+			
 			// meta
 			
 			$fields[]=array(
@@ -1376,6 +1381,35 @@ class Rew_Bulk_Editor {
 		});
 		
 		add_action('rewbe_user_actions',function($actions){
+			
+			// role
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Edit Role',
+				'id' 		=> 'edit_role',
+				'fields' 	=> array(
+					array(
+						
+						'name' 		=> 'action',
+						'type'		=> 'radio',
+						'options' 	=> array(
+						
+							'add' 		=> 'Add',
+							'replace' 	=> 'Replace',
+							'remove' 	=> 'Remove',
+						),
+						'default' => 'add',
+					),				
+					array(
+						
+						'name' 		=> 'roles',
+						'type'		=> 'checkbox_multi',
+						'options'	=> $this->get_roles_options(),
+						'style'		=> 'display:block;',
+					),					
+				),
+			);
 			
 			// meta
 			
@@ -1506,6 +1540,20 @@ class Rew_Bulk_Editor {
 		return $options;
 	}
 	
+	public function get_roles_options(){
+		
+		$options = array();
+		
+		$roles = get_editable_roles();
+		
+		foreach ($roles as $slug => $role ){
+
+			$options[$slug] = $role['name'];
+		}
+		
+		return $options;
+	}
+	
 	public function add_default_columns($columns){
 		
 		$new_columns = array(
@@ -1623,12 +1671,19 @@ class Rew_Bulk_Editor {
 			if( is_array($action['fields']) && !empty($action['fields']) ){
 				
 				foreach( $action['fields'] as $j => $field ){
-				
-					$field_id = 'rewbe_act_' . $action_id . '__' . sanitize_title($field['name']);
 					
-					$actions[$i]['fields'][$j]['id'] = $field_id;
+					if( !empty($field['name']) ){
 					
-					$actions[$i]['fields'][$j]['name'] = $field_id;
+						$field_id = 'rewbe_act_' . $action_id . '__' . sanitize_title($field['name']);
+					
+						$actions[$i]['fields'][$j]['id'] = $field_id;
+					
+						$actions[$i]['fields'][$j]['name'] = $field_id;
+					}
+					else{
+						
+						dump($field);
+					}
 				}
 			}
 			else{
@@ -2140,7 +2195,11 @@ class Rew_Bulk_Editor {
 								
 								// register default actions
 								
-								if( $action == 'edit_meta' ){
+								if( $action == 'edit_role' ){
+								
+									add_action('rewbe_do_user_edit_role',array($this,'edit_user_role'),10,2);
+								}
+								elseif( $action == 'edit_meta' ){
 									
 									add_action('rewbe_do_user_edit_meta',array($this,'edit_user_meta'),10,2);
 								}
@@ -2522,6 +2581,40 @@ class Rew_Bulk_Editor {
 		}
 	}
 	
+	public function edit_user_role($user,$args){
+		
+		if( !empty($args['action']) && !empty($args['roles']) ){
+			
+			$action = sanitize_title($args['action']);
+			
+			$roles = array_map('sanitize_title', $args['roles']);
+			
+			if( $action == 'add' ){
+				
+				foreach ($roles as $role) {
+					
+					$user->add_role($role);
+				}
+			}
+			elseif( $action == 'replace' ){
+				
+				$user->set_role('');
+				
+				foreach ( $roles as $role ) {
+
+					$user->add_role($role);
+				}
+			}
+			elseif( $action == 'remove' ){
+				
+				foreach ($roles as $role) {
+					
+					$user->remove_role($role);
+				}
+			}
+		}
+	}
+	
 	public function edit_user_meta($user,$args){
 		
 		if( !empty($args['action']) && !empty($args['data']['key']) ){
@@ -2878,19 +2971,11 @@ class Rew_Bulk_Editor {
 		
 		// filter search
 		
-		if( !empty($task['rewbe_search']) ){
+		if( !empty($task['rewbe_search']) && !empty($task['rewbe_search_col']) ){
 		
-			$args['search'] = apply_filters( 'get_search_query', sanitize_text_field($task['rewbe_search']) );
-		
-			$args['search_columns'] = array(
-				
-				'ID',
-				'user_login',
-				'user_email',
-				'user_url',
-				'user_nicename',
-				'display_name',
-			);
+			$args['search'] = '*' . apply_filters( 'get_search_query', sanitize_text_field($task['rewbe_search']) ) . '*';
+			
+			$args['search_columns'] = array_map('sanitize_title', $task['rewbe_search_col']);
 		}
 		
 		// filters ids
@@ -2992,9 +3077,22 @@ class Rew_Bulk_Editor {
 		
 		if( $curr_action != 'none' ){
 			
-			$post_type = $task[$this->_base.'post_type'];
+			if( $post_type = $task[$this->_base.'post_type'] ){
 
-			$actions = $this->get_post_type_actions($post_type);
+				$actions = $this->get_post_type_actions($post_type);
+			}
+			elseif( $taxonomy = $task[$this->_base.'taxonomy'] ){
+				
+				$actions = $this->get_taxonomy_actions($taxonomy);
+			}
+			elseif( $data_type = $task[$this->_base.'data_type'] ){
+				
+				$actions = $this->get_data_actions($data_type);
+			}
+			else{
+				
+				$actions = $this->get_user_actions();
+			}
 			
 			if( !empty($actions) ){
 			
