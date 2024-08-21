@@ -747,6 +747,35 @@ class Rew_Bulk_Editor {
 				),
 			);
 			
+			// delete
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Delete ' . $post_type->labels->name,
+				'id' 		=> 'delete_post',
+				'fields' 	=> array(
+					array(
+						
+						'name' 		=> 'action',
+						'type'		=> 'radio',
+						'options'	=> array(
+						
+							'trash' 	=> 'Move to Trash',
+							'delete' 	=> 'Delete Permanently',
+						),
+						'default'	=> 'trash',
+					),
+					array(
+						
+						'name' 			=> 'confirm',
+						'type'			=> 'text',
+						'label'			=> 'Type "delete" to confirm',
+						'placeholder'	=> 'delete',
+						'description'	=> '',
+					),					
+				),
+			);
+			
 			// status
 			
 			$actions[] = array(
@@ -2051,7 +2080,8 @@ class Rew_Bulk_Editor {
 							$post_type = $task[$this->_base.'post_type'];
 					
 							$query = new WP_Query(array(
-							
+								
+								'post_status' 		=> 'all',
 								'post_type' 		=> $post_type,
 								'posts_per_page' 	=> $per_process,
 								'order'				=> 'ASC',
@@ -2089,6 +2119,10 @@ class Rew_Bulk_Editor {
 									
 									add_action('rewbe_do_post_edit_post_type',array($this,'edit_post_type'),10,2);
 								}	
+								elseif( $action == 'delete_post' ){
+									
+									add_action('rewbe_do_post_delete_post',array($this,'delete_post'),10,2);
+								}
 								elseif( $action == 'edit_status' ){
 									
 									add_action('rewbe_do_post_edit_status',array($this,'edit_post_status'),10,2);
@@ -2285,7 +2319,7 @@ class Rew_Bulk_Editor {
 				if( $post->post_type == 'post-type-task' ){
 					
 					$args = $this->parse_post_task_parameters($task,$this->sc_items,$step);
-
+					
 					$query = new WP_Query($args);
 
 					if( $ids = $query->posts ){
@@ -2399,6 +2433,28 @@ class Rew_Bulk_Editor {
 					'ID' 			=> $post->ID,
 					'post_type' 	=> $post_type,
 				));
+			}
+		}
+	}
+	
+	public function delete_post($post,$args){
+		
+		if( !empty($args['action']) && !empty($args['confirm']) ){
+			
+			$action = sanitize_title($args['action']);
+			
+			$confirm = sanitize_title($args['confirm']);
+			
+			if( $confirm == 'delete' ){
+				
+				if( $action == 'trash' ){
+					
+					wp_trash_post($post->ID);
+				}
+				elseif( $action == 'delete' ){
+					
+					wp_delete_post($post->ID,true);
+				}
 			}
 		}
 	}
