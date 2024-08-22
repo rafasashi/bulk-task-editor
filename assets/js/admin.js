@@ -120,7 +120,7 @@
 			return promise;
 		};
 		
-		//input group add row
+		// meta input
 		
 		function set_meta_field(id){
 			
@@ -136,7 +136,7 @@
 			
 					var $block = $($.parseHTML(html));
 				
-					$(target + " .input-group").append($block);				
+					$(target + " .meta-input-group").append($block);				
 				}
 				else{
 						
@@ -156,11 +156,11 @@
 						$clone.append('<a class="remove-input-group" href="#">x</a>');
 					}
 					
-					$(this).next(".input-group").append($clone);
+					$(this).next(".meta-input-group").append($clone);
 				}
 			});
 			
-			$(id + " .input-group").on('click', ".remove-input-group", function(e){
+			$(id + " .meta-input-group").on('click', ".remove-input-group", function(e){
 
 				e.preventDefault();
 				
@@ -175,6 +175,43 @@
 			var id = "#" + $(this).attr('id');
 			
 			set_meta_field(id);
+		});
+		
+		// date input
+
+		function set_date_field(id){
+			
+			$(id + " .add-date-group").on('click', function(e){
+				
+				e.preventDefault();
+				
+				var target 	= "#" + $(this).data("target");
+				
+				if( typeof $(this).data("html") != typeof undefined ){
+					
+					var html = $(this).data("html");
+			
+					var $block = $($.parseHTML(html));
+				
+					$(target + " .date-input-group").append($block);				
+				}
+			});
+			
+			$(id + " .date-input-group").on('click', ".remove-input-group", function(e){
+
+				e.preventDefault();
+				
+				$(this).closest('.input-group-row').remove();
+				
+				load_task_process();
+			});	
+		}
+		
+		$(".date-input").each(function(e){
+			
+			var id = "#" + $(this).attr('id');
+			
+			set_date_field(id);
 		});
 		
 		// taxonomy fields
@@ -649,6 +686,13 @@
 						var id = "#" + $(this).attr('id');
 						
 						set_meta_field(id);
+					});
+					
+					$("#rewbe_action_fields").find('.date-input').each(function(e){
+						
+						var id = "#" + $(this).attr('id');
+						
+						set_date_field(id);
 					});
 					
 					$("#rewbe_action_fields").find('.tags-input').each(function(e){

@@ -106,6 +106,9 @@ class Rew_Bulk_Editor_Admin_API {
 			case 'email':
 				$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="text" name="' . esc_attr( $option_name ) . '" placeholder="' . $placeholder . '" value="' . esc_attr( $data ) . '"' . $style . $required . $disabled . '/>' . "\n";
 			break;
+			case 'date':
+				$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="date" name="' . esc_attr( $option_name ) . '" value="' . esc_attr( $data ) . '"' . $style . $required . $disabled . '/>' . "\n";
+			break;
 			case 'password':
 			case 'number':
 			case 'hidden':
@@ -206,10 +209,14 @@ class Rew_Bulk_Editor_Admin_API {
 				}
 				$html .= '</select> ';
 			break;
-
+			
 			case 'meta':
 				
-				if( !isset($data['key']) || !isset($data['value']) ){
+				if( 	!isset($data['key']) 
+					|| 	!is_array($data['key']) 
+					|| 	!isset($data['value']) 
+					|| 	!is_array($data['value']) 
+				){
 
 					$data = [
 					
@@ -224,98 +231,370 @@ class Rew_Bulk_Editor_Admin_API {
 					}
 				}
 				
-				$type_options = $this->get_type_options();
+				$type_options = $this->get_data_type_options();
 				
 				$compare_options = $this->get_compare_options();
 				
 				$html .= '<div id="'.$field['id'].'" class="meta-input">';
 					
-					$html .= ' <a href="#" class="add-input-group" data-target="'.$field['id'].'" style="line-height:40px;">Add field</a>';
+					$html .= ' <a href="#" class="add-input-group" data-target="'.$field['id'].'" style="line-height:40px;">Add Field</a>';
 				
-					$html .= '<ul class="input-group">';
+					$html .= '<ul class="meta-input-group">';
 						
-						foreach( $data['key'] as $e => $key) {
+						if( !empty($data['key']) ){
+							
+							foreach( $data['key'] as $e => $key) {
 
-							$class='input-group-row';
+								$class='input-group-row';
 
-							$value = str_replace('\\\'','\'',$data['value'][$e]);
-							
-							if( !empty($field['operator']) ){
-							
-								$type = str_replace('\\\'','\'',$data['type'][$e]);
-							
-								$compare = str_replace('\\\'','\'',$data['compare'][$e]);
-							}
-							
-							$html .= '<li class="'.$class.'" style="display:inline-block;width:100%;">';
-								
-								$html .= '<input placeholder="key" type="text" name="'.$option_name.'[key][]" style="width:20%;float:left;" value="'.$data['key'][$e].'">';
-								
-								$html .= '<input placeholder="value" type="text" name="'.$option_name.'[value][]" style="width:20%;float:left;" value="'.$value.'">';
+								$value = str_replace('\\\'','\'',$data['value'][$e]);
 								
 								if( !empty($field['operator']) ){
-									
-									$html .= '<select name="'.$option_name.'[type][]" style="width:80px;float:left;">';
-										
-										foreach ( $type_options as $k => $v ) {
-											
-											$selected = false;
-											
-											if( is_numeric($type) && floatval($k) === floatval($type) ) {
-												
-												$selected = true;
-											}
-											elseif( $k === $type ){
-												
-												$selected = true;
-											}
-											elseif( empty($type) && $k == 'char' ){
-												
-												$selected = true;
-											}
-											
-											$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
-										}
-									
-									$html .= '</select> ';
-									
-									$html .= '<select name="'.$option_name.'[compare][]" style="width:70px;float:left;">';
-										
-										foreach ( $compare_options as $k => $v ) {
-											
-											$selected = false;
-											
-											if( is_numeric($compare) && floatval($k) === floatval($compare) ) {
-												
-												$selected = true;
-											}
-											elseif( $k === $compare ){
-												
-												$selected = true;
-											}
-											elseif( empty($type) && $k == 'equal' ){
-												
-												$selected = true;
-											}
-											
-											$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
-										}
-									
-									$html .= '</select> ';
+								
+									$type = str_replace('\\\'','\'',$data['type'][$e]);
+								
+									$compare = str_replace('\\\'','\'',$data['compare'][$e]);
 								}
 								
-								if( $e > 0 ){
+								$html .= '<li class="'.$class.'" style="display:inline-block;width:100%;">';
 									
-									$html .= '<a class="remove-input-group" href="#">x</a> ';
-								}
+									$html .= '<input placeholder="key" type="text" name="'.$option_name.'[key][]" style="width:20%;float:left;" value="'.$data['key'][$e].'">';
+									
+									$html .= '<input placeholder="value" type="text" name="'.$option_name.'[value][]" style="width:20%;float:left;" value="'.$value.'">';
+									
+									if( !empty($field['operator']) ){
+										
+										$html .= '<select name="'.$option_name.'[type][]" style="width:80px;float:left;">';
+											
+											foreach ( $type_options as $k => $v ) {
+												
+												$selected = false;
+												
+												if( is_numeric($type) && floatval($k) === floatval($type) ) {
+													
+													$selected = true;
+												}
+												elseif( $k === $type ){
+													
+													$selected = true;
+												}
+												elseif( empty($type) && $k == 'char' ){
+													
+													$selected = true;
+												}
+												
+												$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+											}
+										
+										$html .= '</select> ';
+										
+										$html .= '<select name="'.$option_name.'[compare][]" style="width:70px;float:left;">';
+											
+											foreach ( $compare_options as $k => $v ) {
+												
+												$selected = false;
+												
+												if( is_numeric($compare) && floatval($k) === floatval($compare) ) {
+													
+													$selected = true;
+												}
+												elseif( $k === $compare ){
+													
+													$selected = true;
+												}
+												elseif( empty($type) && $k == 'equal' ){
+													
+													$selected = true;
+												}
+												
+												$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+											}
+										
+										$html .= '</select> ';
+									}
+									
+									if( $e > 0 ){
+										
+										$html .= '<a class="remove-input-group" href="#">x</a> ';
+									}
 
-							$html .= '</li>';						
+								$html .= '</li>';						
+							}
 						}
 					
 					$html .= '</ul>';					
 					
 				$html .= '</div>';
 
+			break;
+			case 'dates':
+				
+				if( 	!isset($data['type']) 
+					|| 	!is_array($data['type']) 
+					|| 	!isset($data['column'])
+					|| 	!is_array($data['column']) 
+					|| 	!isset($data['position'])
+					|| 	!is_array($data['position']) 						
+					|| 	!isset($data['value']) 
+					|| 	!is_array($data['value']) 	
+					|| 	!isset($data['period']) 
+					|| 	!is_array($data['period']) 	
+					|| 	!isset($data['from']) 
+					|| 	!is_array($data['from']) 	
+					|| 	!isset($data['limit']) 
+					|| 	!is_array($data['limit']) 	
+				){
+					
+					$data = array (
+				
+						'type' 		=> [ 0 => '' ],
+						'column' 	=> [ 0 => '' ],
+						'value' 	=> [ 0 => '' ],
+						'position' 	=> [ 0 => 'before' ],
+						'period' 	=> [ 0 => 'days' ],
+						'from' 	=> [ 0 => 'ago' ],
+						'limit' 	=> [ 0 => 'in' ],
+						
+					);
+				}
+				
+				$html .= '<div id="'.$field['id'].'" class="date-input">';
+					
+					$html .= '<a href="#" class="add-date-group" data-html="' . esc_html($this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_input_date',
+						'name' 		=> $option_name,
+						'type'		=> 'date_group',
+						'columns'	=> $field['columns'],
+						'data'		=> array (
+							
+							'column' 	=> '',
+							'value' 	=> '',
+							'position' 	=> 'before',
+							'limit' 	=> 'in',
+						),
+					
+					),null,false)) . '" data-target="'.$field['id'].'" style="line-height:40px;">Add Date</a>';
+					
+					$html .= ' | ';
+					
+					$html .= '<a href="#" class="add-date-group" data-html="' . esc_html($this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_input_time',
+						'name' 		=> $option_name,
+						'type'		=> 'time_group',
+						'columns'	=> $field['columns'],
+						'data'		=> array (
+							
+							'column' 	=> '',
+							'value' 	=> 1,
+							'position' 	=> 'before',
+							'period' 	=> 'days',
+							'from' 	=> 'ago',
+							'limit' 	=> 'in',
+						),
+					
+					),null,false)) . '" data-target="'.$field['id'].'" style="line-height:40px;">Add Time</a>';
+				
+					$html .= '<ul class="date-input-group">';
+						
+						if( !empty($data['type']) ){
+							
+							foreach( $data['type'] as $e => $type ) {
+								
+								if( !empty($type) ){
+									
+									$html .= $this->display_field(array(
+										
+										'id' 		=> $field['id'] . '_input_' . $type,
+										'name' 		=> $option_name,
+										'type'		=> $type . '_group',
+										'columns'	=> $field['columns'],
+										'data'		=> array (
+											
+											'column' 	=> isset($data['column'][$e]) 	? $data['column'][$e] 	: '',
+											'value' 	=> isset($data['value'][$e]) 	? $data['value'][$e] 	: '',
+											'position' 	=> isset($data['position'][$e]) ? $data['position'][$e] : '',
+											'period' 	=> isset($data['period'][$e]) 	? $data['period'][$e] 	: '',
+											'from' 	=> isset($data['from'][$e]) 	? $data['from'][$e] 	: '',
+											'limit' 	=> isset($data['limit'][$e]) 	? $data['limit'][$e] 	: '',
+										),
+									
+									),null,false);
+								}						
+							}
+						}
+					
+					$html .= '</ul>';					
+					
+				$html .= '</div>';
+
+			break;
+			case 'date_group':
+
+				$html .= '<li class="input-group-row" style="display:inline-block;width:100%;">';
+					
+					$html .= $this->display_field(array(
+						
+						'id' 	=> $field['id'] . '_type',
+						'name' 	=> $option_name.'[type][]',
+						'type'	=> 'hidden',
+						'data'	=> 'date',
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_column',
+						'name' 		=> $option_name.'[column][]',
+						'type'		=> 'select',
+						'options'	=> $field['columns'],
+						'data'		=> $data['column'],
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_position',
+						'name' 		=> $option_name.'[position][]',
+						'type'		=> 'select',
+						'options'	=> $this->get_date_position_options(),
+						'data'		=> $data['position'],
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id'	=> $field['id'] . '_from',
+						'name'	=> $option_name.'[from][]',
+						'type'	=> 'hidden',
+						'data'	=> '',
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 	=> $field['id'] . '_value',
+						'name' 	=> $option_name.'[value][]',
+						'type'	=> 'date',
+						'data'	=> $data['value'],
+						'style'	=> 'width:258px;',
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 	=> $field['id'] . '_period',
+						'name' 	=> $option_name.'[period][]',
+						'type'	=> 'hidden',
+						'data'	=> '',
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_limit',
+						'name' 		=> $option_name.'[limit][]',
+						'type'		=> 'select',
+						'options'	=> $this->get_boundary_options(),
+						'data' 		=> $data['limit'],
+					
+					),null,false);
+					
+					$html .= ' <a class="remove-input-group" href="#">x</a>';
+					
+				$html .= '</li>';
+			break;
+			case 'time_group':
+				
+				$html .= '<li class="input-group-row" style="display:inline-block;width:100%;">';
+					
+					$html .= $this->display_field(array(
+						
+						'id' 	=> $field['id'] . '_type',
+						'name' 	=> $option_name.'[type][]',
+						'type'	=> 'hidden',
+						'data'	=> 'time',
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_column',
+						'name' 		=> $option_name.'[column][]',
+						'type'		=> 'select',
+						'options'	=> $field['columns'],
+						'data'		=> $data['column'],
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_position',
+						'name' 		=> $option_name.'[position][]',
+						'type'		=> 'select',
+						'options'	=> $this->get_date_position_options(),
+						'data'		=> $data['position'],
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 	=> $field['id'] . '_value',
+						'name' 	=> $option_name.'[value][]',
+						'type'	=> 'number',
+						'min'	=> 1,
+						'step'	=> 1,
+						'data'	=> $data['value'],
+						'style'	=> 'width:60px;',
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_period',
+						'name' 		=> $option_name.'[period][]',
+						'type'		=> 'select',
+						'options'	=> array(
+							
+							'minutes' 	=> 'minute(s)',
+							'hours' 	=> 'hour(s)',
+							'days' 		=> 'day(s)',
+							'weeks' 	=> 'weeks(s)',
+							'months' 	=> 'month(s)',
+							'years' 	=> 'year(s)',
+						),
+						'data'	=> $data['period'],
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_from',
+						'name' 		=> $option_name.'[from][]',
+						'type'		=> 'select',
+						'options'	=> array(
+							
+							'ago' 		=> 'ago',
+							'from_now' 	=> 'from now',
+						),
+						'data'	=> $data['from'],
+					
+					),null,false);
+					
+					$html .= $this->display_field(array(
+						
+						'id' 		=> $field['id'] . '_limit',
+						'name' 		=> $option_name.'[limit][]',
+						'type'		=> 'select',
+						'options'	=> $this->get_boundary_options(),
+						'data' => $data['limit'],
+					
+					),null,false);
+					
+					$html .= ' <a class="remove-input-group" href="#">x</a>';
+					
+				$html .= '</li>';
 			break;
 			case 'terms':
 				
@@ -602,8 +881,45 @@ class Rew_Bulk_Editor_Admin_API {
 			'ex'	=> 'Excluding Children',
 		);
 	}
+	
+	public function get_date_position_options(){
 		
-	public function get_type_options(){
+		return array(
+			
+			'before' 	=> 'before',
+			'after' 	=> 'after',
+		);
+	}
+	
+	public function get_date_column_options($type='post'){
+		
+		if( $type == 'user' ){
+			
+			return array(
+			
+				'user_registered' 	=> 'Registered',
+			);
+		}
+		else{
+			
+			return array(
+			
+				'post_date_gmt' 	=> 'Posted',
+				'post_modified_gmt' => 'Modified',
+			);
+		}
+	}
+	
+	public function get_boundary_options(){
+		
+		return array(
+						
+			'in' 	=> 'inclusive',
+			'ex'	=> 'exclusive',
+		);
+	}
+		
+	public function get_data_type_options(){
 		
 		return array(
 			
@@ -655,10 +971,11 @@ class Rew_Bulk_Editor_Admin_API {
 	public function validate_output ( $data = '', $type = 'text' ) {
 
 		switch( $type ) {
-			
-			case 'text'		: $data = esc_attr( $data ); break;
+
 			case 'url'		: $data = esc_url( $data ); break;
 			case 'email'	: $data = is_email( $data ); break;
+			case 'textarea'	: esc_textarea( $data ); break;
+			default			: $data = esc_attr( $data ); break;
 		}
 
 		return $data;
@@ -668,10 +985,24 @@ class Rew_Bulk_Editor_Admin_API {
 
 		switch( $type ) {
 			
-			case 'text'		: $data = sanitize_text_field( $data ); break;
 			case 'textarea'	: $data = sanitize_textarea_field( $data ); break;
 			case 'url'		: $data = sanitize_url( $data ); break;
 			case 'email'	: $data = sanitize_email( $data ); break;
+			default			: 
+			
+				if( is_array($data) ){ 
+					
+					foreach( $data as $k => $v ){
+						
+						$data[$k] = $this->validate_input($v,$type);
+					}
+				}
+				else{
+					
+					$data = sanitize_text_field( $data ); 
+				}
+				
+			break;
 		}
 
 		return $data;
@@ -800,7 +1131,7 @@ class Rew_Bulk_Editor_Admin_API {
 		foreach ( $fields as $field ) {
 			
 			if( !empty($field['id']) ){
-				
+
 				if ( isset( $_REQUEST[ $field['id'] ] ) ) { //phpcs:ignore
 					
 					update_post_meta( $post_id, $field['id'], $this->validate_input( $_REQUEST[$field['id']], $field['type'] ) ); //phpcs:ignore

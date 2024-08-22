@@ -532,7 +532,26 @@ class Rew_Bulk_Editor {
 					);
 				}
 				
-				// TODO: date
+				// date
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-filters'),
+					'id'          	=> $this->_base . 'dates_rel',
+					'label'       	=> 'Dates',
+					'type'        	=> 'radio',
+					'default'		=> 'and',
+					'options'		=> $this->admin->get_relation_options(),
+				);
+				
+				$fields[]=array(
+				
+					'metabox'		=> array('name'=>'bulk-editor-filters'),
+					'id'			=> $this->_base . 'dates',
+					'type'      	=> 'dates',
+					'columns'		=> $this->admin->get_date_column_options('post'),
+				);
+
 				// TODO: comment count
 				// TODO: stickyness
 				
@@ -2849,6 +2868,60 @@ class Rew_Bulk_Editor {
 				}
 			}
 			
+			// filter dates
+			
+			if( !empty($task['rewbe_dates']) ){
+			
+				$dates = $task['rewbe_dates'];
+				
+				if( !empty($dates['type']) && is_array($dates['type']) ){
+					
+					$args['date_query'] = array( 
+						
+						'relation' => isset($task['rewbe_dates_rel']) ? strtoupper(sanitize_text_field($task['rewbe_dates_rel'])) : 'AND',
+					);
+					
+					foreach( $dates['type'] as $e => $type ){
+						
+						$column = isset($dates['column'][$e]) ? sanitize_title($dates['column'][$e]) : '';
+						
+						$position = isset($dates['position'][$e]) ? sanitize_title($dates['position'][$e]) : 'before';
+						
+						$date = '';
+						
+						if( $type == 'date' ){
+							
+							$date = isset($dates['value'][$e]) ? $dates['value'][$e] : '';
+						}
+						elseif( $type == 'time' ){
+							
+							$value = isset($dates['value'][$e]) ? intval($dates['value'][$e]) : 0;
+							
+							if( !empty($value) ){
+								
+								$period = isset($dates['period'][$e]) ? sanitize_title($dates['period'][$e]) : 'days';
+								
+								$from = isset($dates['from'][$e]) ? sanitize_title($dates['from'][$e]) : 'ago';
+								
+								$date = ( $from == 'ago' ? '-' : '+' ) . $value . ' ' . $period;
+							}
+						}
+						
+						$inclusive = isset($dates['limit'][$e]) && sanitize_title($dates['limit'][$e]) == 'in' ? true : false;
+						
+						if( !empty($position) && !empty($date) && !empty($column) ){
+							
+							$args['date_query'][] = array(
+							
+								$position 	=> $date,
+								'column'	=> $column,
+								'inclusive' => $inclusive,
+							);
+						}
+					}
+				}
+			}
+			
 			// filter authors
 			
 			if( !empty($task['rewbe_post_authors']) && is_array($task['rewbe_post_authors']) ){
@@ -3117,7 +3190,7 @@ class Rew_Bulk_Editor {
 						
 						$type = sanitize_text_field($task['rewbe_meta']['type'][$i]);
 						
-						$type_options = $this->admin->get_type_options();
+						$type_options = $this->admin->get_data_type_options();
 						
 						$compare = sanitize_text_field($task['rewbe_meta']['compare'][$i]);
 						
