@@ -392,7 +392,7 @@ class Rew_Bulk_Editor_Settings {
 											
 											$tasks = get_posts(array(
 											
-												'post_type' 		=> array('post-type-task','taxonomy-task','user-task','data-task'),
+												'post_type' 		=> $this->parent->get_task_types(),
 												'posts_per_page' 	=> -1,
 												'order'				=> 'DESC',
 												'orderby'			=> 'date',
@@ -459,7 +459,7 @@ class Rew_Bulk_Editor_Settings {
 											
 											$tasks = get_posts(array(
 											
-												'post_type' 		=> array('post-type-task','taxonomy-task','user-task','data-task'),
+												'post_type' 		=> $this->parent->get_task_types(),
 												'posts_per_page' 	=> -1,
 												'order'				=> 'DESC',
 												'orderby'			=> 'date',
@@ -522,7 +522,7 @@ class Rew_Bulk_Editor_Settings {
 											
 											$tasks = get_posts(array(
 											
-												'post_type' 		=> array('post-type-task','taxonomy-task','user-task','data-task'),
+												'post_type' 		=> $this->parent->get_task_types(),
 												'posts_per_page' 	=> 10,
 												'order'				=> 'DESC',
 												'orderby'			=> 'date',

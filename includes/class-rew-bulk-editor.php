@@ -373,7 +373,7 @@ class Rew_Bulk_Editor {
 				
 				'bulk-editor-process',
 				__( 'Process', 'rew-bulk-editor' ), 
-				array('post-type-task','taxonomy-task','user-task','data-task'),
+				$this->get_task_types(),
 				'side'
 			);
 			
@@ -381,7 +381,7 @@ class Rew_Bulk_Editor {
 				
 				'bulk-editor-progress',
 				__( 'Progress', 'rew-bulk-editor' ), 
-				array('post-type-task','taxonomy-task','user-task','data-task'),
+				$this->get_task_types(),
 				'side'
 			);
 
@@ -389,7 +389,7 @@ class Rew_Bulk_Editor {
 				
 				'bulk-editor-filters',
 				__( 'Filter', 'rew-bulk-editor' ), 
-				array('post-type-task','taxonomy-task','user-task'),
+				$this->get_task_types(),
 				'advanced'
 			);
 			
@@ -397,7 +397,7 @@ class Rew_Bulk_Editor {
 				
 				'bulk-editor-task',
 				__( 'Task', 'rew-bulk-editor' ), 
-				array('post-type-task','taxonomy-task','user-task'),
+				$this->get_task_types(),
 				'advanced'
 			);
 		});
@@ -1236,6 +1236,22 @@ class Rew_Bulk_Editor {
 					),					
 				),
 			);
+
+			$actions[] = array(
+				
+				'label' 	=> 'Delete ' . $taxonomy->labels->name,
+				'id' 		=> 'delete_term',
+				'fields' 	=> array(
+					array(
+						
+						'name' 			=> 'confirm',
+						'type'			=> 'text',
+						'label'			=> 'Type "delete" to confirm',
+						'placeholder'	=> 'delete',
+						'description'	=> '',
+					),					
+				),
+			);
 			
 			return $actions;
 			
@@ -1497,13 +1513,7 @@ class Rew_Bulk_Editor {
 				
 			if( !defined('DOING_AUTOSAVE') || DOING_AUTOSAVE === false ){
 				
-				if( in_array($post->post_type,array(
-			
-					'post-type-task',
-					'taxonomy-task',
-					'user-task',
-					'data-task',
-				))){
+				if( in_array($post->post_type,$this->get_task_types())){
 					
 					// delete schedule marks
 					
@@ -1530,6 +1540,17 @@ class Rew_Bulk_Editor {
 		
 	} // End __construct ()
 	
+	public function get_task_types(){
+		
+		return array(
+			
+			'post-type-task',
+			'taxonomy-task',
+			'user-task',
+			'data-task',
+		);
+	}
+	
 	public function get_post_type_options(){
 		
 		$post_types = get_post_types('','objects');
@@ -1538,12 +1559,8 @@ class Rew_Bulk_Editor {
 		
 		foreach( $post_types as $post_type ){
 			
-			if( !in_array($post_type->name,array(
-				
-				'post-type-task',
-				'taxonomy-task',
-				'user-task',
-				'data-task',
+			if( !in_array($post_type->name,array_merge($this->get_task_types(),array(
+
 				'revision',
 				'oembed_cache',
 				'custom_css',
@@ -1565,7 +1582,7 @@ class Rew_Bulk_Editor {
 				'shop_coupon',
 				'shop_order_placehold',
 			
-			))){
+			)))){
 				
 				$options[$post_type->name] = $post_type->labels->singular_name;
 			}
@@ -1689,9 +1706,9 @@ class Rew_Bulk_Editor {
 	}
 	
 	public function get_task_meta($post_id){
-		
+
 		$meta = array(
-		
+
 			'rewbe_action' 		=> 'none',
 			'rewbe_progress' 	=> 0,
 		);
@@ -1706,7 +1723,7 @@ class Rew_Bulk_Editor {
 				}
 			}
 		}
-		
+
 		return $meta;
 	}
 	
@@ -1846,13 +1863,7 @@ class Rew_Bulk_Editor {
 		
 		$screen = get_current_screen();
 		
-		if( in_array($screen->id,array(
-			
-			'post-type-task',
-			'taxonomy-task',
-			'user-task',
-			'data-task',
-		))){
+		if( in_array($screen->id,$this->get_task_types())){
 			
 			wp_register_style( $this->_token . '-admin', esc_url( $this->assets_url ) . 'css/admin.css', array(), $this->_version . time() );
 			wp_enqueue_style( $this->_token . '-admin' );
@@ -1874,13 +1885,7 @@ class Rew_Bulk_Editor {
 		
 		$screen = get_current_screen();
 		
-		if( in_array($screen->id,array(
-			
-			'post-type-task',
-			'taxonomy-task',
-			'user-task',
-			'data-task',
-		))){
+		if( in_array($screen->id,$this->get_task_types())){
 		
 			wp_register_script( $this->_token . '-admin', esc_url( $this->assets_url ) . 'js/admin.js', array( 'jquery' ), $this->_version . time(), true );
 			wp_enqueue_script( $this->_token . '-admin' );
@@ -2130,7 +2135,7 @@ class Rew_Bulk_Editor {
 							
 							if( !empty($query->posts) ){
 								
-								$args = $this->parse_action_parameters($task);
+								$args = $this->parse_action_parameters($post->post_type,$task);
 								
 								// register default actions
 								
@@ -2187,6 +2192,7 @@ class Rew_Bulk_Editor {
 								'number'			=> $per_process,
 								'order'				=> 'ASC',
 								'orderby'			=> 'ID',
+								'hide_empty'		=> false,
 								'meta_query' 		=> array(
 							
 									array(
@@ -2199,7 +2205,7 @@ class Rew_Bulk_Editor {
 								),
 							);
 							
-							$total_items = wp_count_terms($args);
+							$total_items = intval(wp_count_terms($args));
 							
 							if( $total_items > $per_process ){
 							
@@ -2210,9 +2216,11 @@ class Rew_Bulk_Editor {
 								$remaining = $total_items;
 							}
 							
-							if( $terms = get_terms($args) ){
+							$query = new WP_Term_Query($args);
+							
+							if( !empty($query->terms) ){
 								
-								$args = $this->parse_action_parameters($task);
+								$args = $this->parse_action_parameters($post->post_type,$task);
 								
 								// register default actions
 								
@@ -2224,8 +2232,12 @@ class Rew_Bulk_Editor {
 									
 									add_action('rewbe_do_term_edit_meta',array($this,'edit_term_meta'),10,2);
 								}
+								elseif( $action == 'delete_term' ){
+									
+									add_action('rewbe_do_term_delete_term',array($this,'delete_term'),10,2);
+								}
 								
-								foreach( $terms as $term ){
+								foreach( $query->terms as $term ){
 									
 									//update_term_meta($term->term_id,$this->_base.$task_id,time());
 					
@@ -2268,7 +2280,7 @@ class Rew_Bulk_Editor {
 							
 							if( $users = $query->get_results() ){
 								
-								$args = $this->parse_action_parameters($task);
+								$args = $this->parse_action_parameters($post->post_type,$task);
 								
 								// register default actions
 								
@@ -2350,9 +2362,11 @@ class Rew_Bulk_Editor {
 					}
 				}
 				elseif( $post->post_type == 'taxonomy-task' ){
-
+					
+					$args = $this->parse_term_task_parameters($task,$this->sc_items,$step);
+					
 					if( $ids = get_terms($args) ){
-						
+
 						foreach( $ids as $id ){
 							
 							update_term_meta($id,$this->_base.$task_id,0);
@@ -2680,6 +2694,14 @@ class Rew_Bulk_Editor {
 		}
 	}
 	
+	public function delete_term($term,$args){
+		
+		if( !empty($args['confirm']) && sanitize_title($args['confirm']) == 'delete' ){
+			
+			wp_delete_term($term->term_id,$term->taxonomy);
+		}
+	}
+	
 	public function edit_user_role($user,$args){
 		
 		if( !empty($args['action']) && !empty($args['roles']) ){
@@ -2760,7 +2782,7 @@ class Rew_Bulk_Editor {
 			
 			if( $args = $this->parse_term_task_parameters($task) ){
 
-				$items = wp_count_terms($args);
+				$items = intval(wp_count_terms($args));
 			}
 		}
 		elseif( $type == 'user-task' ){
@@ -3222,7 +3244,7 @@ class Rew_Bulk_Editor {
 		return $meta_query;
 	}
 	
-	public function parse_action_parameters($task){
+	public function parse_action_parameters($type,$task){
 		
 		$args = array();
 		
@@ -3230,21 +3252,21 @@ class Rew_Bulk_Editor {
 		
 		if( $curr_action != 'none' ){
 			
-			if( $post_type = $task[$this->_base.'post_type'] ){
+			if( $type == 'post-type-task' ){
 
 				$actions = $this->get_post_type_actions($post_type);
 			}
-			elseif( $taxonomy = $task[$this->_base.'taxonomy'] ){
+			elseif( $type == 'taxonomy-task' ){
 				
 				$actions = $this->get_taxonomy_actions($taxonomy);
 			}
-			elseif( $data_type = $task[$this->_base.'data_type'] ){
-				
-				$actions = $this->get_data_actions($data_type);
-			}
-			else{
+			elseif( $type == 'user-task' ){
 				
 				$actions = $this->get_user_actions();
+			}
+			elseif( $type == 'data-task' ){
+				
+				$actions = $this->get_data_actions($data_type);
 			}
 			
 			if( !empty($actions) ){
