@@ -120,6 +120,63 @@
 			return promise;
 		};
 		
+		// array input
+
+		function set_array_field(id){
+			
+			$(id + " .add-input-group").on('click', function(e){
+				
+				e.preventDefault();
+				
+				var target 	= "#" + $(this).data("target");
+				
+				if( typeof $(this).data("html") != typeof undefined ){
+					
+					var html = $(this).data("html");
+			
+					var $block = $($.parseHTML(html));
+				
+					$(target + " .arr-input-group").append($block);				
+				}
+				else{
+						
+					var $clone 	= $(target + " .input-group-row").eq(0).clone().removeClass('ui-state-disabled');
+					
+					$clone.find('input,textarea,select,radio').val('');
+					
+					var $rands	= $clone.find('input[data-value="random"]');
+					
+					if( $rands.length > 0 ){
+						
+						$rands.val(Math.floor(Math.random()*1000000000));
+					}
+					
+					if( $clone.find('a.remove-input-group').length < 1 ){
+					
+						$clone.append('<a class="remove-input-group" href="#">x</a>');
+					}
+					
+					$(this).next(".arr-input-group").append($clone);
+				}
+			});
+			
+			$(id + " .arr-input-group").on('click', ".remove-input-group", function(e){
+
+				e.preventDefault();
+				
+				$(this).closest('.input-group-row').remove();
+				
+				load_task_process();
+			});	
+		}
+		
+		$(".arr-input").each(function(e){
+			
+			var id = "#" + $(this).attr('id');
+			
+			set_arr_field(id);
+		});
+		
 		// meta input
 		
 		function set_meta_field(id){
@@ -680,6 +737,13 @@
 						
 						set_author_field(id);
 					});	
+					
+					$("#rewbe_action_fields").find('.arr-input').each(function(e){
+						
+						var id = "#" + $(this).attr('id');
+						
+						set_array_field(id);
+					});
 					
 					$("#rewbe_action_fields").find('.meta-input').each(function(e){
 						

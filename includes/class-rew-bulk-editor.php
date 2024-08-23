@@ -600,10 +600,9 @@ class Rew_Bulk_Editor {
 				
 				$fields[]=array(
 				
-					'metabox' 		=> array('name'=>'bulk-editor-filters'),
-					'id'        	=> $this->_base . 'meta',
-					'type'        	=> 'meta',
-					'operator'		=> true,
+					'metabox' 	=> array('name'=>'bulk-editor-filters'),
+					'id'        => $this->_base . 'meta',
+					'type'      => 'meta',
 				);
 				
 				// actions 
@@ -622,13 +621,16 @@ class Rew_Bulk_Editor {
 							
 							foreach( $action['fields'] as $field ){
 								
-								// register without field
-								
-								$fields[]=array(
-								
-									'metabox' 	=> array('name'=>'bulk-editor-task'),
-									'id'        => $field['name'],
-								);
+								if( !empty($field['type']) && $field['type'] != 'html' ){
+									
+									// register without field
+									
+									$fields[]=array(
+									
+										'metabox' 	=> array('name'=>'bulk-editor-task'),
+										'id'        => $field['name'],
+									);
+								}
 							}
 						}
 					}
@@ -860,35 +862,38 @@ class Rew_Bulk_Editor {
 			foreach( $taxonomies as $taxonomy ){
 				
 				if( $taxonomy = get_taxonomy($taxonomy) ){
+			
+					$fields = apply_filters('rewbe_post_taxonomy_action_fields', array(
+					
+						array(
+							
+							'name' 		=> 'action',
+							'type'		=> 'radio',
+							'options' 	=> array(
+							
+								'add' 		=> 'Add',
+								'replace' 	=> 'Replace',
+								'remove' 	=> 'Remove',
+							),
+							'default' => 'add',
+						),
+						array(
+							
+							'name' 			=> 'terms',
+							'label' 		=> $taxonomy->label,
+							'type'			=> 'terms',
+							'taxonomy' 		=> $taxonomy->name,
+							'hierarchical'	=> false,
+							'operator'		=> false,
+							'context'		=> 'action',
+						),						
+					),$taxonomy,$post_type);
 					
 					$actions[] = array(
 						
 						'label' 	=> 'Edit ' . $taxonomy->label,
 						'id' 		=> 'edit_tax_' . $taxonomy->name, // dropdown menu
-						'fields' 	=> array(
-							array(
-								
-								'name' 		=> 'action',
-								'type'		=> 'radio',
-								'options' 	=> array(
-								
-									'add' 		=> 'Add',
-									'replace' 	=> 'Replace',
-									'remove' 	=> 'Remove',
-								),
-								'default' => 'add',
-							),
-							array(
-								
-								'name' 			=> 'terms',
-								'label' 		=> $taxonomy->label,
-								'type'			=> 'terms',
-								'taxonomy' 		=> $taxonomy->name,
-								'hierarchical'	=> false,
-								'operator'		=> false,
-								'context'		=> 'action',
-							),						
-						),
+						'fields' 	=> $fields,
 					);
 				}
 			}
@@ -897,25 +902,30 @@ class Rew_Bulk_Editor {
 			
 			$actions[] = array(
 				
-				'label' 	=> 'Edit Meta',
+				'label' 	=> 'Edit Meta Values',
 				'id' 		=> 'edit_meta',
-				'fields' 	=> array(
+				'fields' 	=> array(			
 					array(
 						
-						'name' 		=> 'action',
-						'type'		=> 'radio',
-						'options' 	=> array(
-						
-							'edit' 		=> 'Edit',
-							'remove' 	=> 'Remove',
-						),
-						'default' => 'edit',
-					),				
+						'name' 			=> 'data',
+						'type'			=> 'array',
+						'keys'			=> true,
+						'placeholder'	=> 'value',
+					),					
+				),
+			);
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Remove Meta',
+				'id' 		=> 'remove_meta',
+				'fields' 	=> array(			
 					array(
 						
-						'name' 		=> 'data',
-						'type'		=> 'meta',
-						'operator'	=> false,
+						'name' 			=> 'data',
+						'type'			=> 'array',
+						'keys'			=> true,
+						'placeholder'	=> 'matching value or empty',
 					),					
 				),
 			);
@@ -923,6 +933,32 @@ class Rew_Bulk_Editor {
 			return $actions;
 			
 		},0,2);
+		
+		add_filter('rewbe_post_taxonomy_action_fields',function($fields,$taxonomy,$post_type){
+			
+			if( in_array($post_type->name,array(
+			
+				'product',
+				'product_variation',
+			
+			))){
+			
+				if( strpos($taxonomy->name,'pa_') === 0 && !class_exists('Woo_Bulk_Product_Editor') ){
+					
+					$fields = array(
+						array(
+							
+							'type' 	=> 'upgrade',
+							'type' 	=> 'html',
+							'data' 	=> '<i style="display:block;padding:10px;background:#ff9b0536;color:#a16100;border-radius:5px;border:1px solid #a16100;"><b>Warning</b>: Editing WooCommerce product attributes requires a custom action. <a href="https://code.recuweb.com/get/bulk-product-editor/">Install Bulk Product Editor</a></i>',
+						)
+					);
+				}
+			}
+			
+			return $fields;
+			
+		},9999999,3);
 		
 		add_filter('rewbe_taxonomy-task_custom_fields', function($fields=array()){
 			
@@ -1037,10 +1073,9 @@ class Rew_Bulk_Editor {
 				
 				$fields[]=array(
 				
-					'metabox' 		=> array('name'=>'bulk-editor-filters'),
-					'id'        	=> $this->_base . 'meta',
-					'type'        	=> 'meta',
-					'operator'		=> true,
+					'metabox'	=> array('name'=>'bulk-editor-filters'),
+					'id'       	=> $this->_base . 'meta',
+					'type'		=> 'meta',
 				);
 				
 				// actions 
@@ -1214,25 +1249,30 @@ class Rew_Bulk_Editor {
 			
 			$actions[] = array(
 				
-				'label' 	=> 'Edit Meta',
+				'label' 	=> 'Edit Meta Values',
 				'id' 		=> 'edit_meta',
 				'fields' 	=> array(
 					array(
 						
-						'name' 		=> 'action',
-						'type'		=> 'radio',
-						'options' 	=> array(
-						
-							'edit' 		=> 'Edit',
-							'remove' 	=> 'Remove',
-						),
-						'default' => 'edit',
-					),				
+						'name' 			=> 'data',
+						'type'			=> 'array',
+						'keys'			=> true,
+						'placeholder'	=> 'value',
+					),					
+				),
+			);
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Remove Meta',
+				'id' 		=> 'remove_meta',
+				'fields' 	=> array(			
 					array(
 						
-						'name' 		=> 'data',
-						'type'		=> 'meta',
-						'operator'	=> false,
+						'name' 			=> 'data',
+						'type'			=> 'array',
+						'keys'			=> true,
+						'placeholder'	=> 'matching value or empty',
 					),					
 				),
 			);
@@ -1337,7 +1377,6 @@ class Rew_Bulk_Editor {
 				'metabox' 		=> array('name'=>'bulk-editor-filters'),
 				'id'        	=> $this->_base . 'meta',
 				'type'        	=> 'meta',
-				'operator'		=> true,
 			);
 			
 			// actions 
@@ -1482,25 +1521,30 @@ class Rew_Bulk_Editor {
 			
 			$actions[] = array(
 				
-				'label' 	=> 'Edit Meta',
+				'label' 	=> 'Edit Meta Values',
 				'id' 		=> 'edit_meta',
 				'fields' 	=> array(
 					array(
 						
-						'name' 		=> 'action',
-						'type'		=> 'radio',
-						'options' 	=> array(
-						
-							'edit' 		=> 'Edit',
-							'remove' 	=> 'Remove',
-						),
-						'default' => 'edit',
-					),				
+						'name' 			=> 'data',
+						'type'			=> 'array',
+						'keys'			=> true,
+						'placeholder'	=> 'value',
+					),					
+				),
+			);
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Remove Meta',
+				'id' 		=> 'remove_meta',
+				'fields' 	=> array(			
 					array(
 						
-						'name' 		=> 'data',
-						'type'		=> 'meta',
-						'operator'	=> false,
+						'name' 			=> 'data',
+						'type'			=> 'array',
+						'keys'			=> true,
+						'placeholder'	=> 'matching value or empty',
 					),					
 				),
 			);
@@ -1575,11 +1619,11 @@ class Rew_Bulk_Editor {
 				'wp_font_family',
 				'wp_font_face',
 				'patterns_ai_data',
-				'product',
-				'product_variation',
-				'shop_order',
+				//'product',
+				//'product_variation',
+				//'shop_order',
 				'shop_order_refund',
-				'shop_coupon',
+				//'shop_coupon',
 				'shop_order_placehold',
 			
 			)))){
@@ -1761,17 +1805,20 @@ class Rew_Bulk_Editor {
 				
 				foreach( $action['fields'] as $j => $field ){
 					
-					if( !empty($field['name']) ){
-					
-						$field_id = 'rewbe_act_' . $action_id . '__' . sanitize_title($field['name']);
-					
-						$actions[$i]['fields'][$j]['id'] = $field_id;
-					
-						$actions[$i]['fields'][$j]['name'] = $field_id;
-					}
-					else{
+					if( !empty($field['type']) ){
 						
-						dump($field);
+						if( !empty($field['name']) ){
+						
+							$field_id = 'rewbe_act_' . $action_id . '__' . sanitize_title($field['name']);
+						
+							$actions[$i]['fields'][$j]['id'] = $field_id;
+						
+							$actions[$i]['fields'][$j]['name'] = $field_id;
+						}
+						elseif( $field['type'] != 'html' ){
+							
+							dump($field);
+						}
 					}
 				}
 			}
@@ -2562,9 +2609,7 @@ class Rew_Bulk_Editor {
 	
 	public function edit_post_meta($post,$args){
 		
-		if( !empty($args['action']) && !empty($args['data']['key']) ){
-			
-			$action = sanitize_title($args['action']);
+		if( !empty($args['data']['key']) ){
 			
 			$data = array();
 			
@@ -2576,14 +2621,27 @@ class Rew_Bulk_Editor {
 
 					$value = sanitize_text_field($args['data']['value'][$i]);
 					
-					if( $action == 'edit' ){
-						
-						update_post_meta($post->ID,$key,$value);
-					}
-					elseif( $action == 'remove' ){
+					update_post_meta($post->ID,$key,$value);
+				}
+			}
+		}
+	}
+
+	public function remove_post_meta($post,$args){
+		
+		if( !empty($args['data']['key']) ){
+			
+			$data = array();
+			
+			foreach( $args['data']['key'] as $i => $key ){
+				
+				if( isset($args['data']['value'][$i]) ){
 					
-						delete_post_meta($post->ID,$key,$value);
-					}
+					$key = sanitize_title($key);
+
+					$value = sanitize_text_field($args['data']['value'][$i]);
+					
+					delete_post_meta($post->ID,$key,$value);
 				}
 			}
 		}
@@ -2664,12 +2722,30 @@ class Rew_Bulk_Editor {
 			}
 		}
 	}	
-
+	
 	public function edit_term_meta($term,$args){
 		
-		if( !empty($args['action']) && !empty($args['data']['key']) ){
+		if( !empty($args['data']['key']) ){
 			
-			$action = sanitize_title($args['action']);
+			$data = array();
+			
+			foreach( $args['data']['key'] as $i => $key ){
+				
+				if( isset($args['data']['value'][$i]) ){
+					
+					$key = sanitize_title($key);
+
+					$value = sanitize_text_field($args['data']['value'][$i]);
+
+					update_term_meta($term->term_id,$key,$value);
+				}
+			}
+		}
+	}
+
+	public function remove_term_meta($term,$args){
+		
+		if( !empty($args['data']['key']) ){
 			
 			$data = array();
 			
@@ -2681,14 +2757,7 @@ class Rew_Bulk_Editor {
 
 					$value = sanitize_text_field($args['data']['value'][$i]);
 					
-					if( $action == 'edit' ){
-						
-						update_term_meta($term->term_id,$key,$value);
-					}
-					elseif( $action == 'remove' ){
-					
-						delete_term_meta($term->term_id,$key,$value);
-					}
+					delete_term_meta($term->term_id,$key,$value);
 				}
 			}
 		}
@@ -2740,7 +2809,25 @@ class Rew_Bulk_Editor {
 		
 		if( !empty($args['action']) && !empty($args['data']['key']) ){
 			
-			$action = sanitize_title($args['action']);
+			$data = array();
+			
+			foreach( $args['data']['key'] as $i => $key ){
+				
+				if( isset($args['data']['value'][$i]) ){
+					
+					$key = sanitize_title($key);
+
+					$value = sanitize_text_field($args['data']['value'][$i]);
+
+					update_user_meta($user->ID,$key,$value);
+				}
+			}
+		}
+	}
+
+	public function remove_user_meta($user,$args){
+		
+		if( !empty($args['data']['key']) ){
 			
 			$data = array();
 			
@@ -2752,14 +2839,7 @@ class Rew_Bulk_Editor {
 
 					$value = sanitize_text_field($args['data']['value'][$i]);
 					
-					if( $action == 'edit' ){
-						
-						update_user_meta($user->ID,$key,$value);
-					}
-					elseif( $action == 'remove' ){
-					
-						delete_user_meta($user->ID,$key,$value);
-					}
+					delete_user_meta($user->ID,$key,$value);
 				}
 			}
 		}
