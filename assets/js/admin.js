@@ -526,8 +526,9 @@
 						dataType : "json",
 						data : {
 							
-							action 		: "render_authors",
-							s 			: query,
+							action 	: "render_authors",
+							id		: id,
+							s 		: query,
 						},
 					}).done(function( data ) {
 						

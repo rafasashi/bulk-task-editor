@@ -555,6 +555,25 @@ class Rew_Bulk_Editor {
 				// TODO: comment count
 				// TODO: stickyness
 				
+				// meta
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-filters'),
+					'id'          	=> $this->_base . 'meta_rel',
+					'label'       	=> 'Meta',
+					'type'        	=> 'radio',
+					'default'		=> 'and',
+					'options'		=> $this->admin->get_relation_options(),
+				);
+				
+				$fields[]=array(
+				
+					'metabox' 	=> array('name'=>'bulk-editor-filters'),
+					'id'        => $this->_base . 'meta',
+					'type'      => 'meta',
+				);
+				
 				// taxonomies
 
 				$taxonomies = $this->get_post_type_taxonomies($post_type);
@@ -585,25 +604,6 @@ class Rew_Bulk_Editor {
 						);
 					}
 				}
-				
-				// meta
-				
-				$fields[]=array(
-				
-					'metabox' 		=> array('name'=>'bulk-editor-filters'),
-					'id'          	=> $this->_base . 'meta_rel',
-					'label'       	=> 'Meta',
-					'type'        	=> 'radio',
-					'default'		=> 'and',
-					'options'		=> $this->admin->get_relation_options(),
-				);
-				
-				$fields[]=array(
-				
-					'metabox' 	=> array('name'=>'bulk-editor-filters'),
-					'id'        => $this->_base . 'meta',
-					'type'      => 'meta',
-				);
 				
 				// actions 
 				
@@ -854,6 +854,38 @@ class Rew_Bulk_Editor {
 					),
 				);
 			}
+
+			// meta
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Edit Meta Values',
+				'id' 		=> 'edit_meta',
+				'fields' 	=> array(			
+					array(
+						
+						'name' 			=> 'data',
+						'type'			=> 'array',
+						'keys'			=> true,
+						'placeholder'	=> 'value',
+					),					
+				),
+			);
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Remove Meta',
+				'id' 		=> 'remove_meta',
+				'fields' 	=> array(			
+					array(
+						
+						'name' 			=> 'data',
+						'type'			=> 'array',
+						'keys'			=> true,
+						'placeholder'	=> 'matching value or empty',
+					),					
+				),
+			);
 			
 			// taxonomies
 			
@@ -897,38 +929,6 @@ class Rew_Bulk_Editor {
 					);
 				}
 			}
-			
-			// meta
-			
-			$actions[] = array(
-				
-				'label' 	=> 'Edit Meta Values',
-				'id' 		=> 'edit_meta',
-				'fields' 	=> array(			
-					array(
-						
-						'name' 			=> 'data',
-						'type'			=> 'array',
-						'keys'			=> true,
-						'placeholder'	=> 'value',
-					),					
-				),
-			);
-			
-			$actions[] = array(
-				
-				'label' 	=> 'Remove Meta',
-				'id' 		=> 'remove_meta',
-				'fields' 	=> array(			
-					array(
-						
-						'name' 			=> 'data',
-						'type'			=> 'array',
-						'keys'			=> true,
-						'placeholder'	=> 'matching value or empty',
-					),					
-				),
-			);
 			
 			return $actions;
 			
@@ -1516,6 +1516,30 @@ class Rew_Bulk_Editor {
 					),
 				);
 			}
+
+			// delete
+			
+			$actions[] = array(
+				
+				'label' 	=> 'Delete Users',
+				'id' 		=> 'delete_user',
+				'fields' 	=> array(
+					array(
+					
+						'name' 	=> 'reassign',
+						'label' => 'Reassign contents to',
+						'type'	=> 'authors',
+					),
+					array(
+						
+						'name' 			=> 'confirm',
+						'type'			=> 'text',
+						'label'			=> 'Type "delete" to confirm',
+						'placeholder'	=> 'delete',
+						'description'	=> '',
+					),					
+				),
+			);
 			
 			// meta
 			
@@ -1971,9 +1995,11 @@ class Rew_Bulk_Editor {
 		
 		$results = array();
 		
-		if( current_user_can('edit_posts') ){
+		if( current_user_can('edit_posts')&& !empty($_GET['s']) && !empty($_GET['id']) ){
 			
 			if( $s =  apply_filters( 'get_search_query', $_GET['s'] ) ){
+				
+				$input_id = sanitize_title($_GET['id']);
 				
 				$args = array(
 					'search' 			=> '*' . $s . '*',
@@ -1994,7 +2020,7 @@ class Rew_Bulk_Editor {
 						'name'	=> $name,
 						'html'	=> $this->admin->display_field(array(
 							
-							'id' 	=> 'rewbe_act_edit_author__ids',
+							'id' 	=> $input_id,
 							'type' 	=> 'author',
 							'data' 	=> array(
 							
@@ -2334,6 +2360,10 @@ class Rew_Bulk_Editor {
 								if( $action == 'edit_role' ){
 								
 									add_action('rewbe_do_user_edit_role',array($this,'edit_user_role'),10,2);
+								}
+								elseif( $action == 'delete_user' ){
+								
+									add_action('rewbe_do_user_delete_user',array($this,'delete_user'),10,2);
 								}
 								elseif( $action == 'edit_meta' ){
 									
@@ -2802,6 +2832,16 @@ class Rew_Bulk_Editor {
 					$user->remove_role($role);
 				}
 			}
+		}
+	}
+
+	public function delete_user($user,$args){
+		
+		if( !empty($args['confirm']) && sanitize_title($args['confirm']) == 'delete' ){
+			
+			$reassign = !empty($args['reassign'][1]) && is_numeric($args['reassign'][1]) ? intval($args['reassign'][1]) : 0;
+			
+			wp_delete_user($user->ID,$reassign);
 		}
 	}
 	

@@ -667,6 +667,14 @@ class Rew_Bulk_Editor_Admin_API {
 				$context = !empty($field['context']) ? $field['context'] : 'filter';
 				
 				$html .= '<div class="auto-input tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-hierarchical="'.$hierarchical.'" data-operator="'.$operator.'" data-context="'.$field['context'].'">';
+
+					$html .= '<div class="autocomplete">';
+						
+						$html .= '<input style="width:60%;margin-bottom:5px;" type="text" placeholder="Search term...">';
+						
+						$html .= '<div class="autocomplete-items"></div>';
+					
+					$html .= '</div>';
 					
 					$html .= '<div class="data">';
 						
@@ -716,14 +724,6 @@ class Rew_Bulk_Editor_Admin_API {
 						
 					$html .= '</div>';
 					
-					$html .= '<div class="autocomplete">';
-						
-						$html .= '<input style="width:30%;border:none;" type="text" placeholder="add term...">';
-						
-						$html .= '<div class="autocomplete-items"></div>';
-					
-					$html .= '</div>';
-					
 				$html .= '</div>';
 				
 			break;
@@ -765,7 +765,7 @@ class Rew_Bulk_Editor_Admin_API {
 					
 						$children = $this->get_children_options();
 					
-						$html .= '<select name="'.$option_name.'[children][]" style="width:150px;float:left;">';
+						$html .= '<select name="'.$option_name.'[children][]" style="width:157px;float:left;">';
 
 							foreach ( $children as $k => $v ) {
 								
@@ -794,6 +794,14 @@ class Rew_Bulk_Editor_Admin_API {
 			case 'authors':
 				
 				$html .= '<div class="auto-input authors-input" id="'.$field['id'].'" data-multi="'.( !empty($field['multi']) ? 'true' : 'false' ).'">';
+					
+					$html .= '<div class="autocomplete">';
+						
+						$html .= '<input style="width:60%;margin-bottom:5px;" type="text" placeholder="Search author...">';
+						
+						$html .= '<div class="autocomplete-items"></div>';
+					
+					$html .= '</div>';
 					
 					$html .= '<div class="data">';
 						
@@ -826,14 +834,6 @@ class Rew_Bulk_Editor_Admin_API {
 							}
 						}
 						
-					$html .= '</div>';
-					
-					$html .= '<div class="autocomplete">';
-						
-						$html .= '<input style="width:60%;border:none;" type="text" placeholder="add author...">';
-						
-						$html .= '<div class="autocomplete-items"></div>';
-					
 					$html .= '</div>';
 					
 				$html .= '</div>';
@@ -1189,12 +1189,12 @@ class Rew_Bulk_Editor_Admin_API {
 			
 			return;
 		}
-
+		
 		foreach ( $fields as $field ) {
 			
 			if( !empty($field['id']) ){
-
-				if ( isset( $_REQUEST[ $field['id'] ] ) ) { //phpcs:ignore
+				
+				if ( isset( $_REQUEST[ $field['id'] ] ) ) {
 					
 					update_post_meta( $post_id, $field['id'], $this->validate_input( $_REQUEST[$field['id']], $field['type'] ) ); //phpcs:ignore
 				} 
