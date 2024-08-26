@@ -615,7 +615,7 @@ class Rew_Bulk_Editor {
 					
 					$options[$action['id']] = $action['label'];
 					
-					if( $action['id'] = $task[$this->_base.'action'] ){
+					if( $action['id'] == $task[$this->_base.'action'] ){
 						
 						if( !empty($action['fields']) ){
 							
@@ -640,6 +640,7 @@ class Rew_Bulk_Editor {
 				
 					'metabox' 		=> array('name'=>'bulk-editor-task'),
 					'id'          	=> $this->_base . 'action',
+					'label'         => 'Action',
 					'type'        	=> 'select',
 					'options'     	=> $options,
 				);
@@ -750,183 +751,289 @@ class Rew_Bulk_Editor {
 
 		add_action('rewbe_post_type_actions',function($actions,$post_type){
 			
-			$post_type = get_post_type_object($post_type);
-			
-			// post type
-			
-			$actions[] = array(
+			if( $post_type = get_post_type_object($post_type) ){
 				
-				'label' 	=> 'Edit Post Type',
-				'id' 		=> 'edit_post_type',
-				'fields' 	=> array(
-					array(
-						
-						'name' 		=> 'name',
-						'type'		=> 'select',
-						'options'	=> $this->get_post_type_options(),
-					),
-				),
-			);
-			
-			// delete
-			
-			$actions[] = array(
-				
-				'label' 	=> 'Delete ' . $post_type->labels->name,
-				'id' 		=> 'delete_post',
-				'fields' 	=> array(
-					array(
-						
-						'name' 		=> 'action',
-						'type'		=> 'radio',
-						'options'	=> array(
-						
-							'trash' 	=> 'Move to Trash',
-							'delete' 	=> 'Delete Permanently',
-						),
-						'default'	=> 'trash',
-					),
-					array(
-						
-						'name' 			=> 'confirm',
-						'type'			=> 'text',
-						'label'			=> 'Type "delete" to confirm',
-						'placeholder'	=> 'delete',
-						'description'	=> '',
-					),					
-				),
-			);
-			
-			// status
-			
-			$actions[] = array(
-				
-				'label' 	=> 'Edit Status',
-				'id' 		=> 'edit_status',
-				'fields' 	=> array(
-					array(
-						
-						'name' 		=> 'name',
-						'type'		=> 'select',
-						'options'	=> $this->get_post_type_statuses($post_type->name),
-					),
-				),
-			);
-			
-			// parent
-			
-			if( $post_type->hierarchical ){
-				
-				$actions[] = array(
-				
-					'label' 	=> 'Edit Parent',
-					'id' 		=> 'edit_parent',
-					'fields' 	=> array(
-						array(			
-							
-							'name'			=> 'id',
-							'type'      	=> 'number',
-							'min'      		=> 1,
-							'min'      		=> 0,
-							'max'      		=> 1000000000000,
-							'style'			=> 'width:120px;',
-							'default' 		=> 0,
-						),
-					),
-				);
-			}
-					
-			// author
-			
-			if( post_type_supports($post_type->name,'author') ){
+				global $wpdb;
+
+				$taxonomies = $this->get_post_type_taxonomies($post_type);
+
+				// post type
 				
 				$actions[] = array(
 					
-					'label' 	=> 'Edit Author',
-					'id' 		=> 'edit_author',
+					'label' 	=> 'Edit Post Type',
+					'id' 		=> 'edit_post_type',
 					'fields' 	=> array(
 						array(
 							
-							'name' 		=> 'ids',
-							'type'		=> 'authors',
-							'multi'		=> false,
+							'name' 		=> 'name',
+							'type'		=> 'select',
+							'options'	=> $this->get_post_type_options(),
 						),
 					),
 				);
-			}
 
-			// meta
-			
-			$actions[] = array(
+				// duplicate
 				
-				'label' 	=> 'Edit Meta Values',
-				'id' 		=> 'edit_meta',
-				'fields' 	=> array(			
-					array(
-						
-						'name' 			=> 'data',
-						'type'			=> 'array',
-						'keys'			=> true,
-						'placeholder'	=> 'value',
-					),					
-				),
-			);
-			
-			$actions[] = array(
-				
-				'label' 	=> 'Remove Meta',
-				'id' 		=> 'remove_meta',
-				'fields' 	=> array(			
-					array(
-						
-						'name' 			=> 'data',
-						'type'			=> 'array',
-						'keys'			=> true,
-						'placeholder'	=> 'matching value or empty',
-					),					
-				),
-			);
-			
-			// taxonomies
-			
-			$taxonomies = $this->get_post_type_taxonomies($post_type);
-			
-			foreach( $taxonomies as $taxonomy ){
-				
-				if( $taxonomy = get_taxonomy($taxonomy) ){
-			
-					$fields = apply_filters('rewbe_post_taxonomy_action_fields', array(
+				$options = 	array(
 					
+					'post_title' 	=> 'Title',
+					'post_content' 	=> 'Content',
+					'post_date' 	=> 'Date',
+					'post_password'	=> 'Password',
+				);
+				
+				if( post_type_supports($post_type->name, 'excerpt')){
+					
+					$options['post_excerpt'] = 'Excerpt';
+				}
+				
+				if( post_type_supports($post_type->name, 'author')){
+					
+					$options['post_author'] = 'Author';
+				}
+				
+				if( $post_type->hierarchical ){
+				
+					$options['post_parent'] = 'Parent ID';
+				}
+				
+				if( post_type_supports($post_type->name, 'page-attributes')){
+				
+					$options['menu_order'] = 'Order';
+				}
+				
+				if( post_type_supports($post_type->name, 'comments')){
+					
+					$options['comment_status'] 	= 'Comment status';
+				}
+				
+				if( post_type_supports($post_type->name, 'trackbacks')){
+				
+					$options['ping_status'] = 'Ping status';
+				}
+		
+				if( !empty($taxonomies) ){
+					
+					foreach( $taxonomies as $taxonomy ){
+						
+						$taxonomy = get_taxonomy($taxonomy);
+						
+						$options['tax_'.$taxonomy->name] = $taxonomy->labels->name;
+					}
+				}
+				
+				$options['meta'] = 'Meta';
+				
+				/*
+				$actions[] = array(
+					
+					'label' 	=> 'Duplicate ' . $post_type->labels->name,
+					'id' 		=> 'duplicate_post',
+					'fields' 	=> array(
+						array(
+							
+							'name' 			=> 'prefix',
+							'type'			=> 'text',
+							'label'			=> 'Database Prefix',
+							'placeholder'	=> 'wp_',
+							'default'		=> $wpdb->prefix,
+						),
+						array(
+							
+							'name' 			=> 'status',
+							'type'			=> 'select',
+							'label'			=> $post_type->labels->singular_name . ' status',
+							'default' 		=> 'original',
+							'options'		=> array_merge(array(
+							
+								'original'	=> 'Same as original',
+								
+							),$this->get_post_type_statuses($post_type->name)),
+							
+						),
+						array(
+							
+							'name' 		=> 'include',
+							'type'		=> 'checkbox_multi',
+							'label'		=> 'Include',
+							'options'	=> $options,
+							'default'	=> array_keys($options),
+							'style'		=> 'display:block;',
+						),
+						array(
+							
+							'name' 			=> 'ex_meta',
+							'type'			=> 'array',
+							'keys'			=> false,
+							'label'			=> 'Exclude Meta',
+							'placeholder'	=> 'meta_name',
+						),							
+					),
+				);
+				*/
+				
+				// delete
+				
+				$actions[] = array(
+					
+					'label' 	=> 'Delete ' . $post_type->labels->name,
+					'id' 		=> 'delete_post',
+					'fields' 	=> array(
 						array(
 							
 							'name' 		=> 'action',
 							'type'		=> 'radio',
-							'options' 	=> array(
+							'options'	=> array(
 							
-								'add' 		=> 'Add',
-								'replace' 	=> 'Replace',
-								'remove' 	=> 'Remove',
+								'trash' 	=> 'Move to Trash',
+								'delete' 	=> 'Delete Permanently',
 							),
-							'default' => 'add',
+							'default'	=> 'trash',
 						),
 						array(
 							
-							'name' 			=> 'terms',
-							'label' 		=> $taxonomy->label,
-							'type'			=> 'terms',
-							'taxonomy' 		=> $taxonomy->name,
-							'hierarchical'	=> false,
-							'operator'		=> false,
-							'context'		=> 'action',
-						),						
-					),$taxonomy,$post_type);
+							'name' 			=> 'confirm',
+							'type'			=> 'text',
+							'label'			=> 'Type "delete" to confirm',
+							'placeholder'	=> 'delete',
+							'description'	=> '',
+						),					
+					),
+				);
+				
+				// status
+				
+				$actions[] = array(
+					
+					'label' 	=> 'Edit Status',
+					'id' 		=> 'edit_status',
+					'fields' 	=> array(
+						array(
+							
+							'name' 		=> 'name',
+							'type'		=> 'select',
+							'options'	=> $this->get_post_type_statuses($post_type->name),
+						),
+					),
+				);
+				
+				// parent
+				
+				if( $post_type->hierarchical ){
+					
+					$actions[] = array(
+					
+						'label' 	=> 'Edit Parent',
+						'id' 		=> 'edit_parent',
+						'fields' 	=> array(
+							array(			
+								
+								'name'			=> 'id',
+								'type'      	=> 'number',
+								'min'      		=> 1,
+								'min'      		=> 0,
+								'max'      		=> 1000000000000,
+								'style'			=> 'width:120px;',
+								'default' 		=> 0,
+							),
+						),
+					);
+				}
+						
+				// author
+				
+				if( post_type_supports($post_type->name,'author') ){
 					
 					$actions[] = array(
 						
-						'label' 	=> 'Edit ' . $taxonomy->label,
-						'id' 		=> 'edit_tax_' . $taxonomy->name, // dropdown menu
-						'fields' 	=> $fields,
+						'label' 	=> 'Edit Author',
+						'id' 		=> 'edit_author',
+						'fields' 	=> array(
+							array(
+								
+								'name' 		=> 'ids',
+								'type'		=> 'authors',
+								'multi'		=> false,
+							),
+						),
 					);
+				}
+
+				// meta
+				
+				$actions[] = array(
+					
+					'label' 	=> 'Edit Meta Values',
+					'id' 		=> 'edit_meta',
+					'fields' 	=> array(			
+						array(
+							
+							'name' 			=> 'data',
+							'type'			=> 'array',
+							'keys'			=> true,
+							'placeholder'	=> 'value',
+						),					
+					),
+				);
+				
+				$actions[] = array(
+					
+					'label' 	=> 'Remove Meta',
+					'id' 		=> 'remove_meta',
+					'fields' 	=> array(			
+						array(
+							
+							'name' 			=> 'data',
+							'type'			=> 'array',
+							'keys'			=> true,
+							'placeholder'	=> 'matching value or empty',
+						),					
+					),
+				);
+				
+				// taxonomies
+				
+				if( !empty($taxonomies) ){
+					
+					foreach( $taxonomies as $taxonomy ){
+						
+						if( $taxonomy = get_taxonomy($taxonomy) ){
+					
+							$fields = apply_filters('rewbe_post_taxonomy_action_fields', array(
+							
+								array(
+									
+									'name' 		=> 'action',
+									'type'		=> 'radio',
+									'options' 	=> array(
+									
+										'add' 		=> 'Add',
+										'replace' 	=> 'Replace',
+										'remove' 	=> 'Remove',
+									),
+									'default' => 'add',
+								),
+								array(
+									
+									'name' 			=> 'terms',
+									'label' 		=> $taxonomy->label,
+									'type'			=> 'terms',
+									'taxonomy' 		=> $taxonomy->name,
+									'hierarchical'	=> false,
+									'operator'		=> false,
+									'context'		=> 'action',
+								),						
+							),$taxonomy,$post_type);
+							
+							$actions[] = array(
+								
+								'label' 	=> 'Edit ' . $taxonomy->label,
+								'id' 		=> 'edit_tax_' . $taxonomy->name, // dropdown menu
+								'fields' 	=> $fields,
+							);
+						}
+					}
 				}
 			}
 			
@@ -1765,7 +1872,7 @@ class Rew_Bulk_Editor {
 		return apply_filters('rewbe_post_type_statuses',array(
 					
 			'publish' 	=> 'Published',
-			'pending' 	=> 'Pending',
+			'pending' 	=> 'Pending review',
 			'private' 	=> 'Private',
 			'draft' 	=> 'Draft',
 			'trash' 	=> 'Trash',
@@ -2216,6 +2323,10 @@ class Rew_Bulk_Editor {
 									
 									add_action('rewbe_do_post_edit_post_type',array($this,'edit_post_type'),10,2);
 								}	
+								elseif( $action == 'duplicate_post' ){
+									
+									add_action('rewbe_do_post_duplicate_post',array($this,'duplicate_post'),10,2);
+								}
 								elseif( $action == 'delete_post' ){
 									
 									add_action('rewbe_do_post_delete_post',array($this,'delete_post'),10,2);
@@ -2545,6 +2656,76 @@ class Rew_Bulk_Editor {
 				));
 			}
 		}
+	}
+	
+	public function duplicate_post($post,$args){
+
+		$arr = array();
+		
+		if( in_array('post_title',$args['include']) ){
+			
+			$arr['post_title'] = $post->post_title;
+		}
+		
+		if( in_array('post_content',$args['include']) ){
+			
+			$arr['post_content'] = $post->post_content;
+		}
+		
+		if( in_array('post_excerpt',$args['include']) ){
+			
+			$arr['post_excerpt'] = $post->post_excerpt;
+		}
+		
+		if( in_array('post_date',$args['include']) ){
+			
+			$arr['post_date'] = $post->post_date;
+		}
+		
+		if( in_array('post_parent',$args['include']) ){
+			
+			$arr['post_parent'] = $post->post_parent;
+		}
+		
+		if( in_array('menu_order',$args['include']) ){
+			
+			$arr['menu_order'] = $post->menu_order;
+		}
+		
+		if( in_array('post_password',$args['include']) ){
+			
+			$arr['post_password'] = $post->post_password;
+		}
+		
+		if( in_array('comment_status',$args['include']) ){
+			
+			$arr['comment_status'] = $post->comment_status;
+		}
+		
+		if( in_array('ping_status',$args['include']) ){
+			
+			$arr['ping_status'] = $post->ping_status;
+		}
+		
+		if( !empty($arr) ){
+			
+			$arr['post_type'] = $post->post_type;
+			
+			$arr['post_author'] = in_array('post_author',$args['include']) ? intval($post->post_author) : 0;
+			
+			$arr['post_status'] = !empty($args['status']) && $args['status'] != 'original' ? sanitize_title($args['status']) : $post->post_status;
+			
+			//$post_id = wp_insert_post($arr);
+			
+			if( is_numeric($post_id) ){
+				
+				// taxonomies
+				
+				// meta
+			}
+		}
+		
+		dump($arr);
 	}
 	
 	public function delete_post($post,$args){
@@ -3373,12 +3554,12 @@ class Rew_Bulk_Editor {
 		if( $curr_action != 'none' ){
 			
 			if( $type == 'post-type-task' ){
-
-				$actions = $this->get_post_type_actions($post_type);
+				
+				$actions = $this->get_post_type_actions($task[$this->_base.'post_type']);
 			}
 			elseif( $type == 'taxonomy-task' ){
 				
-				$actions = $this->get_taxonomy_actions($taxonomy);
+				$actions = $this->get_taxonomy_actions($task[$this->_base.'taxonomy']);
 			}
 			elseif( $type == 'user-task' ){
 				
@@ -3386,7 +3567,7 @@ class Rew_Bulk_Editor {
 			}
 			elseif( $type == 'data-task' ){
 				
-				$actions = $this->get_data_actions($data_type);
+				$actions = $this->get_data_actions($task[$this->_base.'data_type']);
 			}
 			
 			if( !empty($actions) ){

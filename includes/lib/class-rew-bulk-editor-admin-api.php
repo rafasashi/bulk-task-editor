@@ -83,7 +83,7 @@ class Rew_Bulk_Editor_Admin_API {
 		
 		// get attributes
 		
-		$style = ( !empty($field['style']) ? ' style="'.$field['style'].'"' : '' );
+		$style = ' style="'.( !empty($field['style']) ? $field['style'] : 'width:60%;margin-bottom:5px;' ).'"';
 		
 		$disabled = ( ( isset($field['disabled']) && $field['disabled'] === true ) ? ' disabled="disabled"' : '' );
 
@@ -1143,7 +1143,7 @@ class Rew_Bulk_Editor_Admin_API {
 			return;
 		}
 
-		$html = '<p class="form-field">';
+		$html = '<div class="form-field" style="margin:10px 0;">';
 			
 			if( !empty($field['label']) ){
 				
@@ -1156,7 +1156,7 @@ class Rew_Bulk_Editor_Admin_API {
 			
 			$html .= $this->display_field( $field, $post, false );
 		
-		$html .= '</p>' . PHP_EOL;
+		$html .= '</div>' . PHP_EOL;
 		
 		if($echo){
 			
