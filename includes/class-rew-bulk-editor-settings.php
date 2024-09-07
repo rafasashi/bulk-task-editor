@@ -75,6 +75,7 @@ class Rew_Bulk_Editor_Settings {
 
 		// Configure placement of plugin settings page. See readme for implementation.
 		add_filter( $this->base . 'menu_settings', array( $this, 'configure_settings' ) );
+		
 	}
 
 	/**
@@ -197,10 +198,12 @@ class Rew_Bulk_Editor_Settings {
 	 * @return array        Modified links.
 	 */
 	public function add_settings_link( $links, $file ) {
+		
 		if( strpos( $file, basename( $this->parent->file ) ) !== false ) {
 			$settings_link = '<a href="options-general.php?page=' . $this->parent->_token . '_settings">' . __( 'Settings', 'rew-bulk-editor' ) . '</a>';
 			array_push( $links, $settings_link );
 		}
+
 		return $links;
 	}
 
@@ -219,14 +222,27 @@ class Rew_Bulk_Editor_Settings {
 				'description' => '',
 				'fields'      => array(),
 			),
-			/*
 			'settings' => array(
 			
 				'title'       => __( 'Settings', 'rew-bulk-editor' ),
 				'description' => __( 'Bulk editor settings', 'rew-bulk-editor'),
-				'fields'      => array(),
+				'fields'      => array(
+					
+					array(
+					
+						'id'	=> 'multi_duplication',
+						'label'	=> 'Enable multisite duplication',
+						'type'	=> 'checkbox',
+					),
+				),
 			),
-			*/			
+			'addons' => array(
+				'title'					=> __( 'Addons', 'rew-bulk-editor' ),
+				'description'			=> '',
+				'class'					=> 'pull-right',
+				'logo'					=> $this->parent->assets_url . '/images/addons-icon.png',
+				'fields'				=> array(),
+			),
 		);
 		
 		return apply_filters( $this->parent->_token . '_settings_fields', $settings );
@@ -238,6 +254,7 @@ class Rew_Bulk_Editor_Settings {
 	 * @return void
 	 */
 	public function register_settings() {
+		
 		if ( is_array( $this->settings ) ) {
 
 			// Check posted/selected tab.
@@ -297,6 +314,36 @@ class Rew_Bulk_Editor_Settings {
 				}
 			}
 		}
+
+		//get addons
+		
+		$domain = parse_url(home_url(),PHP_URL_HOST);
+		
+		$campaign = basename(dirname(__FILE__,2));
+		
+		$this->addons = array(
+			
+			'woo-bulk-product-editor' 	=> array(
+			
+				'title' 		=> 'Bulk Product Editor',
+				'addon_link' 	=> 'https://code.recuweb.com/get/bulk-product-editor/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
+				'addon_name' 	=> 'woo-bulk-product-editor',
+				'logo_url' 		=> 'https://d3ddkiw8cptmcg.cloudfront.net/c/u/3a09f4cf991c32bd735fa06db67889e5/2024/08/17074428/bulk-product-editor-1-300x300.png',
+				'description'	=> 'Bulk Product Editor is a WordPress plugin designed to streamline and accelerate your store management workflow all without overloading your server.',
+				'author' 		=> 'Code Market',
+				'author_link' 	=> 'https://code.recuweb.com/about-us/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
+			),			
+			'language-switcher-everywhere' 	=> array(
+			
+				'title' 		=> 'Language Switcher',
+				'addon_link' 	=> 'https://code.recuweb.com/get/language-switcher-everywhere/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
+				'addon_name' 	=> 'language-switcher-everywhere',
+				'logo_url' 		=> 'https://code.recuweb.com/c/u/3a09f4cf991c32bd735fa06db67889e5/2018/07/language-switcher-everywhere-squared-300x300.png',
+				'description'	=> 'Extends Language Switcher to add languages to custom post types and taxonomies like WooCommerce products or tags',
+				'author' 		=> 'Code Market',
+				'author_link' 	=> 'https://code.recuweb.com/about-us/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
+			),
+		);
 	}
 
 	/**
@@ -318,18 +365,13 @@ class Rew_Bulk_Editor_Settings {
 	 * @return void
 	 */
 	public function settings_page() {
-
+		
+		// get tab name
+		$tab = !empty($_GET['tab']) ? sanitize_title($_GET['tab']) : key($this->settings);
+		
 		// Build page HTML.
 		$html      = '<div class="wrap" id="' . $this->parent->_token . '_settings">' . "\n";
 			$html .= '<h2>' . __( 'Bulk Task Editor', 'rew-bulk-editor' ) . '</h2>' . "\n";
-
-			$tab = '';
-		//phpcs:disable
-		if ( isset( $_GET['tab'] ) && $_GET['tab'] ) {
-			
-			$tab .= sanitize_text_field($_GET['tab']);
-		}
-		//phpcs:enable
 
 		// Show page tabs.
 		if ( is_array( $this->settings ) && 1 < count( $this->settings ) ) {
@@ -337,18 +379,16 @@ class Rew_Bulk_Editor_Settings {
 			$html .= '<h2 class="nav-tab-wrapper">' . "\n";
 
 			$c = 0;
+			
 			foreach ( $this->settings as $section => $data ) {
 
 				// Set tab class.
+				
 				$class = 'nav-tab';
-				if ( ! isset( $_GET['tab'] ) ) { //phpcs:ignore
-					if ( 0 === $c ) {
-						$class .= ' nav-tab-active';
-					}
-				} else {
-					if ( isset( $_GET['tab'] ) && $section == $_GET['tab'] ) { //phpcs:ignore
-						$class .= ' nav-tab-active';
-					}
+				
+				if ( $section == $tab ) {
+					
+					$class .= ' nav-tab-active';
 				}
 
 				// Set tab link.
@@ -363,7 +403,7 @@ class Rew_Bulk_Editor_Settings {
 				), $tab_link );
 
 				// Output tab.
-				$html .= '<a href="' . $tab_link . '" class="' . esc_attr( $class ) . '">' . esc_html( $data['title'] ) . '</a>' . "\n";
+				$html .= '<a href="' . $tab_link . '" class="' . esc_attr( $class ) . '">' . ( !empty($data['logo']) ? '<img src="'.$data['logo'].'" alt="" style="margin-top: 4px;margin-right: 7px;float: left;">' : '' ) . esc_html( $data['title'] ) . '</a>' . "\n";
 
 				++$c;
 			}
@@ -371,7 +411,7 @@ class Rew_Bulk_Editor_Settings {
 			$html .= '</h2>' . "\n";
 		}
 		
-		if( empty($tab) || $tab == 'overview' ){
+		if( $tab == 'overview' ){
 	
 			$html .= '<div id="dashboard-widgets-wrap">' . "\n";
 				$html .= '<div id="dashboard-widgets" class="metabox-holder">' . "\n";
@@ -622,7 +662,80 @@ class Rew_Bulk_Editor_Settings {
 				$html .= '</div>' . "\n";
 			$html .= '</div>' . "\n";
 		}
-		else{
+		elseif( $tab == 'addons' ){
+			
+			$html .= '<h3 style="margin-bottom:25px;">' . wp_kses_normalize_entities($this->settings[$tab]['title']) . '</h3>' . PHP_EOL;
+
+			$html .= '<div class="settings-form-wrapper" style="margin-top:25px;">';
+				
+				$html .= '<div id="the-list">';
+				
+					foreach( $this->addons as $addon ){
+				
+						$html .= '<div class="panel panel-default plugin-card plugin-card-akismet">';
+						
+							$html .= '<div class="panel-body plugin-card-top">';
+								
+								$html .= '<div class="name column-name">';
+								
+									$html .= '<h3>';
+									
+										$html .= '<a href="'.$addon['addon_link'].'" target="_blank" style="text-decoration:none;">';
+											
+											if( !empty($addon['logo_url']) ){
+												
+												$html .= '<img class="plugin-icon" src="'.$addon['logo_url'].'" />';
+											}
+											
+											$html .= $addon['title'];	
+											
+										$html .= '</a>';
+										
+									$html .= '</h3>';
+									
+								$html .= '</div>';
+								
+								$html .= '<div class="desc column-description">';
+							
+									$html .= '<p>'.$addon['description'].'</p>';
+									$html .= '<p class="authors"> <cite>By <a target="_blank" href="'.$addon['author_link'].'">'.$addon['author'].'</a></cite></p>';
+								
+								$html .= '</div>';
+								
+							$html .= '</div>';
+							
+							$html .= '<div class="panel-footer plugin-card-bottom text-right">';
+								
+								$plugin_file = $addon['addon_name'] . '/' . $addon['addon_name'] . '.php';
+								
+								if( !file_exists( WP_PLUGIN_DIR . '/' . $addon['addon_name'] . '/' . $addon['addon_name'] . '.php' ) ){
+									
+									if( !empty($addon['source_url']) ){
+									
+										$url = $addon['source_url'];
+									}
+									else{
+										
+										$url = $addon['addon_link'];
+									}
+									
+									$html .= '<a href="' . esc_url($url) . '" class="button install-now" aria-label="Install">Install Now</a>';
+								}
+								else{
+									
+									$html .= '<span>Installed</span>';
+								}
+							
+							$html .= '</div>';
+						
+						$html .= '</div>';
+					}
+				
+				$html .= '</div>';
+
+			$html .= '</div>';
+		}
+		elseif( !empty($this->settings[$tab]['fields']) ){
 		
 			$html .= '<form method="post" action="options.php" enctype="multipart/form-data">' . "\n";
 

@@ -147,31 +147,60 @@ class Rew_Bulk_Editor_Admin_API {
 			break;
 
 			case 'checkbox':
-				$checked = '';
-				if ( $data && 'on' === $data ) {
-					$checked = 'checked="checked"';
-				}
-				$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" ' . $checked . '/>' . "\n";
+				
+				$html .='<div style="width:fit-content;">';
+					
+					$checked = '';
+					
+					if ( $data && 'on' === $data ) {
+						
+						$checked = 'checked="checked"';
+					}
+					
+					$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" ' . $checked . '/>' . "\n";
+				
+				$html .='</div>';
+				
 			break;
 
 			case 'checkbox_multi':
-				foreach ( $field['options'] as $k => $v ) {
-					$checked = false;
-					if ( in_array( $k, (array) $data, true ) ) {
-						$checked = true;
+			
+				$html .='<div style="width:fit-content;">';
+					
+					foreach ( $field['options'] as $k => $v ) {
+						
+						$checked = false;
+						
+						if ( in_array( $k, (array) $data, true ) ) {
+							
+							$checked = true;
+						}
+						
+						$html .= '<label for="' . esc_attr( $field['id'] . '_' . $k ) . '" class="checkbox_multi"'.$style.'><input type="checkbox" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '[]" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label> ';
 					}
-					$html .= '<label for="' . esc_attr( $field['id'] . '_' . $k ) . '" class="checkbox_multi"'.$style.'><input type="checkbox" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '[]" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label> ';
-				}
+					
+				$html .='</div>';
+				
 			break;
 
 			case 'radio':
-				foreach ( $field['options'] as $k => $v ) {
-					$checked = false;
-					if ( $k === $data ) {
-						$checked = true;
+			
+				$html .='<div style="width:fit-content;">';
+					
+					foreach ( $field['options'] as $k => $v ) {
+						
+						$checked = false;
+						
+						if ( $k === $data ) {
+							
+							$checked = true;
+						}
+						
+						$html .= '<label for="' . esc_attr( $field['id'] . '_' . $k ) . '" style="margin-right:5px;"><input type="radio" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label> ';
 					}
-					$html .= '<label for="' . esc_attr( $field['id'] . '_' . $k ) . '" style="margin-right:5px;"><input type="radio" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label> ';
-				}
+				
+				$html .='</div>';
+				
 			break;
 
 			case 'select':

@@ -112,7 +112,15 @@ class Rew_Bulk_Editor {
 	public $script_suffix;
 	
 	public $sc_items = 1000;
-
+	
+	public $images = array();
+				
+	public $terms = array();
+			
+	public $terms_meta = array();
+			
+	public $terms_image = array();
+			
 	/**
 	 * Constructor funtion.
 	 *
@@ -819,13 +827,15 @@ class Rew_Bulk_Editor {
 						
 						$taxonomy = get_taxonomy($taxonomy);
 						
-						$options['tax_'.$taxonomy->name] = $taxonomy->labels->name;
+						if( current_user_can($taxonomy->cap->edit_terms) ){
+							
+							$options['tax_'.$taxonomy->name] = $taxonomy->labels->name;
+						}
 					}
 				}
 				
 				$options['meta'] = 'Meta';
 				
-				/*
 				$actions[] = array(
 					
 					'label' 	=> 'Duplicate ' . $post_type->labels->name,
@@ -834,10 +844,24 @@ class Rew_Bulk_Editor {
 						array(
 							
 							'name' 			=> 'prefix',
-							'type'			=> 'text',
+							'type'			=> 'select',
 							'label'			=> 'Database Prefix',
-							'placeholder'	=> 'wp_',
+							'options'		=> $this->get_duplicate_prefix_options(),
 							'default'		=> $wpdb->prefix,
+						),
+						array(
+							
+							'name' 			=> 'existing',
+							'type'			=> 'select',
+							'label'			=> 'Existing copy',
+							'default' 		=> 'skip',
+							'options'		=> array(
+							
+								'skip'		=> 'Skip',
+								'overwrite'	=> 'Overwrite',
+								'duplicate'	=> 'Duplicate',
+							),
+							
 						),
 						array(
 							
@@ -849,7 +873,7 @@ class Rew_Bulk_Editor {
 							
 								'original'	=> 'Same as original',
 								
-							),$this->get_post_type_statuses($post_type->name)),
+							),$this->get_post_type_statuses($post_type->name,array('trash'))),
 							
 						),
 						array(
@@ -871,7 +895,6 @@ class Rew_Bulk_Editor {
 						),							
 					),
 				);
-				*/
 				
 				// delete
 				
@@ -1712,8 +1735,43 @@ class Rew_Bulk_Editor {
 			return $post_id;
 			
 		},99999,3);
-		
+
 	} // End __construct ()
+	
+	public function get_duplicate_prefix_options(){
+		
+		global $wpdb;
+		
+		$prefixes = array(
+		
+			$wpdb->prefix => $wpdb->prefix,
+		);
+
+		$tables = $wpdb->get_col("SHOW TABLES LIKE '%_options'");
+
+		foreach ($tables as $table) {
+			
+			$safe_table = esc_sql($table);
+
+			$query = $wpdb->prepare(
+				"SELECT option_name, option_value FROM `$safe_table` WHERE option_name = %s AND option_value = %s",
+				'rewbe_multi_duplication',
+				'on'
+			);
+
+			if( $row = $wpdb->get_row($query) ){
+				
+				$prefix = str_replace('_options','',$table).'_';
+				
+				if( !isset($prefixes[$prefix]) ){
+					
+					$prefixes[$prefix] = $prefix;
+				}
+			}
+		}
+		
+		return $prefixes;
+	}
 	
 	public function get_task_types(){
 		
@@ -1867,9 +1925,9 @@ class Rew_Bulk_Editor {
 		return $column;
 	}
 	
-	public function get_post_type_statuses($post_type){
+	public function get_post_type_statuses($post_type,$exclude=array()){
 		
-		return apply_filters('rewbe_post_type_statuses',array(
+		$post_statuses = apply_filters('rewbe_post_type_statuses',array(
 					
 			'publish' 	=> 'Published',
 			'pending' 	=> 'Pending review',
@@ -1878,6 +1936,19 @@ class Rew_Bulk_Editor {
 			'trash' 	=> 'Trash',
 		
 		),$post_type);
+		
+		if( !empty($exclude) ){
+			
+			foreach( $exclude as $status ){
+				
+				if( isset($post_statuses[$status]) ){
+					
+					unset($post_statuses[$status]);
+				}
+			}
+		}
+		
+		return $post_statuses;
 	}
 	
 	public function get_task_meta($post_id){
@@ -1948,7 +2019,7 @@ class Rew_Bulk_Editor {
 						}
 						elseif( $field['type'] != 'html' ){
 							
-							dump($field);
+							// unregistered field type
 						}
 					}
 				}
@@ -2658,74 +2729,629 @@ class Rew_Bulk_Editor {
 		}
 	}
 	
-	public function duplicate_post($post,$args){
-
-		$arr = array();
+	public function duplicate_post($post,$args,$level=1){
+	
+		$postarr = array();
 		
 		if( in_array('post_title',$args['include']) ){
 			
-			$arr['post_title'] = $post->post_title;
+			$postarr['post_title'] = $post->post_title;
 		}
 		
 		if( in_array('post_content',$args['include']) ){
 			
-			$arr['post_content'] = $post->post_content;
+			$postarr['post_content'] = $post->post_content;
 		}
 		
 		if( in_array('post_excerpt',$args['include']) ){
 			
-			$arr['post_excerpt'] = $post->post_excerpt;
+			$postarr['post_excerpt'] = $post->post_excerpt;
 		}
 		
 		if( in_array('post_date',$args['include']) ){
 			
-			$arr['post_date'] = $post->post_date;
-		}
-		
-		if( in_array('post_parent',$args['include']) ){
+			$postarr['post_date'] = $post->post_date;
 			
-			$arr['post_parent'] = $post->post_parent;
+			$postarr['post_date_gmt'] = $post->post_date_gmt;
 		}
 		
 		if( in_array('menu_order',$args['include']) ){
 			
-			$arr['menu_order'] = $post->menu_order;
+			$postarr['menu_order'] = $post->menu_order;
 		}
 		
 		if( in_array('post_password',$args['include']) ){
 			
-			$arr['post_password'] = $post->post_password;
+			$postarr['post_password'] = $post->post_password;
 		}
 		
 		if( in_array('comment_status',$args['include']) ){
 			
-			$arr['comment_status'] = $post->comment_status;
+			$postarr['comment_status'] = $post->comment_status;
 		}
 		
 		if( in_array('ping_status',$args['include']) ){
 			
-			$arr['ping_status'] = $post->ping_status;
+			$postarr['ping_status'] = $post->ping_status;
 		}
 		
-		if( !empty($arr) ){
+		if( $postarr = apply_filters('rewbe_before_duplicate_post',$postarr,$post) ){
 			
-			$arr['post_type'] = $post->post_type;
+			//get post type
 			
-			$arr['post_author'] = in_array('post_author',$args['include']) ? intval($post->post_author) : 0;
+			$post_type = get_post_type_object($post->post_type);
 			
-			$arr['post_status'] = !empty($args['status']) && $args['status'] != 'original' ? sanitize_title($args['status']) : $post->post_status;
+			// get author
 			
-			//$post_id = wp_insert_post($arr);
+			$author = !empty($post->post_author) ? get_user_by('id',$post->post_author) : false;
 			
-			if( is_numeric($post_id) ){
+			// get parent
+			
+			$parent = !empty($post->post_parent) ? get_post($post->post_parent) : false;
+		
+			// get terms
+			
+			$taxonomies = $this->get_post_type_taxonomies($post_type);
+
+			if( !empty($taxonomies) ){
 				
-				// taxonomies
+				foreach( $taxonomies as $taxonomy ){
+					
+					if( in_array('tax_'.$taxonomy,$args['include']) ){
+						
+						if( $terms = wp_get_object_terms($post->ID,$taxonomy) ){
+						
+							foreach( $terms as $term ){
+								
+								$this->terms[$taxonomy][$term->term_id] = $term;
+								
+								if( $meta = get_term_meta($term->term_id) ){
+								
+									$this->terms_meta[$term->term_id] = $this->register_duplicated_meta($meta);
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			// get meta
+			
+			if( in_array('meta',$args['include']) ){
 				
-				// meta
+				$metadata = $this->register_duplicated_meta(get_post_meta($post->ID));
+			}
+			
+			// switch db prefix
+			
+			global $wpdb;
+			
+			$old_prefix = $wpdb->prefix;
+			
+			if( !empty($args['prefix']) ){
+				
+				$new_prefix = sanitize_title(str_replace(' ','',$args['prefix']));
+				
+				if( !empty($new_prefix) ){
+					
+					$wpdb->set_prefix($new_prefix,true);
+				}
+			}
+			
+			$postarr['post_type'] = $post->post_type;
+			
+			$postarr['post_status'] = !empty($args['status']) && $args['status'] != 'original' ? sanitize_title($args['status']) : $post->post_status;
+			
+			if( in_array('post_author',$args['include']) ){
+			
+				$post_author = 0;
+			
+				if( $old_prefix != $new_prefix ){
+					
+					if( !empty($author) ){
+						
+						// get author
+						
+						if( $remote_author = get_user_by('email',$author->user_email) ){
+							
+							$post_author = intval($remote_author->ID);
+						}
+						else{
+							
+							// add user
+							
+							$author_copy_id = wp_insert_user(array(
+							
+								'user_login'		=> $author->user_login,
+								'user_email'		=> $author->user_email,
+								'user_pass'			=> $author->user_pass,
+								'user_nicename'		=> $author->user_nicename,
+								'user_url'			=> $author->user_url,
+								'display_name'  	=> $author->display_name,
+								'user_status'  		=> $author->user_status,
+								'user_registered'  	=> $author->user_registered,
+								'user_nicename'  	=> $author->user_nicename,
+							));
+							
+							if( !is_wp_error($author_copy_id) ){
+
+								if( !empty($author->roles) ){
+									
+									foreach( $author->roles as $role ){
+										
+										$author_copy = new WP_User($author_copy_id);
+										
+										$author_copy->add_role($role);
+									}
+								}
+								
+								$post_author = intval($author_copy_id);
+							}
+						}
+					}
+				}
+				else{
+					
+					$post_author = intval($post->post_author);
+				}
+				
+				$postarr['post_author'] = $post_author;
+			}
+			
+			if( in_array('post_parent',$args['include']) && !empty($parent) ){
+				
+				if( $old_prefix != $new_prefix ){
+
+					$parent_copies = get_posts(array(
+					
+						'post_type'			=> apply_filters('rewbe_duplicate_parent_post_types',array($post->post_type),$post),
+						'post_status'		=> array_keys($this->get_post_type_statuses($post->post_type,array('trash'))),
+						'posts_per_page' 	=> -1,
+						'order'				=> 'ASC',
+						'orderby'			=> 'ID',
+						'meta_query'		=> array(
+						
+							array(
+								
+								'key'     	=> 'rewbe_origin',
+								'value'		=> serialize(array(
+								
+									$old_prefix => $post->post_parent,
+								)),
+								'compare' 	=> '=',
+							)
+						)
+					));
+			
+					if( !empty($parent_copies) ){
+						
+						$postarr['post_parent'] = $parent_copies[0]->ID;
+					}
+					else{
+						
+						//$this->duplicate_post($parent,$args);
+					}
+				}
+				else{
+				
+					$postarr['post_parent'] = $post->post_parent;
+				}
+			}
+			
+			$existing = !empty($args['existing']) ? sanitize_title($args['existing']) : 'skip';
+			
+			$post_ids = array();
+			
+			if( in_array($existing,array(
+			
+				'skip',
+				'overwrite',
+			))){
+				
+				$copies = get_posts(array(
+				
+					'post_type'			=> $post->post_type,
+					'post_status'		=> array_keys($this->get_post_type_statuses($post->post_type,array('trash'))),
+					'posts_per_page' 	=> -1,
+					'order'				=> 'ASC',
+					'orderby'			=> 'ID',
+					'meta_query'		=> array(
+					
+						array(
+							
+							'key'     	=> 'rewbe_origin',
+							'value'		=> serialize(array(
+							
+								$old_prefix => $post->ID,
+							)),
+							'compare' 	=> '=',
+						)
+					)
+				));
+				
+				if( !empty($copies) ){
+					
+					if( $existing == 'overwrite' ){
+						
+						foreach( $copies as $copy ){
+							
+							// update copies
+							
+							$postarr['ID'] = $copy->ID;
+							
+							wp_update_post($postarr,false);
+							
+							$post_ids[$copy->ID] = $post->ID;
+						}
+					}
+					else{
+						
+						// skip
+					}
+				}
+				elseif( $post_id = wp_insert_post($postarr,false) ){
+					
+					$post_ids[$post_id] = $post->ID;
+				}
+			}
+			elseif( $post_id = wp_insert_post($postarr,false) ){
+				
+				$post_ids[$post_id] = $post->ID;
+			}
+			
+			if( !empty($post_ids) ){
+				
+				foreach( $post_ids as $post_id => $origin_id ){
+					
+					if( !empty($this->terms) ){
+						
+						// update terms
+						
+						foreach( $this->terms as $taxonomy => $terms ){
+							
+							$term_slugs = array();
+							
+							foreach( $terms as $term ){
+								
+								if( $old_prefix != $new_prefix ){
+									
+									$term_query = new WP_Term_Query(apply_filters('rewbe_duplicate_term_query',array(
+									
+										'taxonomy'   	=> $taxonomy,
+										'hide_empty' 	=> false,
+										'meta_query'	=> array(
+										
+											array(
+												
+												'key'     	=> 'rewbe_origin',
+												'value'		=> serialize(array(
+												
+													$old_prefix => $term->term_id,
+												)),
+												'compare' 	=> '=',
+											)
+										)
+									),$term));
+									
+									if( $term_copies = $term_query->get_terms() ){
+										
+										foreach( $term_copies as $term_copy ){
+											
+											$term_slugs[] = $term_copy->slug;
+										}
+									}
+									else{
+
+										// copy term
+										
+										$term_parent = 0;
+										
+										if( !empty($term->parent) ){
+											
+											$parent_term_query = new WP_Term_Query(apply_filters('rewbe_duplicate_term_query',array(
+											
+												'taxonomy'   	=> $taxonomy,
+												'hide_empty'	=> false,
+												'meta_query'	=> array(
+												
+													array(
+														
+														'key'     	=> 'rewbe_origin',
+														'value'		=> serialize(array(
+														
+															$old_prefix => $term->parent,
+														)),
+														'compare' 	=> '=',
+													)
+												)
+											),$term));
+											
+											if( $parent_term_copies = $parent_term_query->get_terms() ){
+												
+												$term_parent = $parent_term_copies[0]->term_id;
+											}
+										}
+										
+										$inserted_term = wp_insert_term($term->name,$term->taxonomy,array(
+										
+											'description'	=> $term->description,
+											'parent' 		=> $term_parent,
+										));
+										
+										if( !is_wp_error($inserted_term) && !empty($inserted_term['term_id']) ){
+										
+											$term_copy = get_term($inserted_term['term_id']);
+										}
+										
+										if( !empty($this->terms_meta[$term->term_id]) ){
+											
+											// copy term meta
+											
+											foreach( $this->terms_meta[$term->term_id] as $name => $values ){
+												
+												$count = count($values);
+												
+												if( $count > 1 ){
+												
+													delete_term_meta($term_copy->term_id,$name);
+												}
+												
+												foreach( $values as $e => $value ){
+												
+													$value = $this->parse_duplicated_meta($value,$name,array($old_prefix=>$term->term_id));
+
+													if( !is_null($value) ){
+														
+														if( $count > 1 ){
+														
+															add_term_meta($term_copy->term_id,$name,$value);
+														}
+														else{
+															
+															update_term_meta($term_copy->term_id,$name,$value);
+														}
+													}
+												}
+											}
+										}
+										
+										update_term_meta($term_copy->term_id,'rewbe_origin',array(
+										
+											$old_prefix => $term->term_id,
+										));
+										
+										$term_slugs[] = $term_copy->slug;
+									}
+								}
+								else{
+									
+									$term_slugs[] = $term->slug;
+								}
+							}
+							
+							if( !empty($term_slugs) ){
+							
+								wp_set_object_terms($post_id,$term_slugs,$taxonomy,false);
+							}
+						}
+					}
+					
+					// update meta
+					
+					if( !empty($metadata) ){
+						
+						$ex_meta = isset($args['ex_meta']['value']) ? $args['ex_meta']['value'] : array();
+						
+						foreach( $metadata as $name => $values ){
+							
+							if( !empty($values) && !in_array($name,$ex_meta) ){
+								
+								$count = count($values);
+								
+								if( $count > 1 ){
+								
+									delete_post_meta($post_id,$name);
+								}
+								
+								foreach( $values as $value ){
+									
+									$value = $this->parse_duplicated_meta($value,$name,array($old_prefix=>$post->ID));
+									
+									if( !is_null($value) ){
+										
+										if( $count > 1 ){
+										
+											add_post_meta($post_id,$name,$value);
+										}
+										else{
+											
+											update_post_meta($post_id,$name,$value);
+										}
+									}
+								}
+							}
+						}
+					}
+					
+					update_post_meta($post_id,'rewbe_origin',array($old_prefix=>$post->ID));
+				}
+			}
+			
+			// switch back db prefix
+			
+			if( !empty($old_prefix) ){
+			
+				$wpdb->set_prefix($old_prefix,true);
+			}
+
+			do_action('rewbe_duplicated_posts',$post_ids,$args,$level);
+			
+			if( $level == 1 ){
+				
+				//dump('done');
+			}
+			
+			return $post_ids;
+		}
+	}
+	
+	public function get_image_meta_names(){
+
+		return apply_filters('rewbe_image_meta_names',array(
+		
+			'thumbnail_id' 	=> 'numeric',
+			'_thumbnail_id' => 'numeric',
+		));
+	}		
+
+	public function register_duplicated_meta($metadata){
+	
+		// get images
+		
+		if( $image_names = $this->get_image_meta_names() ){
+			
+			foreach( $image_names as $name => $type ){
+				
+				$image_ids = array();
+			
+				if( !empty($metadata[$name][0]) ){
+					
+					if( $type == 'numeric' && is_numeric($metadata[$name][0]) ){
+					
+						$image_ids[] = intval($metadata[$name][0]);
+					}
+					elseif( $type == 'csv' && is_string($metadata[$name][0]) ){
+						
+						$image_ids = array_map('intval',explode(',',$metadata[$name][0]));
+					}
+					
+					if( !empty($image_ids) ){
+						
+						foreach( $image_ids as $image_id ){
+							
+							if( !isset($this->images[$image_id]) ){
+							
+								if( $image_url = wp_get_attachment_url($image_id) ){
+								
+									$attr = get_post($image_id);
+									
+									$author = get_user_by('ID',intval($attr->post_author));
+									
+									$this->images[$image_id]['url'] = $image_url;
+								
+									$this->images[$image_id]['attr'] = (array) $attr;
+									
+									$this->images[$image_id]['author'] = !empty($author->user_email) ? $author->user_email : null;
+								
+									$this->images[$image_id]['meta'] = wp_get_attachment_metadata($image_id);
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		
-		dump($arr);
+		return apply_filters('rewbe_before_duplicate_meta',$metadata);
+	}
+	
+	public function parse_duplicated_meta($data,$name,$origin){
+		
+		$value = null;
+		
+		if( strpos($name,'rewbe_') === false ){
+			
+			$image_names = $this->get_image_meta_names();
+			
+			if( isset($image_names[$name]) ){
+				
+				$type = $image_names[$name];
+				
+				if( $type == 'numeric' ){
+					
+					$value = $this->get_duplicated_image_id(intval($data),$origin);
+				}
+				elseif( $type == 'csv' ){
+					
+					$image_ids = array_map('intval',explode(',',$data));
+					
+					foreach( $image_ids as $e => $image_id ){
+						
+						$image_ids[$e] = $this->get_duplicated_image_id($image_id,$origin);
+					}
+					
+					$value = implode(',',$image_ids);
+				}
+			} 
+			else{
+				
+				$value = apply_filters('rewbe_duplicate_meta_value',maybe_unserialize($data),$name,$origin);
+			}
+		}
+			
+		return $value;
+	}
+
+	public function get_duplicated_image_id($image_id,$origin){
+		
+		$attachment_id = 0;
+		
+		$image = isset($this->images[$image_id]) ? $this->images[$image_id] : false;
+		
+		if( !empty($image) && !empty($image['url']) && !empty($image['attr']) ){
+			
+			if( !$attachment_id = $this->get_post_by_guid($image['url'], 'attachment' ) ){
+				
+				if( !empty($image['author']) ){
+					
+					$user = get_user_by('email',$image['author']);
+				}
+				
+				$attachment_id = wp_insert_attachment( array(
+					
+					'guid' 				=> $image['url'],
+					'post_author' 		=> !empty($user->ID) ? $user->ID : 0,
+					'post_mime_type' 	=> $image['attr']['post_mime_type'],
+					'post_title' 		=> $image['attr']['post_title'],
+				
+				),null,null);
+				
+				update_post_meta($attachment_id,'rewbe_origin',$origin);
+			}
+			
+			if( !empty($image['meta']) ){
+				
+				$image['meta']['sizes']['full'] = array(
+							
+					'width' 	=> $image['meta']['width'],
+					'height' 	=> $image['meta']['height'],
+					'file' 		=> wp_basename($image['url']),
+					'mime' 		=> $image['attr']['post_mime_type'],
+				);
+				
+				wp_update_attachment_metadata($attachment_id,$image['meta']);
+			}						
+		}
+		
+		return $attachment_id;
+	}
+
+	public function get_post_by_guid($guid, $post_type=null){
+		
+		global $wpdb;
+		
+		$post_id = 0;
+		
+		if( !empty($post_type) ){
+		
+			$post_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE guid=%s AND post_type=%s", $guid, $post_type ) );
+		}
+		else{
+			
+			$post_id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE guid=%s", $guid ) );
+		}
+		
+		return intval($post_id);
 	}
 	
 	public function delete_post($post,$args){
