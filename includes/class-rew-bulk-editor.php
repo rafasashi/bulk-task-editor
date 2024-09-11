@@ -2837,7 +2837,7 @@ class Rew_Bulk_Editor {
 						
 							foreach( $terms as $term ){
 								
-								$this->terms[$taxonomy][$term->term_id] = $term;
+								$this->terms[$post->ID][$taxonomy][$term->term_id] = $term;
 								
 								if( $meta = get_term_meta($term->term_id) ){
 								
@@ -3037,11 +3037,11 @@ class Rew_Bulk_Editor {
 				
 				foreach( $post_ids as $post_id => $origin_id ){
 					
-					if( !empty($this->terms) ){
+					if( !empty($this->terms[$origin_id]) ){
 						
 						// update terms
 						
-						foreach( $this->terms as $taxonomy => $terms ){
+						foreach( $this->terms[$origin_id] as $taxonomy => $terms ){
 							
 							$term_slugs = array();
 							
@@ -3053,6 +3053,8 @@ class Rew_Bulk_Editor {
 									
 										'taxonomy'   	=> $taxonomy,
 										'hide_empty' 	=> false,
+										'orderby'    	=> 'id',
+										'order'      	=> 'ASC',
 										'meta_query'	=> array(
 										
 											array(
@@ -3071,7 +3073,10 @@ class Rew_Bulk_Editor {
 										
 										foreach( $term_copies as $term_copy ){
 											
-											$term_slugs[] = $term_copy->slug;
+											if( !in_array($term_copy->slug,$term_slugs) ){
+											
+												$term_slugs[] = $term_copy->slug;
+											}
 										}
 									}
 									else{
@@ -3086,6 +3091,8 @@ class Rew_Bulk_Editor {
 											
 												'taxonomy'   	=> $taxonomy,
 												'hide_empty'	=> false,
+												'orderby'    	=> 'id',
+												'order'      	=> 'ASC',
 												'meta_query'	=> array(
 												
 													array(
@@ -3115,46 +3122,58 @@ class Rew_Bulk_Editor {
 										if( !is_wp_error($inserted_term) && !empty($inserted_term['term_id']) ){
 										
 											$term_copy = get_term($inserted_term['term_id']);
-										}
-										
-										if( !empty($this->terms_meta[$term->term_id]) ){
 											
-											// copy term meta
-											
-											foreach( $this->terms_meta[$term->term_id] as $name => $values ){
+											if( !empty($this->terms_meta[$term->term_id]) ){
 												
-												$count = count($values);
+												// copy term meta
 												
-												if( $count > 1 ){
-												
-													delete_term_meta($term_copy->term_id,$name);
-												}
-												
-												foreach( $values as $e => $value ){
-												
-													$value = $this->parse_duplicated_meta($value,$name,$term_copy,$args,array($old_prefix=>$term->term_id));
+												foreach( $this->terms_meta[$term->term_id] as $name => $values ){
+													
+													$count = count($values);
+													
+													if( $count > 1 ){
+													
+														delete_term_meta($term_copy->term_id,$name);
+													}
+													
+													foreach( $values as $e => $value ){
+													
+														$value = $this->parse_duplicated_meta($value,$name,$term_copy,$args,array($old_prefix=>$term->term_id));
 
-													if( !is_null($value) ){
-														
-														if( $count > 1 ){
-														
-															add_term_meta($term_copy->term_id,$name,$value);
-														}
-														else{
+														if( !is_null($value) ){
 															
-															update_term_meta($term_copy->term_id,$name,$value);
+															if( $count > 1 ){
+															
+																add_term_meta($term_copy->term_id,$name,$value);
+															}
+															else{
+																
+																update_term_meta($term_copy->term_id,$name,$value);
+															}
 														}
 													}
 												}
 											}
+											
+											update_term_meta($term_copy->term_id,'rewbe_origin',array(
+											
+												$old_prefix => $term->term_id,
+											));
+											
+											$term_slugs[] = $term_copy->slug;
 										}
+										elseif( defined('REW_DEV_ENV') && REW_DEV_ENV === true && !in_array($term->taxonomy,array(
 										
-										update_term_meta($term_copy->term_id,'rewbe_origin',array(
+											'product_color',
 										
-											$old_prefix => $term->term_id,
-										));
-										
-										$term_slugs[] = $term_copy->slug;
+										))){
+											
+											dump(array(
+												'debugging duplicate term',
+												$inserted_term,
+												get_term_by('name',$term->name,$term->taxonomy),
+											));
+										}
 									}
 								}
 								else{
@@ -3164,7 +3183,7 @@ class Rew_Bulk_Editor {
 							}
 							
 							if( !empty($term_slugs) ){
-							
+								
 								wp_set_object_terms($post_id,$term_slugs,$taxonomy,false);
 							}
 						}
