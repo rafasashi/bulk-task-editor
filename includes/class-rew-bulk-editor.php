@@ -3222,9 +3222,9 @@ class Rew_Bulk_Editor {
 
 			do_action('rewbe_duplicated_posts',$post_ids,$args,$level);
 			
-			if( $level == 1 ){
+			if( $level == 1 && defined('REW_DEV_ENV') && REW_DEV_ENV === true ){
 				
-				dump('done');
+				//dump('done');
 			}
 			
 			return $post_ids;
