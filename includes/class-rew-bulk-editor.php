@@ -3190,7 +3190,7 @@ class Rew_Bulk_Editor {
 			
 			if( $level == 1 ){
 				
-				dump('done');
+				//dump('done');
 			}
 			
 			return $post_ids;
