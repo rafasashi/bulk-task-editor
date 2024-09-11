@@ -414,9 +414,16 @@ class Rew_Bulk_Editor {
 			
 			global $post;
 	
-			$post_id = !empty($post->ID) ? $post->ID : 0; 
-			
-			$task = $this->get_task_meta($post_id);
+			$screen = get_current_screen();
+			 
+			if( !empty($screen) && $screen->base === 'post' && !empty($_POST['post_type']) ){
+				
+				$task = $this->sanitize_task_meta($_POST);
+			}
+			elseif( !empty($post->ID) ){
+
+				$task = $this->get_task_meta($post->ID);
+			}
 			
 			if( !empty($task[$this->_base.'post_type']) ){
 				
@@ -1094,9 +1101,16 @@ class Rew_Bulk_Editor {
 			
 			global $post;
 	
-			$post_id = !empty($post->ID) ? $post->ID : 0; 
-			
-			$task = $this->get_task_meta($post_id);
+			$screen = get_current_screen();
+			 
+			if( !empty($screen) && $screen->base === 'post' && !empty($_POST['post_type']) ){
+				
+				$task = $this->sanitize_task_meta($_POST);
+			}
+			elseif( !empty($post->ID) ){
+
+				$task = $this->get_task_meta($post->ID);
+			}
 			
 			if( !empty($task[$this->_base.'taxonomy']) ){
 				
@@ -1431,9 +1445,16 @@ class Rew_Bulk_Editor {
 			
 			global $post;
 	
-			$post_id = !empty($post->ID) ? $post->ID : 0; 
-			
-			$task = $this->get_task_meta($post_id);
+			$screen = get_current_screen();
+			 
+			if( !empty($screen) && $screen->base === 'post' && !empty($_POST['post_type']) ){
+				
+				$task = $this->sanitize_task_meta($_POST);
+			}
+			elseif( !empty($post->ID) ){
+
+				$task = $this->get_task_meta($post->ID);
+			}
 			
 			// id
 			
@@ -1949,6 +1970,19 @@ class Rew_Bulk_Editor {
 		}
 		
 		return $post_statuses;
+	}
+	
+	public function sanitize_task_meta($task){
+	
+		array_walk_recursive($task, function(&$value){
+			
+			if( is_string($value) ){
+				
+				$value = sanitize_text_field($value);
+			}
+		});
+		
+		return $task;
 	}
 	
 	public function get_task_meta($post_id){
@@ -3190,7 +3224,7 @@ class Rew_Bulk_Editor {
 			
 			if( $level == 1 ){
 				
-				//dump('done');
+				dump('done');
 			}
 			
 			return $post_ids;
