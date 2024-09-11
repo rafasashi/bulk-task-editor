@@ -840,7 +840,7 @@ class Rew_Bulk_Editor {
 					
 					'label' 	=> 'Duplicate ' . $post_type->labels->name,
 					'id' 		=> 'duplicate_post',
-					'fields' 	=> array(
+					'fields' 	=> apply_filters('rewbe_duplicate_post_fields',array(
 						array(
 							
 							'name' 			=> 'prefix',
@@ -893,7 +893,7 @@ class Rew_Bulk_Editor {
 							'label'			=> 'Exclude Meta',
 							'placeholder'	=> 'meta_name',
 						),							
-					),
+					),$post_type),
 				);
 				
 				// delete
@@ -2807,7 +2807,7 @@ class Rew_Bulk_Editor {
 								
 								if( $meta = get_term_meta($term->term_id) ){
 								
-									$this->terms_meta[$term->term_id] = $this->register_duplicated_meta($meta);
+									$this->terms_meta[$term->term_id] = $this->register_duplicated_meta($meta,$term);
 								}
 							}
 						}
@@ -2819,7 +2819,7 @@ class Rew_Bulk_Editor {
 			
 			if( in_array('meta',$args['include']) ){
 				
-				$metadata = $this->register_duplicated_meta(get_post_meta($post->ID));
+				$metadata = $this->register_duplicated_meta(get_post_meta($post->ID),$post);
 			}
 			
 			// switch db prefix
@@ -3098,7 +3098,7 @@ class Rew_Bulk_Editor {
 												
 												foreach( $values as $e => $value ){
 												
-													$value = $this->parse_duplicated_meta($value,$name,array($old_prefix=>$term->term_id));
+													$value = $this->parse_duplicated_meta($value,$name,$term_copy,$args,array($old_prefix=>$term->term_id));
 
 													if( !is_null($value) ){
 														
@@ -3142,6 +3142,8 @@ class Rew_Bulk_Editor {
 						
 						$ex_meta = isset($args['ex_meta']['value']) ? $args['ex_meta']['value'] : array();
 						
+						$post_copy = get_post($post_id);
+						
 						foreach( $metadata as $name => $values ){
 							
 							if( !empty($values) && !in_array($name,$ex_meta) ){
@@ -3155,7 +3157,7 @@ class Rew_Bulk_Editor {
 								
 								foreach( $values as $value ){
 									
-									$value = $this->parse_duplicated_meta($value,$name,array($old_prefix=>$post->ID));
+									$value = $this->parse_duplicated_meta($value,$name,$post_copy,$args,array($old_prefix=>$post->ID));
 									
 									if( !is_null($value) ){
 										
@@ -3188,7 +3190,7 @@ class Rew_Bulk_Editor {
 			
 			if( $level == 1 ){
 				
-				//dump('done');
+				dump('done');
 			}
 			
 			return $post_ids;
@@ -3204,7 +3206,7 @@ class Rew_Bulk_Editor {
 		));
 	}		
 
-	public function register_duplicated_meta($metadata){
+	public function register_duplicated_meta($metadata,$object){
 	
 		// get images
 		
@@ -3252,10 +3254,10 @@ class Rew_Bulk_Editor {
 			}
 		}
 		
-		return apply_filters('rewbe_before_duplicate_meta',$metadata);
+		return apply_filters('rewbe_before_duplicate_meta',$metadata,$object);
 	}
 	
-	public function parse_duplicated_meta($data,$name,$origin){
+	public function parse_duplicated_meta($data,$name,$object,$args,$origin){
 		
 		$value = null;
 		
@@ -3285,7 +3287,7 @@ class Rew_Bulk_Editor {
 			} 
 			else{
 				
-				$value = apply_filters('rewbe_duplicate_meta_value',maybe_unserialize($data),$name,$origin);
+				$value = apply_filters('rewbe_duplicate_meta_value',maybe_unserialize($data),$name,$object,$args,$origin);
 			}
 		}
 			
