@@ -83,7 +83,7 @@ class Rew_Bulk_Editor_Admin_API {
 		
 		// get attributes
 		
-		$style = ' style="'.( !empty($field['style']) ? $field['style'] : 'width:60%;margin-bottom:5px;' ).'"';
+		$style = ' style="'.( !empty($field['style']) ? $field['style'] : 'width:60%;' . ( empty($field['description']) ? 'margin-bottom:5px;' : '' )).'"';
 		
 		$disabled = ( ( isset($field['disabled']) && $field['disabled'] === true ) ? ' disabled="disabled"' : '' );
 
@@ -760,7 +760,7 @@ class Rew_Bulk_Editor_Admin_API {
 			
 				$html .= '<div class="item">';
 					
-					$html .= '<input style="width:30%;float:left;" type="text" value="' . $data['term']->name . '" disabled="disabled"/>';
+					$html .= '<input style="width:60%;float:left;" type="text" value="' . $data['term']->name . '" disabled="disabled"/>';
 
 					$html .= '<input type="hidden" value="' . $data['term']->term_id . '" name="'.$option_name.'[term][]"/>';
 					
@@ -911,7 +911,7 @@ class Rew_Bulk_Editor_Admin_API {
 			case 'select_multi':
 				if( !empty($field['description']) ){
 				
-					$html .= '<p class="description">' . $field['description'] . '</p>';
+					$html .= '<p class="description" style="margin-bottom:7px;font-style:italic;">' . $field['description'] . '</p>';
 				}
 			break;
 			default:
@@ -923,7 +923,7 @@ class Rew_Bulk_Editor_Admin_API {
 				
 				if( !empty($field['description']) ){
 					
-					$html .= '<span class="description">' . $field['description'] . '</span>' . PHP_EOL;
+					$html .= '<span class="description" style="display:block;margin-bottom:7px;font-style:italic;">' . $field['description'] . '</span>' . PHP_EOL;
 				}
 				
 				if ( !$post ){
