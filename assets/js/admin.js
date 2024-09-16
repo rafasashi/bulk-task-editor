@@ -668,15 +668,26 @@
 					},
 					success: function(prog){
 						
-						$('#rewbe_task_processed').empty().html( prog + '%' );
-					
-						if( prog < 100 ){
+						var response = prog;
+						
+						if( !isNaN(prog) && !isNaN(parseFloat(prog)) ){
 							
-							load_task_progess();
+							$('#rewbe_task_processed').empty().html(prog+'%');
+							
+							if( prog < 100 ){
+								
+								load_task_progess();
+							}
+							else{
+								
+								$("#rewbe_task_processed").removeClass("loading loading-right");
+							}
 						}
 						else{
 							
-							$("#rewbe_task_processed").removeClass("loading loading-right");
+							$('#rewbe_task_processed').empty().html('paused').removeClass("loading loading-right");
+							
+							console.log(prog);
 						}
 					},
 					error: function(xhr, status, error){
@@ -778,6 +789,60 @@
 		$("#rewbe_action").on('change', function(e){
 			
 			load_action_fields();
+		});
+		
+		// set action buttons
+		
+		$('.postbox').each(function() {
+			
+			var id = $(this).attr('id');
+			
+			var actionBtns = '';
+			
+			if( id == 'bulk-editor-task' ){
+				
+				actionBtns = $('<button/>', {
+					html: '<span class="dashicons dashicons-update" aria-hidden="true"></span>',
+					class: 'handle-order-higher',
+					click: function(e) {
+						
+						e.preventDefault();
+						e.stopPropagation();
+						
+						load_action_fields();
+					}
+				});
+			}
+			else if( id == 'bulk-editor-process' ){
+				
+				actionBtns = $('<button/>', {
+					html: '<span class="dashicons dashicons-update" aria-hidden="true"></span>',
+					class: 'handle-order-higher',
+					click: function(e) {
+						
+						e.preventDefault();
+						e.stopPropagation();
+						
+						load_task_process();
+					}
+				});
+			}
+			else if ( id == 'bulk-editor-progress' ) {
+				
+				actionBtns = $('<button/>', {
+					html: '<span class="dashicons dashicons-update" aria-hidden="true"></span>',
+					class: 'handle-order-higher',
+					click: function(e) {
+						
+						e.preventDefault();
+						e.stopPropagation();
+						
+						load_task_progess();
+					}
+				});
+			}
+			
+			$(this).find('h2').append(actionBtns);
 		});
 	});
 	
