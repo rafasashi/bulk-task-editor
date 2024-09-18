@@ -111,6 +111,8 @@ class Rew_Bulk_Editor {
 	 */
 	public $script_suffix;
 	
+	public $rescheduled = false;
+	
 	public $sc_items = 1000;
 	
 	public $images = array();
@@ -660,6 +662,7 @@ class Rew_Bulk_Editor {
 					'options'     	=> $options,
 				);
 				
+				/*
 				$fields[]=array(
 				
 					'metabox' 		=> array('name'=>'bulk-editor-task'),
@@ -667,28 +670,38 @@ class Rew_Bulk_Editor {
 					'type'        	=> 'html',
 					'data'        	=> '<div id="rewbe_action_fields" data-type="post_type" class="loading"></div>',
 				);
+				*/
+				
+				if( $curr_action = $task[$this->_base.'action'] ){
+
+					if( $actions = $this->get_post_type_actions($task[$this->_base.'post_type'],$task) ){
+						
+						foreach( $actions as $action ){
+						
+							if( $curr_action == $action['id'] && !empty($action['fields']) ){
+								
+								foreach( $action['fields'] as $field ){
+									
+									$field['metabox'] = array('name'=>'bulk-editor-task');
+									
+									$fields[] = $field;
+								}
+							}
+						}
+					}
+				}
 				
 				// process
 				
-				$fields[]=array(
+				$fields[]= $this->get_process_items_field('post_type');
 				
-					'metabox' 		=> array('name'=>'bulk-editor-process'),
-					'id'        	=> $this->_base . 'process',
-					'type'        	=> 'html',
-					'data'     		=> '<div id="rewbe_task_process" data-type="post_type" class="loading"></div>',
-				);
+				$fields[]= $this->get_per_process_field($task);
 				
-				$fields[]=array(
-					
-					'metabox' 		=> array('name'=>'bulk-editor-process'),
-					'id'        	=> $this->_base . 'per_process',
-				);
+				$fields[]= $this->get_process_calling_field($task);
 				
-				$fields[]=array(
-					
-					'metabox' 		=> array('name'=>'bulk-editor-process'),
-					'id'        	=> $this->_base . 'call',
-				);
+				$fields[]= $this->get_process_status_field($task);
+				
+				// progress
 				
 				if( !empty($task[$this->_base.'action']) && $task[$this->_base.'action'] != 'none' ){
 					
@@ -699,30 +712,17 @@ class Rew_Bulk_Editor {
 					$fields[]=array(
 						
 						'metabox' 		=> array('name'=>'bulk-editor-progress'),
-						'id'		=> $this->_base . 'scheduled',
+						'id'		=> $this->_base . 'scheduler',
 						'label'		=> 'Scheduled',
 						'type'      => 'html',
 						'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-type="post_type" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
 					);
 					
-					$fields[]=array(
-						
-						'metabox' 		=> array('name'=>'bulk-editor-progress'),
-						'id'		=> $this->_base . 'processed',
-						'label'		=> 'Processed',
-						'type'      => 'html',
-						'data'      => '<span id="rewbe_task_processed" style="width:65px;display:block;">' . $task['rewbe_progress'] . '%</span>',
-					);
+					$fields[]= $this->get_progress_processed_field($task);
 				}
 				else{
 					
-					$fields[]=array(
-					
-						'metabox' 		=> array('name'=>'bulk-editor-progress'),
-						'id'          	=> 'progress-notice',
-						'type'        	=> 'html',
-						'data'        	=> '<i>Select a task and update</i>',
-					);
+					$fields[]= $this->get_progress_notice_field('Select a task and update');
 				}
 			}
 			else{
@@ -736,29 +736,11 @@ class Rew_Bulk_Editor {
 					'options'	  	=> $this->get_post_type_options(),
 				);
 				
-				$fields[]=array(
+				$fields[]= $this->get_action_notice_field('Select a post type and save');
 				
-					'metabox' 		=> array('name'=>'bulk-editor-task'),
-					'id'          	=> 'action-notice',
-					'type'        	=> 'html',
-					'data'        	=> '<i>Select a post type and save</i>',
-				);
+				$fields[]= $this->get_process_notice_field('Select a post type and save');
 				
-				$fields[]=array(
-				
-					'metabox' 		=> array('name'=>'bulk-editor-process'),
-					'id'          	=> 'process-notice',
-					'type'        	=> 'html',
-					'data'        	=> '<i>Select a post type and save</i>',
-				);
-				
-				$fields[]=array(
-				
-					'metabox' 		=> array('name'=>'bulk-editor-progress'),
-					'id'          	=> 'progress-notice',
-					'type'        	=> 'html',
-					'data'        	=> '<i>Select a post type and save</i>',
-				);
+				$fields[]= $this->get_progress_notice_field('Select a post type and save');
 			}
 				
 			return $fields;
@@ -1268,25 +1250,15 @@ class Rew_Bulk_Editor {
 				
 				// process
 				
-				$fields[]=array(
+				$fields[]= $this->get_process_items_field('taxonomy');
 				
-					'metabox' 		=> array('name'=>'bulk-editor-process'),
-					'id'        	=> $this->_base . 'process',
-					'type'        	=> 'html',
-					'data'     		=> '<div id="rewbe_task_process" data-type="taxonomy" class="loading"></div>',
-				);
+				$fields[]= $this->get_per_process_field($task);
+
+				$fields[]= $this->get_process_calling_field($task);
 				
-				$fields[]=array(
-					
-					'metabox' 		=> array('name'=>'bulk-editor-process'),
-					'id'        	=> $this->_base . 'per_process',
-				);
+				$fields[]= $this->get_process_status_field($task);
 				
-				$fields[]=array(
-					
-					'metabox' 		=> array('name'=>'bulk-editor-process'),
-					'id'        	=> $this->_base . 'call',
-				);
+				// progress
 				
 				if( !empty($task[$this->_base.'action']) && $task[$this->_base.'action'] != 'none' ){
 					
@@ -1297,30 +1269,17 @@ class Rew_Bulk_Editor {
 					$fields[]=array(
 						
 						'metabox' 		=> array('name'=>'bulk-editor-progress'),
-						'id'		=> $this->_base . 'scheduled',
+						'id'		=> $this->_base . 'scheduler',
 						'label'		=> 'Scheduled',
 						'type'      => 'html',
 						'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-type="taxonomy" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
 					);
 					
-					$fields[]=array(
-						
-						'metabox' 		=> array('name'=>'bulk-editor-progress'),
-						'id'		=> $this->_base . 'processed',
-						'label'		=> 'Processed',
-						'type'      => 'html',
-						'data'      => '<span id="rewbe_task_processed" style="width:65px;display:block;">' . $task['rewbe_progress'] . '%</span>',
-					);
+					$fields[]= $this->get_progress_processed_field($task);
 				}
 				else{
 					
-					$fields[]=array(
-					
-						'metabox' 		=> array('name'=>'bulk-editor-progress'),
-						'id'          	=> 'progress-notice',
-						'type'        	=> 'html',
-						'data'        	=> '<i>Select a task and update</i>',
-					);
+					$fields[]= $this->get_progress_notice_field('Select a task and update');
 				}
 			}
 			else{
@@ -1334,29 +1293,11 @@ class Rew_Bulk_Editor {
 					'options'	  	=> $this->get_taxonomy_options(),
 				);
 				
-				$fields[]=array(
+				$fields[]= $this->get_action_notice_field('Select a taxonomy and save');
 				
-					'metabox' 		=> array('name'=>'bulk-editor-task'),
-					'id'          	=> 'action-notice',
-					'type'        	=> 'html',
-					'data'        	=> '<i>Select a taxonomy and save</i>',
-				);
+				$fields[]= $this->get_process_notice_field('Select a taxonomy and save');
 				
-				$fields[]=array(
-				
-					'metabox' 		=> array('name'=>'bulk-editor-process'),
-					'id'          	=> 'process-notice',
-					'type'        	=> 'html',
-					'data'        	=> '<i>Select a taxonomy and save</i>',
-				);
-				
-				$fields[]=array(
-				
-					'metabox' 		=> array('name'=>'bulk-editor-progress'),
-					'id'          	=> 'progress-notice',
-					'type'        	=> 'html',
-					'data'        	=> '<i>Select a taxonomy and save</i>',
-				);
+				$fields[]= $this->get_progress_notice_field('Select a taxonomy and save');
 			}
 				
 			return $fields;
@@ -1440,7 +1381,7 @@ class Rew_Bulk_Editor {
 			return $actions;
 			
 		},0,2);
-
+	
 		add_filter('rewbe_user-task_custom_fields', function($fields=array()){
 			
 			global $post;
@@ -1576,25 +1517,15 @@ class Rew_Bulk_Editor {
 			
 			// process
 			
-			$fields[]=array(
+			$fields[]= $this->get_process_items_field('user');
 			
-				'metabox' 		=> array('name'=>'bulk-editor-process'),
-				'id'        	=> $this->_base . 'process',
-				'type'        	=> 'html',
-				'data'     		=> '<div id="rewbe_task_process" data-type="user" class="loading"></div>',
-			);
+			$fields[]= $this->get_per_process_field($task);
+
+			$fields[]= $this->get_process_calling_field($task);
 			
-			$fields[]=array(
-				
-				'metabox' 		=> array('name'=>'bulk-editor-process'),
-				'id'        	=> $this->_base . 'per_process',
-			);
+			$fields[]= $this->get_process_status_field($task);
 			
-			$fields[]=array(
-				
-				'metabox' 		=> array('name'=>'bulk-editor-process'),
-				'id'        	=> $this->_base . 'call',
-			);
+			// progress
 			
 			if( !empty($task[$this->_base.'action']) && $task[$this->_base.'action'] != 'none' ){
 				
@@ -1605,30 +1536,17 @@ class Rew_Bulk_Editor {
 				$fields[]=array(
 					
 					'metabox' 		=> array('name'=>'bulk-editor-progress'),
-					'id'		=> $this->_base . 'scheduled',
+					'id'		=> $this->_base . 'scheduler',
 					'label'		=> 'Scheduled',
 					'type'      => 'html',
 					'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-type="user" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
 				);
 				
-				$fields[]=array(
-					
-					'metabox' 		=> array('name'=>'bulk-editor-progress'),
-					'id'		=> $this->_base . 'processed',
-					'label'		=> 'Processed',
-					'type'      => 'html',
-					'data'      => '<span id="rewbe_task_processed" style="width:65px;display:block;">' . $task['rewbe_progress'] . '%</span>',
-				);
+				$fields[]= $this->get_progress_processed_field($task);
 			}
 			else{
 				
-				$fields[]=array(
-				
-					'metabox' 		=> array('name'=>'bulk-editor-progress'),
-					'id'          	=> 'progress-notice',
-					'type'        	=> 'html',
-					'data'        	=> '<i>Select a task and update</i>',
-				);
+				$fields[]= $this->get_progress_notice_field('Select a task and update');
 			}
 				
 			return $fields;
@@ -1728,37 +1646,256 @@ class Rew_Bulk_Editor {
 			
 		},0,2);
 		
-		add_action('save_post', function($post_id,$post,$update){
-				
+		add_action('pre_post_update', function($post_id,$data){
+			
 			if( !defined('DOING_AUTOSAVE') || DOING_AUTOSAVE === false ){
 				
-				if( in_array($post->post_type,$this->get_task_types())){
+				if( in_array($data['post_type'],$this->get_task_types()) ){
 					
-					// delete schedule marks
+					// check changes
 					
-					global $wpdb;
+					$new_task = $this->sanitize_task_meta($_POST);
 					
-					$wpdb->query(
+					if( !empty($new_task[$this->_base.'process_status']) && $new_task[$this->_base.'process_status']  == 'reschedule' ){
 						
-						$wpdb->prepare("DELETE FROM $wpdb->postmeta WHERE meta_key = %s", $this->_base.$post_id)
-					);
+						$this->rescheduled = true;
+					}
+					else{
 
-					// reset scheduler
-					
-					update_post_meta($post_id,$this->_base . 'scheduled',0);
-					
-					// reset progress
-					
-					update_post_meta($post_id,$this->_base.'progress',0);
+						$old_task = $this->get_task_meta($post_id);
+				
+						$changes = $this->compare_arrays($old_task,$new_task,array(
+							
+							'rewbe_id',
+							'rewbe_action',
+							'rewbe_items',
+							'rewbe_progress',
+							'rewbe_process',
+							'rewbe_processed',
+							'rewbe_per_process',
+							'rewbe_process_status',
+							'rewbe_scheduled',
+							'rewbe_call',
+						));
+						
+						if( !empty($changes) ){
+							
+							$this->rescheduled = true;
+						}
+					}
 				}
 			}
 			
 			return $post_id;
 			
-		},99999,3);
+		},99999999,2);
+		
+		add_action('save_post', function($post_id,$post){
+			
+			if( !empty($this->rescheduled) ){
+				
+				// delete schedule marks
+				
+				global $wpdb;
+				
+				$wpdb->query(
+					
+					$wpdb->prepare("DELETE FROM $wpdb->postmeta WHERE meta_key = %s", $this->_base.$post_id)
+				);
+				
+				// process status
+				
+				update_post_meta($post_id,$this->_base . 'process_status','running');
+				
+				// reset scheduler
+				
+				update_post_meta($post_id,$this->_base . 'scheduled',0);
+				
+				// reset progress
+				
+				update_post_meta($post_id,$this->_base.'progress',0);
+			}
+			
+			return $post_id;
+			
+		},99999999,2);
 
 	} // End __construct ()
 	
+	public function get_per_process_field($task){
+		
+		return array(
+			
+			'metabox' 		=> array('name'=>'bulk-editor-process'),
+			'id'        	=> $this->_base . 'per_process',
+			'label'       	=> 'Items per process',
+			'type'        	=> 'number',
+			'default'       => 10,
+		);
+	}
+	
+	public function get_process_calling_field($task){
+		
+		$options = array(
+		
+			'ajax' 		=> 'AJAX',
+			//'cron' 	=> 'CRON',
+		);
+		
+		return array(
+			
+			'metabox' 		=> array('name'=>'bulk-editor-process'),
+			'id'        	=> $this->_base . 'call',
+			'label'       	=> 'Calling method',
+			'type'        	=> 'radio',
+			'options'       => $options,
+			'default'       => 'ajax',
+		);
+	}
+	
+	public function get_process_items_field($type){
+
+		return array(
+		
+			'metabox' 		=> array('name'=>'bulk-editor-process'),
+			'id'        	=> $this->_base . 'items',
+			'label'			=> 'Matching items',
+			'type'        	=> 'html',
+			'data'     		=> '<div id="rewbe_task_items" style="height:30px;" data-type="'.$type.'" class="loading"></div>',
+		);
+	}
+	
+	public function get_process_status_field($task){
+		
+		$status = !empty($task[$this->_base.'process_status']) ? $task[$this->_base.'process_status'] : 'running';
+		
+		$options = array(
+		
+			'running' 		=> $status == 'pause' ? 'Start' :'Running',
+			'pause' 		=> 'Pause',
+			'reschedule' 	=> 'Reschedule',
+		);
+		
+		return array(
+			
+			'metabox'	=> array('name'=>'bulk-editor-process'),
+			'id'       	=> $this->_base . 'process_status',
+			'label'   	=> 'Task Status',
+			'type'		=> 'radio',
+			'options'	=> $options,
+			'data'		=> $status == 'reschedule' ? 'running' : $status,
+		);
+	}
+	
+	public function get_action_notice_field($notice){
+		
+		return array(
+		
+			'metabox' 		=> array('name'=>'bulk-editor-task'),
+			'id'          	=> 'action-notice',
+			'type'        	=> 'html',
+			'data'        	=> '<i>'.$notice.'</i>',
+		);
+	}
+				
+	public function get_process_notice_field($notice){
+		
+		return array(
+		
+			'metabox' 		=> array('name'=>'bulk-editor-process'),
+			'id'          	=> 'process-notice',
+			'type'        	=> 'html',
+			'data'        	=> '<i>'.$notice.'</i>',
+		);
+	}
+	
+	public function get_progress_notice_field($notice){
+		
+		return array(
+		
+			'metabox' 		=> array('name'=>'bulk-editor-progress'),
+			'id'          	=> 'progress-notice',
+			'type'        	=> 'html',
+			'data'        	=> '<i>'.$notice.'</i>',
+		);
+	}
+	
+	public function get_progress_processed_field($task){
+	
+		if( !empty($task[$this->_base.'process_status']) && $task[$this->_base.'process_status']  == 'pause' ){
+			
+			if( is_numeric($task['rewbe_progress']) ){
+				
+				$data = $task['rewbe_progress'] . '%';
+			}
+			else{
+				
+				$data = '0%';
+			}
+		}
+		elseif( is_numeric($task['rewbe_progress']) && $task['rewbe_progress'] >= 100 ){
+			
+			$data = '100%';
+		}
+		else{
+			
+			$data = '<span id="rewbe_task_processed" style="width:65px;display:block;">' . ( is_numeric($task['rewbe_progress']) ? $task['rewbe_progress'] : 0 ) . '%</span>';
+		}
+		
+		return array(
+			
+			'metabox' 	=> array('name'=>'bulk-editor-progress'),
+			'id'		=> $this->_base . 'processor',
+			'label'		=> 'Processed',
+			'type'      => 'html',
+			'data'      => $data,
+		);
+	}
+
+	public function compare_arrays($oldArray,$newArray,$ignoreKeys=array()) {
+
+		$changes = array();
+
+		foreach( $oldArray as $key => $value ){
+			
+			if( in_array($key,$ignoreKeys) ){
+				
+				continue;
+			}
+
+			if( !array_key_exists($key,$newArray) ){
+				
+				if( !empty($value) ){
+				
+					$changes['removed'][$key] = $value;
+				}
+			}
+			elseif( $newArray[$key] !== $value ){
+				
+				$changes['changed'][$key] = array(
+				
+					'old' 	=> $value,
+					'new'	=> $newArray[$key],
+				);
+			}
+		}
+
+		foreach( $newArray as $key => $value ){
+			
+			if( in_array($key,$ignoreKeys) ){
+				
+				continue;
+			}
+
+			if( !array_key_exists($key,$oldArray) ){
+				
+				$changes['added'][$key] = $value;
+			}
+		}
+
+		return $changes;
+	}
+
 	public function get_duplicate_prefix_options(){
 		
 		global $wpdb;
@@ -1972,16 +2109,25 @@ class Rew_Bulk_Editor {
 		return $post_statuses;
 	}
 	
-	public function sanitize_task_meta($task){
-	
-		array_walk_recursive($task, function(&$value){
-			
-			if( is_string($value) ){
-				
-				$value = sanitize_text_field($value);
-			}
-		});
+	public function sanitize_task_meta($meta,$level=1){
 		
+		$task=array();
+		
+		foreach($meta as $key => $value){
+			
+			if( strpos($key,'rewbe_') === 0 || $level > 1 ){
+				
+				if( is_array($value) ){
+					
+					$task[$key] = $this->sanitize_task_meta($value,$level+1);
+				}
+				elseif( is_string($value) ){
+					
+					$task[$key] = sanitize_meta($key,$value,'post');
+				}
+			}
+		}
+
 		return $task;
 	}
 	
@@ -2421,38 +2567,14 @@ class Rew_Bulk_Editor {
 			
 			// render fields
 
-			$this->admin->display_meta_box_field(array(
+			$this->admin->display_field(array(
 			
 				'id'        	=> $this->_base . 'matching',
-				'label'       	=> 'Matching items',
 				'type'        	=> 'number',
 				'data'      	=> $total_items,
 				'default'		=> 0,
 				'disabled'		=> true,
 				
-			),$post);
-			
-			$this->admin->display_meta_box_field(array(
-			
-				'id'        	=> $this->_base . 'per_process',
-				'label'       	=> 'Items per process',
-				'type'        	=> 'number',
-				'default'       => 10,
-			
-			),$post);
-
-			$this->admin->display_meta_box_field(array(
-			
-				'id'        	=> $this->_base . 'call',
-				'label'       	=> 'Calling method',
-				'type'        	=> 'radio',
-				'options'       => array(
-				
-					'ajax' 	=> 'AJAX',
-					//'cron' 	=> 'CRON',
-				),
-				'default'       => 'ajax',
-			
 			),$post);
 		}
 

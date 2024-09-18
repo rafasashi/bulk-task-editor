@@ -166,7 +166,7 @@
 				
 				$(this).closest('.input-group-row').remove();
 				
-				load_task_process();
+				load_task_items();
 			});	
 		}
 		
@@ -223,7 +223,7 @@
 				
 				$(this).closest('.input-group-row').remove();
 				
-				load_task_process();
+				load_task_items();
 			});	
 		}
 		
@@ -260,7 +260,7 @@
 				
 				$(this).closest('.input-group-row').remove();
 				
-				load_task_process();
+				load_task_items();
 			});	
 		}
 		
@@ -281,7 +281,7 @@
 				
 				$(this).parent().remove();
 				
-				load_task_process();
+				load_task_items();
 			});
 
 			// Handle the click of one suggestion
@@ -439,7 +439,7 @@
 				
 				$(this).parent().remove();
 				
-				load_task_process();
+				load_task_items();
 			});
 
 			// Handle the click of one suggestion
@@ -569,9 +569,9 @@
 		
 		// task process
 		
-		function load_task_process(){
+		function load_task_items(){
 			
-			$("#rewbe_task_process").empty().addClass("loading");
+			$("#rewbe_task_items").empty().addClass("loading");
 				
 			clearTimeout(processing);
 			
@@ -587,7 +587,7 @@
 					},
 				}).done(function( data ) {
 					
-					$("#rewbe_task_process").empty().removeClass("loading").html(data);
+					$("#rewbe_task_items").empty().removeClass("loading").html(data);
 				});
 
 			},100);
@@ -595,11 +595,11 @@
 		
 		var processing;
 		
-		load_task_process();
+		load_task_items();
 		
 		$('#bulk-editor-filters').on('change', 'input, select, textarea', function() {
 			
-			load_task_process();
+			load_task_items();
 		});
 		
 		function load_task_schedule(){
@@ -685,7 +685,7 @@
 						}
 						else{
 							
-							$('#rewbe_task_processed').empty().html('paused').removeClass("loading loading-right");
+							$('#rewbe_task_processed').empty().html('<i>Check the console log</i>').removeClass("loading loading-right");
 							
 							console.log(prog);
 						}
@@ -719,17 +719,22 @@
 		
 		function load_action_fields(){
 			
-			$("#rewbe_action_fields").empty().addClass("loading");
-			
 			clearTimeout(selecting);
-				
-			var type = $('#rewbe_action_fields').data('type');
 			
 			var post_id 	= $("#post_ID").val();
 			var bulk_action = $("#rewbe_action").val();
 			
 			selecting = setTimeout(function() {
 
+				if( $("#rewbe_action_fields").length == 0 ){
+					
+					$('#bulk-editor-task .form-field').not(':first').remove();
+					
+					$('#bulk-editor-task .form-field:first').after('<div id="rewbe_action_fields"></div>')
+				}
+				
+				$("#rewbe_action_fields").empty().addClass("loading");
+				
 				$.ajax({
 					url : ajaxurl,
 					type: "GET",
@@ -783,9 +788,7 @@
 		}
 		
 		var selecting;
-		
-		load_action_fields();
-		
+
 		$("#rewbe_action").on('change', function(e){
 			
 			load_action_fields();
@@ -823,11 +826,11 @@
 						e.preventDefault();
 						e.stopPropagation();
 						
-						load_task_process();
+						load_task_items();
 					}
 				});
 			}
-			else if ( id == 'bulk-editor-progress' ) {
+			else if ( id == 'bulk-editor-progress' && $('#rewbe_task_processed').length > 0 ) {
 				
 				actionBtns = $('<button/>', {
 					html: '<span class="dashicons dashicons-update" aria-hidden="true"></span>',

@@ -157,7 +157,7 @@ class Rew_Bulk_Editor_Admin_API {
 						$checked = 'checked="checked"';
 					}
 					
-					$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" ' . $checked . '/>' . "\n";
+					$html .= '<label for="' . esc_attr( $field['id'] ) . '" class="checkbox"'.$style.'><input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" ' . $checked . '/> ' . esc_html( $field['description'] ) . '</label>';
 				
 				$html .='</div>';
 				
@@ -507,7 +507,7 @@ class Rew_Bulk_Editor_Admin_API {
 											'value' 	=> isset($data['value'][$e]) 	? $data['value'][$e] 	: '',
 											'position' 	=> isset($data['position'][$e]) ? $data['position'][$e] : '',
 											'period' 	=> isset($data['period'][$e]) 	? $data['period'][$e] 	: '',
-											'from' 	=> isset($data['from'][$e]) 	? $data['from'][$e] 	: '',
+											'from' 		=> isset($data['from'][$e]) 	? $data['from'][$e] 	: '',
 											'limit' 	=> isset($data['limit'][$e]) 	? $data['limit'][$e] 	: '',
 										),
 									
@@ -541,6 +541,7 @@ class Rew_Bulk_Editor_Admin_API {
 						'type'		=> 'select',
 						'options'	=> $field['columns'],
 						'data'		=> $data['column'],
+						'style'		=> 'width:15%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -551,6 +552,7 @@ class Rew_Bulk_Editor_Admin_API {
 						'type'		=> 'select',
 						'options'	=> $this->get_date_position_options(),
 						'data'		=> $data['position'],
+						'style'		=> 'width:15%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -560,6 +562,7 @@ class Rew_Bulk_Editor_Admin_API {
 						'name'	=> $option_name.'[from][]',
 						'type'	=> 'hidden',
 						'data'	=> '',
+						'style'	=> 'width:15%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -569,7 +572,7 @@ class Rew_Bulk_Editor_Admin_API {
 						'name' 	=> $option_name.'[value][]',
 						'type'	=> 'date',
 						'data'	=> $data['value'],
-						'style'	=> 'width:258px;',
+						'style'	=> 'width:31%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -589,6 +592,7 @@ class Rew_Bulk_Editor_Admin_API {
 						'type'		=> 'select',
 						'options'	=> $this->get_boundary_options(),
 						'data' 		=> $data['limit'],
+						'style'		=> 'width:15%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -616,6 +620,7 @@ class Rew_Bulk_Editor_Admin_API {
 						'type'		=> 'select',
 						'options'	=> $field['columns'],
 						'data'		=> $data['column'],
+						'style'		=> 'width:15%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -626,6 +631,7 @@ class Rew_Bulk_Editor_Admin_API {
 						'type'		=> 'select',
 						'options'	=> $this->get_date_position_options(),
 						'data'		=> $data['position'],
+						'style'		=> 'width:15%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -637,7 +643,7 @@ class Rew_Bulk_Editor_Admin_API {
 						'min'	=> 1,
 						'step'	=> 1,
 						'data'	=> $data['value'],
-						'style'	=> 'width:60px;',
+						'style'	=> 'width:10%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -656,6 +662,7 @@ class Rew_Bulk_Editor_Admin_API {
 							'years' 	=> 'year(s)',
 						),
 						'data'	=> $data['period'],
+						'style'	=> 'width:10%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -670,6 +677,7 @@ class Rew_Bulk_Editor_Admin_API {
 							'from_now' 	=> 'from now',
 						),
 						'data'	=> $data['from'],
+						'style'	=> 'width:10%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -679,7 +687,8 @@ class Rew_Bulk_Editor_Admin_API {
 						'name' 		=> $option_name.'[limit][]',
 						'type'		=> 'select',
 						'options'	=> $this->get_boundary_options(),
-						'data' => $data['limit'],
+						'data' 		=> $data['limit'],
+						'style'		=> 'width:15%;margin-bottom:5px;',
 					
 					),null,false);
 					
@@ -905,7 +914,9 @@ class Rew_Bulk_Editor_Admin_API {
 		}
 
 		switch ( $field['type'] ) {
-
+			
+			case 'checkbox':
+			break;
 			case 'checkbox_multi':
 			case 'radio':
 			case 'select_multi':
@@ -1171,7 +1182,7 @@ class Rew_Bulk_Editor_Admin_API {
 		if ( ! is_array( $field ) || 0 === count( $field ) || empty($field['type'])  ) {
 			return;
 		}
-
+		
 		$html = '<div class="form-field" style="margin:10px 0;">';
 			
 			if( !empty($field['label']) ){
