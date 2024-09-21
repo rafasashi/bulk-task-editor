@@ -157,8 +157,15 @@ class Rew_Bulk_Editor_Admin_API {
 						$checked = 'checked="checked"';
 					}
 					
-					$html .= '<label for="' . esc_attr( $field['id'] ) . '" class="checkbox"'.$style.'><input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" ' . $checked . '/> ' . esc_html( $field['description'] ) . '</label>';
-				
+					if( !empty($field['description']) ){
+					
+						$html .= '<label for="' . esc_attr( $field['id'] ) . '" class="checkbox"'.$style.'><input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" ' . $checked . '/> ' . esc_html( $field['description'] ) . '</label>';
+					}
+					else{
+						
+						$html .= '<input id="' . esc_attr( $field['id'] ) . '" type="' . esc_attr( $field['type'] ) . '" name="' . esc_attr( $option_name ) . '" ' . $checked . '/>';
+					}
+					
 				$html .='</div>';
 				
 			break;
