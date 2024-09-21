@@ -662,16 +662,6 @@ class Rew_Bulk_Editor {
 					'options'     	=> $options,
 				);
 				
-				/*
-				$fields[]=array(
-				
-					'metabox' 		=> array('name'=>'bulk-editor-task'),
-					'id'          	=> 'action_fields',
-					'type'        	=> 'html',
-					'data'        	=> '<div id="rewbe_action_fields" data-type="post_type" class="loading"></div>',
-				);
-				*/
-				
 				if( $curr_action = $task[$this->_base.'action'] ){
 
 					if( $actions = $this->get_post_type_actions($task[$this->_base.'post_type'],$task) ){
@@ -1243,13 +1233,24 @@ class Rew_Bulk_Editor {
 					'options'     	=> $options,
 				);
 				
-				$fields[]=array(
-				
-					'metabox' 		=> array('name'=>'bulk-editor-task'),
-					'id'          	=> 'action_fields',
-					'type'        	=> 'html',
-					'data'        	=> '<div id="rewbe_action_fields" data-type="taxonomy" class="loading"></div>',
-				);
+				if( $curr_action = $task[$this->_base.'action'] ){
+
+					if( $actions = $this->get_taxonomy_actions($task[$this->_base.'taxonomy'],$task) ){
+						
+						foreach( $actions as $action ){
+						
+							if( $curr_action == $action['id'] && !empty($action['fields']) ){
+								
+								foreach( $action['fields'] as $field ){
+									
+									$field['metabox'] = array('name'=>'bulk-editor-task');
+									
+									$fields[] = $field;
+								}
+							}
+						}
+					}
+				}
 				
 				// process
 				
@@ -1476,7 +1477,7 @@ class Rew_Bulk_Editor {
 			
 			// actions 
 			
-			$actions = $this->get_user_actions();
+			$actions = $this->get_user_actions($task);
 			
 			$options = array('none' => 'None');
 		
@@ -1510,13 +1511,24 @@ class Rew_Bulk_Editor {
 				'options'     	=> $options,
 			);
 			
-			$fields[]=array(
-			
-				'metabox' 		=> array('name'=>'bulk-editor-task'),
-				'id'          	=> 'action_fields',
-				'type'        	=> 'html',
-				'data'        	=> '<div id="rewbe_action_fields" data-type="user" class="loading"></div>',
-			);
+			if( $curr_action = $task[$this->_base.'action'] ){
+
+				if( $actions = $this->get_user_actions($task) ){
+					
+					foreach( $actions as $action ){
+					
+						if( $curr_action == $action['id'] && !empty($action['fields']) ){
+							
+							foreach( $action['fields'] as $field ){
+								
+								$field['metabox'] = array('name'=>'bulk-editor-task');
+								
+								$fields[] = $field;
+							}
+						}
+					}
+				}
+			}
 			
 			// process
 			
