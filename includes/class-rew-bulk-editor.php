@@ -699,14 +699,7 @@ class Rew_Bulk_Editor {
 					
 					$sc_steps = ceil($total/$this->sc_items);
 					
-					$fields[]=array(
-						
-						'metabox' 		=> array('name'=>'bulk-editor-progress'),
-						'id'		=> $this->_base . 'scheduler',
-						'label'		=> 'Scheduled',
-						'type'      => 'html',
-						'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-type="post_type" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
-					);
+					$fields[]= $this->get_progress_scheduled_field('post_type',$task,$sc_steps);
 					
 					$fields[]= $this->get_progress_processed_field($task);
 				}
@@ -1270,14 +1263,7 @@ class Rew_Bulk_Editor {
 					
 					$sc_steps = ceil($total/$this->sc_items);
 					
-					$fields[]=array(
-						
-						'metabox' 		=> array('name'=>'bulk-editor-progress'),
-						'id'		=> $this->_base . 'scheduler',
-						'label'		=> 'Scheduled',
-						'type'      => 'html',
-						'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-type="taxonomy" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
-					);
+					$fields[]= $this->get_progress_scheduled_field('taxonomy',$task,$sc_steps);
 					
 					$fields[]= $this->get_progress_processed_field($task);
 				}
@@ -1548,14 +1534,7 @@ class Rew_Bulk_Editor {
 				
 				$sc_steps = ceil($total/$this->sc_items);
 				
-				$fields[]=array(
-					
-					'metabox' 		=> array('name'=>'bulk-editor-progress'),
-					'id'		=> $this->_base . 'scheduler',
-					'label'		=> 'Scheduled',
-					'type'      => 'html',
-					'data'      => !empty($task[$this->_base.'scheduled']) ? '100%' : '<span id="rewbe_task_scheduled" data-type="user" data-steps="'.$sc_steps.'" style="width:65px;display:block;">0%</span>',
-				);
+				$fields[]= $this->get_progress_scheduled_field('user',$task,$sc_steps);
 				
 				$fields[]= $this->get_progress_processed_field($task);
 			}
@@ -1717,10 +1696,6 @@ class Rew_Bulk_Editor {
 					$wpdb->prepare("DELETE FROM $wpdb->postmeta WHERE meta_key = %s", $this->_base.$post_id)
 				);
 				
-				// process status
-				
-				update_post_meta($post_id,$this->_base . 'process_status','running');
-				
 				// reset scheduler
 				
 				update_post_meta($post_id,$this->_base . 'scheduled',0);
@@ -1834,6 +1809,22 @@ class Rew_Bulk_Editor {
 		);
 	}
 	
+	public function get_progress_scheduled_field($type,$task,$steps){
+	
+		$prog = !empty($task[$this->_base.'scheduled']) ? 100 : 0;
+		
+		$status = !empty($task[$this->_base.'process_status']) ? $task[$this->_base.'process_status'] : 'running';
+		
+		return array(
+			
+			'metabox' 		=> array('name'=>'bulk-editor-progress'),
+			'id'		=> $this->_base . 'scheduler',
+			'label'		=> 'Scheduled',
+			'type'      => 'html',
+			'data'      => $prog == 100 || $status == 'pause' ? $prog . '%' : '<span id="rewbe_task_scheduled" data-type="'.$type.'" data-steps="'.$steps.'" style="width:65px;display:block;">' . $prog . '%</span>',
+		);
+	}
+		
 	public function get_progress_processed_field($task){
 	
 		if( !empty($task[$this->_base.'process_status']) && $task[$this->_base.'process_status']  == 'pause' ){
