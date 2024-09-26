@@ -917,23 +917,7 @@ class Rew_Bulk_Editor {
 				
 				if( $post_type->hierarchical ){
 					
-					$actions[] = array(
-					
-						'label' 	=> 'Edit Parent',
-						'id' 		=> 'edit_parent',
-						'fields' 	=> array(
-							array(			
-								
-								'name'			=> 'id',
-								'type'      	=> 'number',
-								'min'      		=> 1,
-								'min'      		=> 0,
-								'max'      		=> 1000000000000,
-								'style'			=> 'width:120px;',
-								'default' 		=> 0,
-							),
-						),
-					);
+					$actions[] = $this->get_parent_action_field();
 				}
 						
 				// author
@@ -1301,23 +1285,8 @@ class Rew_Bulk_Editor {
 			
 			if( $taxonomy->hierarchical ){
 				
-				$actions[] = array(
+				$actions[] = $this->get_parent_action_field();
 				
-					'label' 	=> 'Edit Parent',
-					'id' 		=> 'edit_parent',
-					'fields' 	=> array(
-						array(			
-							
-							'name'			=> 'id',
-							'type'      	=> 'number',
-							'min'      		=> 1,
-							'min'      		=> 0,
-							'max'      		=> 1000000000000,
-							'style'			=> 'width:120px;',
-							'default' 		=> 0,
-						),
-					),
-				);
 			}
 			
 			// meta
@@ -1708,7 +1677,19 @@ class Rew_Bulk_Editor {
 			return $post_id;
 			
 		},99999999,2);
-
+		
+		// synch multisite terms
+		
+		
+		
+		add_filter('rewbe_update_default_term_parent_id', array($this,'synch_term_parent_id'),0,2);
+		
+		add_filter('rewbe_post_slug_updated', array($this,'synch_post_url'),0,1);
+		
+		add_filter('rewbe_term_slug_updated', array($this,'synch_term_url'),0,1);
+		
+		add_filter('edit_term',array($this,'synch_term_url'),10,1);
+	
 	} // End __construct ()
 	
 	public function get_per_process_field($task){
@@ -1756,12 +1737,12 @@ class Rew_Bulk_Editor {
 	
 	public function get_process_status_field($task){
 		
-		$status = !empty($task[$this->_base.'process_status']) ? $task[$this->_base.'process_status'] : 'running';
+		$status = !empty($task[$this->_base.'process_status']) ? $task[$this->_base.'process_status'] : 'pause';
 		
 		$options = array(
-		
-			'running' 		=> $status == 'pause' ? 'Start' :'Running',
+			
 			'pause' 		=> 'Pause',
+			'running' 		=> $status == 'pause' ? 'Start' :'Running',
 			'reschedule' 	=> 'Reschedule',
 		);
 		
@@ -1813,7 +1794,7 @@ class Rew_Bulk_Editor {
 	
 		$prog = !empty($task[$this->_base.'scheduled']) ? 100 : 0;
 		
-		$status = !empty($task[$this->_base.'process_status']) ? $task[$this->_base.'process_status'] : 'running';
+		$status = !empty($task[$this->_base.'process_status']) ? $task[$this->_base.'process_status'] : 'pause';
 		
 		return array(
 			
@@ -1856,7 +1837,29 @@ class Rew_Bulk_Editor {
 			'data'      => $data,
 		);
 	}
+	
+	public function get_parent_action_field(){
 
+		return array(
+		
+			'label' 	=> 'Edit Parent',
+			'id' 		=> 'edit_parent',
+			'fields' 	=> array(
+				array(			
+					
+					'name'			=> 'id',
+					'label'			=> 'Parent ID',
+					'type'      	=> 'number',
+					'min'      		=> 1,
+					'min'      		=> 0,
+					'max'      		=> 1000000000000,
+					'style'			=> 'width:120px;',
+					'default' 		=> 0,
+				),
+			),
+		);
+	}
+				
 	public function compare_arrays($oldArray,$newArray,$ignoreKeys=array()) {
 
 		$changes = array();
@@ -2282,6 +2285,11 @@ class Rew_Bulk_Editor {
 			elseif( empty($action['capability']) || current_user_can($action['capability']) ){
 				
 				$action_id = sanitize_title($action['id']);
+				
+				if( !empty($action['label']) ){
+					
+					$action['label'] = ucwords($action['label']);
+				}
 				
 				if( is_array($action['fields']) && !empty($action['fields']) ){
 					
@@ -3018,6 +3026,18 @@ class Rew_Bulk_Editor {
 		}
 	}
 	
+	public function set_wpdb_prefix($prefix){
+		
+		global $wpdb;
+		
+		$wpdb->set_prefix($prefix,true);
+		
+		wp_cache_flush();
+						
+		remove_all_filters('option_siteurl');
+		remove_all_filters('option_home');
+	}
+
 	public function duplicate_post($post,$args,$level=1){
 	
 		$postarr = array();
@@ -3123,7 +3143,7 @@ class Rew_Bulk_Editor {
 				
 				if( !empty($new_prefix) ){
 					
-					$wpdb->set_prefix($new_prefix,true);
+					$this->set_wpdb_prefix($new_prefix);
 				}
 			}
 			
@@ -3491,7 +3511,7 @@ class Rew_Bulk_Editor {
 			
 			if( !empty($old_prefix) ){
 			
-				$wpdb->set_prefix($old_prefix,true);
+				$this->set_wpdb_prefix($old_prefix);
 			}
 
 			do_action('rewbe_duplicated_posts',$post_ids,$args,$level);
@@ -3696,11 +3716,16 @@ class Rew_Bulk_Editor {
 			
 			if( isset($statuses[$post_status]) ){
 				
-				$this->update_post(array(
+				$post_id = $this->update_post(array(
 					
 					'ID' 			=> $post->ID,
 					'post_status' 	=> $post_status,
 				));
+				
+				if( !empty($post_id) && $post_status != $post->post_status && $post_status == 'publish' ){
+					
+					do_action('rewbe_post_slug_updated',$post_id);
+				}
 			}
 		}
 	}
@@ -3864,7 +3889,7 @@ class Rew_Bulk_Editor {
 				
 				wp_update_term($term->term_id,$term->taxonomy,array(
 					
-					'parent' => $parent_id
+					'parent' => apply_filters('rewbe_update_default_term_parent_id',$parent_id,$term),
 				));
 			}
 		}
@@ -4329,24 +4354,31 @@ class Rew_Bulk_Editor {
 
 		// filters parent
 		
-		if( !empty($task['rewbe_term_parent']) ){
-		
-			$ids = array_filter(array_map('intval',explode(',',$task['rewbe_term_parent'])), function($id){
-				
-				return ( $id > 0 );
-			});
+		if( isset($task['rewbe_term_parent']) ){
 			
-			if( !empty($ids) ){
+			if( $task['rewbe_term_parent'] === '0' ){
 				
-				$operator = !empty($task['rewbe_term_parent_op']) ? sanitize_title($task['rewbe_term_parent_op']) : 'in';
+				$args['parent'] = 0;
+			}
+			else{
 				
-				if( $operator == 'in' ){
-				
-					$args['parent'] = $ids;
-				}
-				else{
+				$ids = array_filter(array_map('intval',explode(',',$task['rewbe_term_parent'])), function($id){
 					
-					//does not exist yet
+					return ( $id > 0 );
+				});
+				
+				if( !empty($ids) ){
+					
+					$operator = !empty($task['rewbe_term_parent_op']) ? sanitize_title($task['rewbe_term_parent_op']) : 'in';
+					
+					if( $operator == 'in' ){
+					
+						$args['parent'] = $ids;
+					}
+					else{
+						
+						//does not exist yet
+					}
 				}
 			}
 		}
@@ -4585,6 +4617,171 @@ class Rew_Bulk_Editor {
 		}
 		
 		wp_die();
+	}
+	
+	public function synch_term_parent_id($parent_id,$term){
+		
+		if( $origin = get_term_meta($term->term_id,'rewbe_origin',true) ){
+			
+			global $wpdb;
+			
+			$orig_prefix = key($origin);
+			
+			$orig_id = $origin[$orig_prefix];
+		
+			$old_prefix = $wpdb->prefix;
+			
+			if( $old_prefix != $orig_prefix ){
+				
+				$this->set_wpdb_prefix($orig_prefix);
+				
+				if( $orig_term = get_term($orig_id) ){
+					
+					if( !empty($orig_term->parent) ){
+						
+						$orig_term_parent = get_term($orig_term->parent);
+					}
+				}
+				
+				$this->set_wpdb_prefix($old_prefix);
+				
+				if( !empty($orig_term_parent) ){
+					
+					// get parent term
+					
+					if( $parents = get_terms(array(
+					
+						'taxonomy'   	=> $term->taxonomy,
+						'hide_empty' 	=> false,
+						'orderby'    	=> 'id',
+						'order'      	=> 'ASC',
+						'meta_query'	=> array(
+						
+							array(
+								
+								'key'     	=> 'rewbe_origin',
+								'value'		=> serialize(array(
+								
+									$orig_prefix => $orig_term_parent->term_id,
+								)),
+								'compare' 	=> '=',
+							)
+						)
+					
+					)) ){
+						
+						$parent_id = $parents[0]->term_id;
+					}
+				}
+			}
+		}
+		
+		return $parent_id;
+	}
+
+	public function synch_post_url($post_id){
+		
+		$post = get_post($post_id);
+		
+		if( !empty($post) && class_exists('Language_Switcher') ){
+			
+			if( $origin = get_post_meta($post_id,'rewbe_origin',true) ){
+				
+				if( $languages = get_post_meta($post_id,'lsw_language_switcher',true) ){
+					
+					global $wpdb;
+					
+					$orig_prefix = key($origin);
+					
+					$orig_id = $origin[$orig_prefix];
+				
+					$old_prefix = $wpdb->prefix;
+					
+					if( $old_prefix != $orig_prefix && !empty($languages['urls']) ){
+						
+						if( $post->post_status == 'publish' ){
+							
+							// udpate permalink
+							
+							$languages['urls'][$languages['main']] = apply_filters('rew_prod_url',get_permalink($post_id));
+						}
+						
+						$this->set_wpdb_prefix($orig_prefix);
+						
+						if( $orig_languages = get_post_meta($orig_id,'lsw_language_switcher',true) ){
+							
+							if( !empty($orig_languages['urls']) ){
+								
+								foreach( $languages['urls'] as $lang => $url ){
+									
+									if( $lang != $orig_languages['main']){
+									
+										$orig_languages['urls'][$lang] = $url;
+									}
+								}
+								
+								update_post_meta($orig_id,'lsw_language_switcher',$orig_languages);
+							}
+						}
+						
+						$this->set_wpdb_prefix($old_prefix);
+					}
+				}
+			}
+		}
+		
+		return $updated;
+		
+	}
+	
+	public function synch_term_url($updated){
+		
+		$term_id = !empty($updated['term_id']) ? intval($updated['term_id']) : intval($updated);
+		
+		if( !empty($term_id) && class_exists('Language_Switcher') ){
+			
+			if( $origin = get_term_meta($term_id,'rewbe_origin',true) ){
+				
+				if( $languages = get_term_meta($term_id,'language_switcher',true) ){
+					
+					global $wpdb;
+					
+					$orig_prefix = key($origin);
+					
+					$orig_id = $origin[$orig_prefix];
+				
+					$old_prefix = $wpdb->prefix;
+					
+					if( $old_prefix != $orig_prefix && !empty($languages['urls']) ){
+						
+						$languages['urls'][$languages['main']] = apply_filters('rew_prod_url',get_term_link($term_id));
+						
+						$this->set_wpdb_prefix($orig_prefix);
+						
+						if( $orig_languages = get_term_meta($orig_id,'language_switcher',true) ){
+							
+							if( !empty($orig_languages['urls']) ){
+								
+								foreach( $languages['urls'] as $lang => $url ){
+									
+									if( $lang != $orig_languages['main']){
+									
+										$orig_languages['urls'][$lang] = $url;
+									}
+								}
+								
+								update_term_meta($orig_id,'language_switcher',$orig_languages);
+							}
+						}
+						
+						$this->set_wpdb_prefix($old_prefix);
+					}
+				}
+			}
+		}
+		
+		return $updated;
+		
 	}
 	
 	/**
