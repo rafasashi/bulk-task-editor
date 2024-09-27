@@ -264,6 +264,8 @@ class Rew_Bulk_Editor_Admin_API {
 				
 				$input = !empty($field['input']) ? sanitize_title($field['input']) : 'text';
 				
+				$options = !empty($field['options']) ? $field['options'] : array();
+				
 				$html .= '<div id="'.$field['id'].'" class="arr-input">';
 					
 					$html .= ' <a href="#" class="add-input-group" data-target="'.$field['id'].'" style="line-height:40px;">Add Field</a>';

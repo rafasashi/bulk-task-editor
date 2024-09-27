@@ -174,7 +174,7 @@
 			
 			var id = "#" + $(this).attr('id');
 			
-			set_arr_field(id);
+			set_array_field(id);
 		});
 		
 		// meta input
@@ -573,6 +573,13 @@
 			
 			$("#rewbe_task_items").empty().addClass("loading");
 				
+			if( $('#rew_preview_items').length > 0 ){
+			
+				$('#rew_preview_items table').empty();
+	
+				$('#rew_preview_items').addClass('loading');
+			}
+			
 			clearTimeout(processing);
 			
 			processing = setTimeout(function() {
@@ -588,6 +595,8 @@
 				}).done(function( data ) {
 					
 					$("#rewbe_task_items").empty().removeClass("loading").html(data);
+					
+					set_preview_button();
 				});
 
 			},100);
@@ -847,6 +856,91 @@
 			
 			$(this).find('h2').append(actionBtns);
 		});
+		
+		// set preview button
+		
+		function set_preview_button(){
+			
+			var page = 1;
+						
+			if( $("#rew_preview_dialog").length == 0 ){
+				
+				$('body').append('<div id="rew_preview_dialog" title="Content Manager"><div id="rew_preview_items" class="loading"><table></table></div></div>');
+				
+				$("#rew_preview_dialog").dialog({
+				
+					autoOpen	: false,
+					
+					width		: Math.round($(window).width() * 0.5),  // 50% of current window width
+					height		: Math.round($(window).height() * 0.5), // 50% of current window height
+					minWidth	: 250,
+					minHeight	: 250,
+					resizable	: true,
+					position: {
+						my: "center",
+						at: "center",
+						of: window
+					},
+					create : function (event) {
+						
+						$(event.target).parent().css({ 
+						
+							'position'	: 'fixed', 
+							'left'		: 50, 
+							'top'		: 150
+						});
+						
+						load_task_preview(page);
+					},
+					close : function (event) {
+						
+						// do something
+					},
+				});
+			}
+			else{
+				
+				load_task_preview(page);
+			}
+			
+			$("#rew_preview_button").on('click', function(e){
+				
+				e.preventDefault();
+
+				$("#rew_preview_dialog").dialog('open');
+			});
+		}
+		
+		function load_task_preview(page){
+			
+			$.ajaxQueue({
+				
+				url : ajaxurl,
+				type: 'GET',
+				data: {
+					action 	: "render_task_preview",
+					task 	: $("#post").serializeObject(),
+					page	: page,
+				},
+				success: function(data){
+					
+					if( page == 1 ){
+						
+						$('#rew_preview_items table').empty().html(data);
+					}
+					else{
+						
+						$('#rew_preview_items table').append(data);
+					}
+				
+					$('#rew_preview_items').removeClass('loading');
+				},
+				error: function(xhr, status, error){
+					
+					console.error('Error loading preview ' + page + ': ' + error);
+				}
+			});
+		}
 	});
 	
 })(jQuery);

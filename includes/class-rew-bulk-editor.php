@@ -160,6 +160,7 @@ class Rew_Bulk_Editor {
 			
 			add_action('wp_ajax_render_task_action', array($this,'render_task_action') );
 			add_action('wp_ajax_render_task_process', array($this,'render_task_process') );
+			add_action('wp_ajax_render_task_preview', array($this,'render_task_preview') );
 			add_action('wp_ajax_render_task_schedule', array($this,'render_task_schedule') );
 			add_action('wp_ajax_render_task_progress', array($this,'render_task_progress') );
 			
@@ -729,11 +730,13 @@ class Rew_Bulk_Editor {
 			return $fields;
 		});	
 
-		add_action('rewbe_post_type_actions',function($actions,$post_type){
+		add_action('rewbe_post_type_actions',function($actions,$post_type,$task){
 			
 			if( $post_type = get_post_type_object($post_type) ){
 				
 				global $wpdb;
+				
+				$action = !empty($task['rewbe_action']) ? $task['rewbe_action'] : 'none';
 
 				$taxonomies = $this->get_post_type_taxonomies($post_type);
 
@@ -1018,7 +1021,7 @@ class Rew_Bulk_Editor {
 			
 			return $actions;
 			
-		},0,2);
+		},0,3);
 		
 		add_filter('rewbe_post_taxonomy_action_fields',function($fields,$taxonomy,$post_type){
 			
@@ -2391,7 +2394,16 @@ class Rew_Bulk_Editor {
 		
 		$screen = get_current_screen();
 		
-		if( in_array($screen->id,$this->get_task_types())){
+		if( in_array($screen->id,$this->get_task_types()) ){
+			
+			wp_dequeue_style('jquery-ui-core');
+			wp_dequeue_style('jquery-ui-style');
+
+			wp_register_style( 'jquery-ui-core', esc_url( $this->assets_url ) . 'css/jquery-ui.css', array(), $this->_version );
+			wp_enqueue_style( 'jquery-ui-core' );
+			
+			wp_register_style( 'jquery-ui-dialog', esc_url( $this->assets_url ) . 'css/jquery-ui-dialog.css', array('jquery-ui-core'), $this->_version );
+			wp_enqueue_style( 'jquery-ui-dialog' );
 			
 			wp_register_style( $this->_token . '-admin', esc_url( $this->assets_url ) . 'css/admin.css', array(), $this->_version . time() );
 			wp_enqueue_style( $this->_token . '-admin' );
@@ -2414,8 +2426,13 @@ class Rew_Bulk_Editor {
 		$screen = get_current_screen();
 		
 		if( in_array($screen->id,$this->get_task_types())){
-		
-			wp_register_script( $this->_token . '-admin', esc_url( $this->assets_url ) . 'js/admin.js', array( 'jquery' ), $this->_version . time(), true );
+			
+			//wp_deregister_script('jquery-ui-core');
+			
+			wp_register_script( 'jquery-ui-core', esc_url( $this->assets_url ) . 'js/jquery-ui.js', array('jquery'), $this->_version );
+			wp_enqueue_script( 'jquery-ui-core' );	
+			
+			wp_register_script( $this->_token . '-admin', esc_url( $this->assets_url ) . 'js/admin.js', array( 'jquery' ), $this->_version.time(), true );
 			wp_enqueue_script( $this->_token . '-admin' );
 		}
 		
@@ -2574,18 +2591,73 @@ class Rew_Bulk_Editor {
 			$post = get_post($post_id);
 			
 			$total_items = $this->count_task_items($post->post_type,$task);
-			
+
 			// render fields
 
 			$this->admin->display_field(array(
 			
-				'id'        	=> $this->_base . 'matching',
-				'type'        	=> 'number',
-				'data'      	=> $total_items,
-				'default'		=> 0,
-				'disabled'		=> true,
+				'id'		=> $this->_base . 'matching',
+				'type'		=> 'number',
+				'data'		=> $total_items,
+				'default'	=> 0,
+				'disabled'	=> true,
 				
 			),$post);
+			
+			if( $total_items > 0 ){
+				
+				$html = '<button id="rew_preview_button" class="button" style="margin-left:5px;">Preview</button>';
+				
+				$this->admin->display_field(array(
+				
+					'type'	=> 'html',
+					'data'	=> $html,
+					
+				),$post);
+			}
+		}
+
+		wp_die();
+	}
+
+	public function render_task_preview(){
+		
+		if( !empty($_GET['task']) && is_array($_GET['task']) ){
+			
+			$task = $_GET['task'];
+			
+			$page = intval($_GET['page']);
+			
+			$post_id = intval($task['post_ID']);
+			
+			$post = get_post($post_id);
+			
+			$rows = array_map(function($object){
+				
+				$html = '<a href="'.get_permalink($object->ID).'" target="_blank">';
+				
+					$html .= '#' . $object->ID . ' - ';
+				
+					$html .= $object->post_title;
+					
+				$html .= '</a>';
+				
+				return $html;
+				
+			},$this->retrieve_task_items($post->post_type,$task,100));
+			
+			foreach( $rows as $row ){
+				
+				echo '<tr>';
+					
+					echo '<td>';
+					
+						echo $row . PHP_EOL;
+						
+					echo '</td>';
+					
+				echo '</tr>';	
+			}
 		}
 
 		wp_die();
@@ -2681,6 +2753,10 @@ class Rew_Bulk_Editor {
 									
 									add_action('rewbe_do_post_edit_meta',array($this,'edit_post_meta'),10,2);
 								}
+								elseif( $action == 'remove_meta' ){
+									
+									add_action('rewbe_do_post_remove_meta',array($this,'remove_post_meta'),10,2);
+								}
 								elseif( strpos($action,'edit_tax_') === 0 ){
 									
 									$taxonomy =  substr($action,strlen('edit_tax_'));
@@ -2750,6 +2826,10 @@ class Rew_Bulk_Editor {
 									
 									add_action('rewbe_do_term_edit_meta',array($this,'edit_term_meta'),10,2);
 								}
+								elseif( $action == 'remove_meta' ){
+									
+									add_action('rewbe_do_term_remove_meta',array($this,'remove_term_meta'),10,2);
+								}
 								elseif( $action == 'delete_term' ){
 									
 									add_action('rewbe_do_term_delete_term',array($this,'delete_term'),10,2);
@@ -2813,6 +2893,10 @@ class Rew_Bulk_Editor {
 								elseif( $action == 'edit_meta' ){
 									
 									add_action('rewbe_do_user_edit_meta',array($this,'edit_user_meta'),10,2);
+								}
+								elseif( $action == 'remove_meta' ){
+									
+									add_action('rewbe_do_user_remove_meta',array($this,'remove_user_meta'),10,2);
 								}
 								
 								foreach ( $users as $user ){
@@ -3791,8 +3875,6 @@ class Rew_Bulk_Editor {
 		
 		if( !empty($args['data']['key']) ){
 			
-			$data = array();
-			
 			foreach( $args['data']['key'] as $i => $key ){
 				
 				if( isset($args['data']['value'][$i]) ){
@@ -4061,7 +4143,44 @@ class Rew_Bulk_Editor {
 		return $items;
 	}
 	
-	public function parse_post_task_parameters($task,$number=1,$paged=0){
+	public function retrieve_task_items($type,$task,$number=10,$paged=1,$fields='all'){
+		
+		$items = 0;
+		
+		if( $type == 'post-type-task' ){
+			
+			if( $args = $this->parse_post_task_parameters($task,$number,$paged,$fields) ){
+				
+				$query = new WP_Query($args);
+				
+				$items = $query->posts;
+			}
+		}
+		elseif( $type == 'taxonomy-task' ){
+			
+			if( $args = $this->parse_term_task_parameters($task,$number,$paged,$number,$fields) ){
+
+				$items = get_terms($args);
+			}
+		}
+		elseif( $type == 'user-task' ){
+			
+			if( $args = $this->parse_user_task_parameters($task,$number,$paged,$fields) ){
+				
+				$query = new WP_User_Query($args);
+				
+				$items = $query->get_results();
+			}
+		}
+		elseif( $type == 'data-task' ){
+			
+			
+		}
+		
+		return $items;
+	}
+	
+	public function parse_post_task_parameters($task,$number=1,$paged=0,$fields='ids'){
 		
 		if( $post_type = get_post_type_object(sanitize_text_field($task['rewbe_post_type'])) ){
 			
@@ -4072,7 +4191,7 @@ class Rew_Bulk_Editor {
 				'paged' 				=> $paged,
 				'order'					=> 'ASC',
 				'orderby'				=> 'ID',
-				'fields'				=> 'ids',
+				'fields'				=> $fields,
 				'ignore_sticky_posts' 	=> true,
 			);
 			
@@ -4283,7 +4402,7 @@ class Rew_Bulk_Editor {
 		return $args;
 	}
 
-	public function parse_term_task_parameters($task,$number=1,$paged=0,$per_page=10){
+	public function parse_term_task_parameters($task,$number=1,$paged=0,$per_page=10,$fields='ids'){
 		
 		$taxonomy = sanitize_text_field($task['rewbe_taxonomy']);
 		
@@ -4294,7 +4413,7 @@ class Rew_Bulk_Editor {
 			'offset ' 		=> $paged > 0 ? ($paged - 1) * $per_page : 0,
 			'order'			=> 'ASC',
 			'orderby'		=> 'id',
-			'fields'		=> 'ids',
+			'fields'		=> $fields,
 			'hide_empty' 	=> false,
 		);
 		
@@ -4381,14 +4500,14 @@ class Rew_Bulk_Editor {
 		return $args;
 	}
 
-	public function parse_user_task_parameters($task,$number=-1,$paged=1){
+	public function parse_user_task_parameters($task,$number=-1,$paged=1,$fields='ids'){
 		
 		$args = array(
 			
 			'number' 		=> $number,
 			'order'			=> 'ASC',
 			'orderby'		=> 'ID',
-			'fields'		=> 'ids',
+			'fields'		=> $fields,
 		);
 		
 		if( $number > 0 ){
