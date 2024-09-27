@@ -1433,86 +1433,100 @@ class Rew_Bulk_Editor {
 				'type'        	=> 'meta',
 			);
 			
-			// actions 
-			
-			$actions = $this->get_user_actions($task);
-			
-			$options = array('none' => 'None');
-		
-			foreach( $actions as $action ){
+			if( !empty($task) ){
 				
-				$options[$action['id']] = $action['label'];
+				// actions 
 				
-				if( $action['id'] = $task[$this->_base.'action'] ){
+				$actions = $this->get_user_actions($task);
+				
+				$options = array('none' => 'None');
+			
+				foreach( $actions as $action ){
 					
-					if( !empty($action['fields']) ){
+					$options[$action['id']] = $action['label'];
+					
+					if( $action['id'] = $task[$this->_base.'action'] ){
 						
-						foreach( $action['fields'] as $field ){
-							
-							// register without field
-							
-							$fields[]=array(
-							
-								'metabox' 	=> array('name'=>'bulk-editor-task'),
-								'id'        => $field['name'],
-							);
-						}
-					}
-				}
-			}
-			
-			$fields[]=array(
-			
-				'metabox' 		=> array('name'=>'bulk-editor-task'),
-				'id'          	=> $this->_base . 'action',
-				'type'        	=> 'select',
-				'options'     	=> $options,
-			);
-			
-			if( $curr_action = $task[$this->_base.'action'] ){
-
-				if( $actions = $this->get_user_actions($task) ){
-					
-					foreach( $actions as $action ){
-					
-						if( $curr_action == $action['id'] && !empty($action['fields']) ){
+						if( !empty($action['fields']) ){
 							
 							foreach( $action['fields'] as $field ){
 								
-								$field['metabox'] = array('name'=>'bulk-editor-task');
+								if( !empty($field['name']) ){
 								
-								$fields[] = $field;
+									// register without field
+									
+									$fields[]=array(
+									
+										'metabox' 	=> array('name'=>'bulk-editor-task'),
+										'id'        => $field['name'],
+									);
+								}
 							}
 						}
 					}
 				}
-			}
-			
-			// process
-			
-			$fields[]= $this->get_process_items_field('user');
-			
-			$fields[]= $this->get_per_process_field($task);
+				
+				$fields[]=array(
+				
+					'metabox' 		=> array('name'=>'bulk-editor-task'),
+					'id'          	=> $this->_base . 'action',
+					'type'        	=> 'select',
+					'options'     	=> $options,
+				);
+				
+				if( $curr_action = $task[$this->_base.'action'] ){
 
-			$fields[]= $this->get_process_calling_field($task);
-			
-			$fields[]= $this->get_process_status_field($task);
-			
-			// progress
-			
-			if( !empty($task[$this->_base.'action']) && $task[$this->_base.'action'] != 'none' ){
+					if( $actions = $this->get_user_actions($task) ){
+						
+						foreach( $actions as $action ){
+						
+							if( $curr_action == $action['id'] && !empty($action['fields']) ){
+								
+								foreach( $action['fields'] as $field ){
+									
+									$field['metabox'] = array('name'=>'bulk-editor-task');
+									
+									$fields[] = $field;
+								}
+							}
+						}
+					}
+				}
 				
-				$total = $this->count_task_items($post->post_type,$task);
+				// process
 				
-				$sc_steps = ceil($total/$this->sc_items);
+				$fields[]= $this->get_process_items_field('user');
 				
-				$fields[]= $this->get_progress_scheduled_field('user',$task,$sc_steps);
+				$fields[]= $this->get_per_process_field($task);
+
+				$fields[]= $this->get_process_calling_field($task);
 				
-				$fields[]= $this->get_progress_processed_field($task);
+				$fields[]= $this->get_process_status_field($task);
+				
+				// progress
+				
+				if( !empty($task[$this->_base.'action']) && $task[$this->_base.'action'] != 'none' ){
+					
+					$total = $this->count_task_items($post->post_type,$task);
+					
+					$sc_steps = ceil($total/$this->sc_items);
+					
+					$fields[]= $this->get_progress_scheduled_field('user',$task,$sc_steps);
+					
+					$fields[]= $this->get_progress_processed_field($task);
+				}
+				else{
+					
+					$fields[]= $this->get_progress_notice_field('Select a task and update');
+				}
 			}
 			else{
 				
-				$fields[]= $this->get_progress_notice_field('Select a task and update');
+				$fields[]= $this->get_action_notice_field('Give a title and save');
+				
+				$fields[]= $this->get_process_notice_field('Give a title and save');
+				
+				$fields[]= $this->get_progress_notice_field('Give a title and save');
 			}
 				
 			return $fields;
@@ -2634,14 +2648,39 @@ class Rew_Bulk_Editor {
 			
 			$rows = array_map(function($object){
 				
-				$html = '<a href="'.get_permalink($object->ID).'" target="_blank">';
+				if( !empty($object->post_type) ){
+					
+					$item_id = $object->ID;
+					
+					$item_url = get_permalink($item_id);
+					
+					$item_name = $object->post_title;
+				}
+				elseif( !empty($object->term_id) ){
+					
+					$item_id = $object->term_id;
+					
+					$item_url = get_term_link($item_id);
+					
+					$item_name = $object->name;
+				}
+				elseif( !empty($object->user_email) ){
+					
+					$item_id = $object->ID;
+					
+					$item_url = '#';
+					
+					$item_name = $object->user_email;
+				}
 				
-					$html .= '#' . $object->ID . ' - ';
+				$html = '<a href="'.$item_url.'" target="_blank">';
 				
-					$html .= $object->post_title;
+					$html .= '#' . $item_id . ' - ';
+				
+					$html .= $item_name;
 					
 				$html .= '</a>';
-				
+					
 				return $html;
 				
 			},$this->retrieve_task_items($post->post_type,$task,100));
