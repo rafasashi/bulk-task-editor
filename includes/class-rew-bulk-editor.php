@@ -853,6 +853,20 @@ class Rew_Bulk_Editor {
 						),
 						array(
 							
+							'name' 			=> 'filter_content',
+							'type'			=> 'select',
+							'label'			=> 'Content filters',
+							'description'	=> 'Apply shortcodes and filters through the_content hook',
+							'default' 		=> 'enabled',
+							'options'		=> array(
+							
+								'enabled'	=> 'Enabled',
+								'disabled'	=> 'Disabled',
+								
+							),
+						),
+						array(
+							
 							'name' 		=> 'include',
 							'type'		=> 'checkbox_multi',
 							'label'		=> 'Include',
@@ -2646,56 +2660,54 @@ class Rew_Bulk_Editor {
 			
 			$post = get_post($post_id);
 			
-			$rows = array_map(function($object){
-				
-				if( !empty($object->post_type) ){
+			$items = $this->retrieve_task_items($post->post_type,$task,100);
+			
+			foreach( $items as $item ){
+
+				if( !empty($item->post_type) ){
 					
-					$item_id = $object->ID;
+					$item_id = $item->ID;
 					
 					$item_url = get_permalink($item_id);
 					
-					$item_name = $object->post_title;
+					$item_name = $item->post_title;
 				}
-				elseif( !empty($object->term_id) ){
+				elseif( !empty($item->term_id) ){
 					
-					$item_id = $object->term_id;
+					$item_id = $item->term_id;
 					
 					$item_url = get_term_link($item_id);
 					
-					$item_name = $object->name;
+					$item_name = $item->name;
 				}
-				elseif( !empty($object->user_email) ){
+				elseif( !empty($item->user_email) ){
 					
-					$item_id = $object->ID;
+					$item_id = $item->ID;
 					
 					$item_url = '#';
 					
-					$item_name = $object->user_email;
+					$item_name = $item->user_email;
 				}
-				
-				$html = '<a href="'.$item_url.'" target="_blank">';
-				
-					$html .= '#' . $item_id . ' - ';
-				
-					$html .= $item_name;
-					
-				$html .= '</a>';
-					
-				return $html;
-				
-			},$this->retrieve_task_items($post->post_type,$task,100));
-			
-			foreach( $rows as $row ){
 				
 				echo '<tr>';
 					
 					echo '<td>';
 					
-						echo $row . PHP_EOL;
-						
+						echo '#' . $item_id;
+					
 					echo '</td>';
 					
-				echo '</tr>';	
+					echo '<td>';
+					
+						echo '<a href="'.$item_url.'" target="_blank">';
+
+							echo !empty($item_name) ? $item_name : 'N/A';
+							
+						echo '</a>';
+					
+					echo '</td>';
+					
+				echo '</tr>';
 			}
 		}
 
@@ -3160,7 +3172,14 @@ class Rew_Bulk_Editor {
 		
 		if( in_array('post_content',$args['include']) ){
 			
-			$postarr['post_content'] = $post->post_content;
+			if( !empty($args['filter_content']) && $args['filter_content'] == 'enabled' ){
+			
+				$postarr['post_content'] = apply_filters('the_content',$post->post_content);
+			}
+			else{
+				
+				$postarr['post_content'] = $post->post_content;
+			}
 		}
 		
 		if( in_array('post_excerpt',$args['include']) ){
@@ -3554,11 +3573,17 @@ class Rew_Bulk_Editor {
 										
 										))){
 											
-											dump(array(
-												'debugging duplicate term',
-												$inserted_term,
-												get_term_by('name',$term->name,$term->taxonomy),
-											));
+											if( $term_copy = get_term_by('name',$term->name,$term->taxonomy) ){
+												
+												$term_slugs[] = $term_copy->slug;
+											}
+											else{
+												
+												dump(array(
+													'debugging duplicate term',
+													$inserted_term,
+												));
+											}
 										}
 									}
 								}

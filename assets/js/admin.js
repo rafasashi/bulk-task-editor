@@ -887,7 +887,7 @@
 						
 							'position'	: 'fixed', 
 							'left'		: 50, 
-							'top'		: 150
+							'top'		: 150,
 						});
 						
 						load_task_preview(page);
