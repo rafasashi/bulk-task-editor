@@ -11,7 +11,7 @@
 - **USER-FRIENDLY** – Navigate and operate the plugin with ease thanks to its intuitive and user-friendly interface.
 - **CUSTOMIZABLE** – Register and hook into the bulk task filter to incorporate custom actions tailored to your specific needs.
 
-[Watch the Video Preview](https://www.youtube.com/embed/e0LPQjWz-v0)
+[![Watch the video](https://img.youtube.com/vi/e0LPQjWz-v0/maxresdefault.jpg)](https://www.youtube.com/watch?v=e0LPQjWz-v0)
 
 ## Built-in Tasks
 
