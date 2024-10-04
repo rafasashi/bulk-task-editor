@@ -3578,13 +3578,6 @@ class Rew_Bulk_Editor {
 												
 												$term_slugs[] = $term_copy->slug;
 											}
-											else{
-												
-												dump(array(
-													'debugging duplicate term',
-													$inserted_term,
-												));
-											}
 										}
 									}
 								}
@@ -3652,11 +3645,6 @@ class Rew_Bulk_Editor {
 			}
 
 			do_action('rewbe_duplicated_posts',$post_ids,$args,$level);
-			
-			if( $level == 1 && defined('REW_DEV_ENV') && REW_DEV_ENV === true ){
-				
-				//dump('done');
-			}
 			
 			return $post_ids;
 		}
