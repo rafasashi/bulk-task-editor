@@ -958,35 +958,11 @@ class Rew_Bulk_Editor {
 
 				// meta
 				
-				$actions[] = array(
-					
-					'label' 	=> 'Edit Meta Values',
-					'id' 		=> 'edit_meta',
-					'fields' 	=> array(			
-						array(
-							
-							'name' 			=> 'data',
-							'type'			=> 'array',
-							'keys'			=> true,
-							'placeholder'	=> 'value',
-						),					
-					),
-				);
+				$actions[] = $this->get_edit_meta_action_field();
 				
-				$actions[] = array(
-					
-					'label' 	=> 'Remove Meta',
-					'id' 		=> 'remove_meta',
-					'fields' 	=> array(			
-						array(
-							
-							'name' 			=> 'data',
-							'type'			=> 'array',
-							'keys'			=> true,
-							'placeholder'	=> 'matching value or empty',
-						),					
-					),
-				);
+				$actions[] = $this->get_remove_meta_action_field();
+				
+				$actions[] = $this->get_rename_meta_action_field();
 				
 				// taxonomies
 				
@@ -1308,35 +1284,11 @@ class Rew_Bulk_Editor {
 			
 			// meta
 			
-			$actions[] = array(
-				
-				'label' 	=> 'Edit Meta Values',
-				'id' 		=> 'edit_meta',
-				'fields' 	=> array(
-					array(
-						
-						'name' 			=> 'data',
-						'type'			=> 'array',
-						'keys'			=> true,
-						'placeholder'	=> 'value',
-					),					
-				),
-			);
+			$actions[] = $this->get_edit_meta_action_field();
 			
-			$actions[] = array(
-				
-				'label' 	=> 'Remove Meta',
-				'id' 		=> 'remove_meta',
-				'fields' 	=> array(			
-					array(
-						
-						'name' 			=> 'data',
-						'type'			=> 'array',
-						'keys'			=> true,
-						'placeholder'	=> 'matching value or empty',
-					),					
-				),
-			);
+			$actions[] = $this->get_remove_meta_action_field();
+
+			$actions[] = $this->get_rename_meta_action_field();
 
 			$actions[] = array(
 				
@@ -1605,35 +1557,11 @@ class Rew_Bulk_Editor {
 		
 			// meta
 			
-			$actions[] = array(
-				
-				'label' 	=> 'Edit Meta Values',
-				'id' 		=> 'edit_meta',
-				'fields' 	=> array(
-					array(
-						
-						'name' 			=> 'data',
-						'type'			=> 'array',
-						'keys'			=> true,
-						'placeholder'	=> 'value',
-					),					
-				),
-			);
+			$actions[] = $this->get_edit_meta_action_field();
 			
-			$actions[] = array(
-				
-				'label' 	=> 'Remove Meta',
-				'id' 		=> 'remove_meta',
-				'fields' 	=> array(			
-					array(
-						
-						'name' 			=> 'data',
-						'type'			=> 'array',
-						'keys'			=> true,
-						'placeholder'	=> 'matching value or empty',
-					),					
-				),
-			);
+			$actions[] = $this->get_remove_meta_action_field();
+			
+			$actions[] = $this->get_rename_meta_action_field();
 			
 			return $actions;
 			
@@ -1878,7 +1806,68 @@ class Rew_Bulk_Editor {
 			),
 		);
 	}
-				
+	
+	public function get_edit_meta_action_field(){
+	
+		return array(
+			
+			'label' 	=> 'Edit Meta Values',
+			'id' 		=> 'edit_meta',
+			'fields' 	=> array(			
+				array(
+					
+					'name' 			=> 'data',
+					'type'			=> 'array',
+					'keys'			=> true,
+					'placeholder'	=> 'value',
+				),					
+			),
+		);
+	}	
+	
+	public function get_remove_meta_action_field(){
+	
+		return array(
+			
+			'label' 	=> 'Remove Meta',
+			'id' 		=> 'remove_meta',
+			'fields' 	=> array(			
+				array(
+					
+					'name' 			=> 'data',
+					'type'			=> 'array',
+					'keys'			=> true,
+					'placeholder'	=> 'matching value or empty',
+				),					
+			),
+		);
+	}
+			
+	public function get_rename_meta_action_field(){
+
+		return array(
+			
+			'label' 	=> 'Rename Meta',
+			'id' 		=> 'rename_meta',
+			'fields' 	=> array(			
+				array(
+					
+					'name' 			=> 'from',
+					'label' 		=> 'From Meta Name',
+					'type'			=> 'text',
+					'placeholder'	=> 'meta_name',
+				),	
+				array(
+					
+					'name' 			=> 'to',
+					'label' 		=> 'To Meta Name',
+					'type'			=> 'text',
+					'placeholder'	=> 'meta_name',
+				),						
+			),
+		);
+	}
+
 	public function compare_arrays($oldArray,$newArray,$ignoreKeys=array()) {
 
 		$changes = array();
@@ -2808,6 +2797,10 @@ class Rew_Bulk_Editor {
 									
 									add_action('rewbe_do_post_remove_meta',array($this,'remove_post_meta'),10,2);
 								}
+								elseif( $action == 'rename_meta' ){
+									
+									add_action('rewbe_do_post_rename_meta',array($this,'rename_post_meta'),10,2);
+								}
 								elseif( strpos($action,'edit_tax_') === 0 ){
 									
 									$taxonomy =  substr($action,strlen('edit_tax_'));
@@ -2881,6 +2874,10 @@ class Rew_Bulk_Editor {
 									
 									add_action('rewbe_do_term_remove_meta',array($this,'remove_term_meta'),10,2);
 								}
+								elseif( $action == 'rename_meta' ){
+									
+									add_action('rewbe_do_term_rename_meta',array($this,'rename_term_meta'),10,2);
+								}
 								elseif( $action == 'delete_term' ){
 									
 									add_action('rewbe_do_term_delete_term',array($this,'delete_term'),10,2);
@@ -2948,6 +2945,10 @@ class Rew_Bulk_Editor {
 								elseif( $action == 'remove_meta' ){
 									
 									add_action('rewbe_do_user_remove_meta',array($this,'remove_user_meta'),10,2);
+								}
+								elseif( $action == 'rename_meta' ){
+									
+									add_action('rewbe_do_user_rename_meta',array($this,'rename_user_meta'),10,2);
 								}
 								
 								foreach ( $users as $user ){
@@ -3952,6 +3953,25 @@ class Rew_Bulk_Editor {
 			}
 		}
 	}
+	
+	public function rename_post_meta($post,$args){
+		
+		if( !empty($args['from']) && !empty($args['to']) ){
+			
+			$from = sanitize_text_field($args['from']);
+			
+			$to = sanitize_text_field($args['to']);
+			
+			 if( metadata_exists('post', $post->ID, $from) ){
+				
+				$value = get_post_meta($post->ID,$from,true);
+				
+				update_post_meta($post->ID,$to,$value);
+
+				delete_post_meta($post->ID,$from);
+			}
+		}
+	}
 
 	public function edit_post_taxonomy($post,$args){
 		
@@ -4069,6 +4089,25 @@ class Rew_Bulk_Editor {
 		}
 	}
 	
+	public function rename_term_meta($term,$args){
+		
+		if( !empty($args['from']) && !empty($args['to']) ){
+			
+			$from = sanitize_text_field($args['from']);
+			
+			$to = sanitize_text_field($args['to']);
+			
+			 if( metadata_exists('term', $term->term_id, $from) ){
+				
+				$value = get_post_meta($term->term_id,$from,true);
+				
+				update_term_meta($term->term_id,$to,$value);
+
+				delete_term_meta($term->term_id,$from);
+			}
+		}
+	}
+	
 	public function delete_term($term,$args){
 		
 		if( !empty($args['confirm']) && sanitize_title($args['confirm']) == 'delete' ){
@@ -4161,6 +4200,25 @@ class Rew_Bulk_Editor {
 		}
 	}
 	
+	public function rename_user_meta($user,$args){
+
+		if( !empty($args['from']) && !empty($args['to']) ){
+
+			$from = sanitize_text_field($args['from']);
+			
+			$to = sanitize_text_field($args['to']);
+
+			if( metadata_exists('user', $user->ID, $from) ){
+
+				$value = get_user_meta($user->ID, $from, true);
+
+				update_user_meta($user->ID, $to, $value);
+
+				delete_user_meta($user->ID, $from);
+			}
+		}
+	}
+
 	public function count_task_items($type,$task){
 		
 		$items = 0;
