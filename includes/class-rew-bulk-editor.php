@@ -175,7 +175,7 @@ class Rew_Bulk_Editor {
 		$this->load_plugin_textdomain();
 		add_action( 'init', array( $this, 'load_localisation' ), 0 );
 		
-		$this->register_post_type( 'post-type-task', __( 'Post tasks', 'rew-bulk-editor' ), __( 'Post task', 'rew-bulk-editor' ), '', array(
+		$this->register_post_type( 'post-type-task', __( 'Post tasks', 'bulk-task-editor' ), __( 'Post task', 'bulk-task-editor' ), '', array(
 
 			'public' 				=> false,
 			'publicly_queryable' 	=> false,
@@ -196,7 +196,7 @@ class Rew_Bulk_Editor {
 			'menu_icon' 			=> '',
 		));		
 		
-		$this->register_post_type( 'taxonomy-task', __( 'Term tasks', 'rew-bulk-editor' ), __( 'Term task', 'rew-bulk-editor' ), '', array(
+		$this->register_post_type( 'taxonomy-task', __( 'Term tasks', 'bulk-task-editor' ), __( 'Term task', 'bulk-task-editor' ), '', array(
 
 			'public' 				=> false,
 			'publicly_queryable' 	=> false,
@@ -217,7 +217,7 @@ class Rew_Bulk_Editor {
 			'menu_icon' 			=> '',
 		));		
 
-		$this->register_post_type( 'user-task', __( 'User tasks', 'rew-bulk-editor' ), __( 'User task', 'rew-bulk-editor' ), '', array(
+		$this->register_post_type( 'user-task', __( 'User tasks', 'bulk-task-editor' ), __( 'User task', 'bulk-task-editor' ), '', array(
 
 			'public' 				=> false,
 			'publicly_queryable' 	=> false,
@@ -238,7 +238,7 @@ class Rew_Bulk_Editor {
 			'menu_icon' 			=> '',
 		));	
 
-		$this->register_post_type( 'data-task', __( 'Data tasks', 'rew-bulk-editor' ), __( 'Data task', 'rew-bulk-editor' ), '', array(
+		$this->register_post_type( 'data-task', __( 'Data tasks', 'bulk-task-editor' ), __( 'Data task', 'bulk-task-editor' ), '', array(
 
 			'public' 				=> false,
 			'publicly_queryable' 	=> false,
@@ -273,7 +273,7 @@ class Rew_Bulk_Editor {
 			
 			$new_columns = array(
 				
-				'post-type' => __('Post Type', 'rew-bulk-editor'),
+				'post-type' => __('Post Type', 'bulk-task-editor'),
 			);
 
 			$first_part  = array_slice($columns, 0, 2, true);
@@ -311,7 +311,7 @@ class Rew_Bulk_Editor {
 			
 			$new_columns = array(
 				
-				'taxonomy' 	=> __('Taxonomy', 'rew-bulk-editor'),
+				'taxonomy' 	=> __('Taxonomy', 'bulk-task-editor'),
 			);
 
 			$first_part  = array_slice($columns, 0, 2, true);
@@ -349,7 +349,7 @@ class Rew_Bulk_Editor {
 			
 			$new_columns = array(
 				
-				'data-type' => __('Data Type', 'rew-bulk-editor'),
+				'data-type' => __('Data Type', 'bulk-task-editor'),
 			);
 
 			$first_part  = array_slice($columns, 0, 2, true);
@@ -383,7 +383,7 @@ class Rew_Bulk_Editor {
 			$this->admin->add_meta_box (
 				
 				'bulk-editor-process',
-				__( 'Process', 'rew-bulk-editor' ), 
+				__( 'Process', 'bulk-task-editor' ), 
 				$this->get_task_types(),
 				'side'
 			);
@@ -391,7 +391,7 @@ class Rew_Bulk_Editor {
 			$this->admin->add_meta_box (
 				
 				'bulk-editor-progress',
-				__( 'Progress', 'rew-bulk-editor' ), 
+				__( 'Progress', 'bulk-task-editor' ), 
 				$this->get_task_types(),
 				'side'
 			);
@@ -399,7 +399,7 @@ class Rew_Bulk_Editor {
 			$this->admin->add_meta_box (
 				
 				'bulk-editor-filters',
-				__( 'Filter', 'rew-bulk-editor' ), 
+				__( 'Filter', 'bulk-task-editor' ), 
 				$this->get_task_types(),
 				'advanced'
 			);
@@ -407,7 +407,7 @@ class Rew_Bulk_Editor {
 			$this->admin->add_meta_box (
 				
 				'bulk-editor-task',
-				__( 'Task', 'rew-bulk-editor' ), 
+				__( 'Task', 'bulk-task-editor' ), 
 				$this->get_task_types(),
 				'advanced'
 			);
@@ -2054,8 +2054,8 @@ class Rew_Bulk_Editor {
 		
 		$new_columns = array(
 			
-			'task'    	=> __('Task', 'rew-bulk-editor'),
-			'progress'	=> __('Progress', 'rew-bulk-editor'),
+			'task'    	=> __('Task', 'bulk-task-editor'),
+			'progress'	=> __('Progress', 'bulk-task-editor'),
 		);
 
 		$first_part  = array_slice($columns, 0, 2, true);
@@ -2463,7 +2463,7 @@ class Rew_Bulk_Editor {
 	 * @since   1.0.0
 	 */
 	public function load_localisation() {
-		load_plugin_textdomain( 'rew-bulk-editor', false, dirname( plugin_basename( $this->file ) ) . '/lang/' );
+		load_plugin_textdomain( 'bulk-task-editor', false, dirname( plugin_basename( $this->file ) ) . '/lang/' );
 	} // End load_localisation ()
 
 	/**
@@ -2474,7 +2474,7 @@ class Rew_Bulk_Editor {
 	 * @since   1.0.0
 	 */
 	public function load_plugin_textdomain() {
-		$domain = 'rew-bulk-editor';
+		$domain = 'bulk-task-editor';
 
 		$locale = apply_filters( 'plugin_locale', get_locale(), $domain );
 

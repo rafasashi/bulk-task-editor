@@ -114,32 +114,32 @@ class Rew_Bulk_Editor_Settings {
 		
 		add_submenu_page(
 			$this->parent->_token . '_settings',
-			__( 'Post Types', 'rew-bulk-editor' ),
-			__( 'Post Types', 'rew-bulk-editor' ),
+			__( 'Post Types', 'bulk-task-editor' ),
+			__( 'Post Types', 'bulk-task-editor' ),
 			'edit_pages',
 			'edit.php?post_type=post-type-task'
 		);
 		
 		add_submenu_page(
 			$this->parent->_token . '_settings',
-			__( 'Taxonomies', 'rew-bulk-editor' ),
-			__( 'Taxonomies', 'rew-bulk-editor' ),
+			__( 'Taxonomies', 'bulk-task-editor' ),
+			__( 'Taxonomies', 'bulk-task-editor' ),
 			'edit_pages',
 			'edit.php?post_type=taxonomy-task'
 		);
 		
 		add_submenu_page(
 			$this->parent->_token . '_settings',
-			__( 'Users', 'rew-bulk-editor' ),
-			__( 'Users', 'rew-bulk-editor' ),
+			__( 'Users', 'bulk-task-editor' ),
+			__( 'Users', 'bulk-task-editor' ),
 			'edit_pages',
 			'edit.php?post_type=user-task'
 		);
 		/*
 		add_submenu_page(
 			$this->parent->_token . '_settings',
-			__( 'Data', 'rew-bulk-editor' ),
-			__( 'Data', 'rew-bulk-editor' ),
+			__( 'Data', 'bulk-task-editor' ),
+			__( 'Data', 'bulk-task-editor' ),
 			'edit_pages',
 			'edit.php?post_type=data-task'
 		);
@@ -158,8 +158,8 @@ class Rew_Bulk_Editor_Settings {
 			array(
 				'location'    => 'menu', // Possible settings: options, menu, submenu.
 				'parent_slug' => 'admin.php',
-				'page_title'  => __( 'Bulk Task Editor', 'rew-bulk-editor' ),
-				'menu_title'  => __( 'Tasks', 'rew-bulk-editor' ),
+				'page_title'  => __( 'Bulk Task Editor', 'bulk-task-editor' ),
+				'menu_title'  => __( 'Tasks', 'bulk-task-editor' ),
 				'capability'  => 'manage_options',
 				'menu_slug'   => $this->parent->_token . '_settings',
 				'function'    => array( $this, 'settings_page' ),
@@ -200,7 +200,7 @@ class Rew_Bulk_Editor_Settings {
 	public function add_settings_link( $links, $file ) {
 		
 		if( strpos( $file, basename( $this->parent->file ) ) !== false ) {
-			$settings_link = '<a href="options-general.php?page=' . $this->parent->_token . '_settings">' . __( 'Settings', 'rew-bulk-editor' ) . '</a>';
+			$settings_link = '<a href="options-general.php?page=' . $this->parent->_token . '_settings">' . __( 'Settings', 'bulk-task-editor' ) . '</a>';
 			array_push( $links, $settings_link );
 		}
 
@@ -218,14 +218,14 @@ class Rew_Bulk_Editor_Settings {
 		
 			'overview' => array(
 			
-				'title'       => __( 'Overview', 'rew-bulk-editor' ),
+				'title'       => __( 'Overview', 'bulk-task-editor' ),
 				'description' => '',
 				'fields'      => array(),
 			),
 			'settings' => array(
 			
-				'title'       => __( 'Settings', 'rew-bulk-editor' ),
-				'description' => __( 'Bulk editor settings', 'rew-bulk-editor'),
+				'title'       => __( 'Settings', 'bulk-task-editor' ),
+				'description' => __( 'Bulk editor settings', 'bulk-task-editor'),
 				'fields'      => array(
 					
 					array(
@@ -237,7 +237,7 @@ class Rew_Bulk_Editor_Settings {
 				),
 			),
 			'addons' => array(
-				'title'					=> __( 'Addons', 'rew-bulk-editor' ),
+				'title'					=> __( 'Addons', 'bulk-task-editor' ),
 				'description'			=> '',
 				'class'					=> 'pull-right',
 				'logo'					=> $this->parent->assets_url . '/images/addons-icon.png',
@@ -381,7 +381,7 @@ class Rew_Bulk_Editor_Settings {
 		
 		// Build page HTML.
 		$html      = '<div class="wrap" id="' . $this->parent->_token . '_settings">' . "\n";
-			$html .= '<h2>' . __( 'Bulk Task Editor', 'rew-bulk-editor' ) . '</h2>' . "\n";
+			$html .= '<h2>' . __( 'Bulk Task Editor', 'bulk-task-editor' ) . '</h2>' . "\n";
 
 		// Show page tabs.
 		if ( is_array( $this->settings ) && 1 < count( $this->settings ) ) {
@@ -483,7 +483,7 @@ class Rew_Bulk_Editor_Settings {
 												
 												$html .= '<li>' . "\n";
 												
-													$html .= __( 'No processing tasks', 'rew-bulk-editor' );
+													$html .= __( 'No processing tasks', 'bulk-task-editor' );
 												
 												$html .= '</li>' . "\n";
 											}
@@ -547,7 +547,7 @@ class Rew_Bulk_Editor_Settings {
 												
 												$html .= '<li>' . "\n";
 												
-													$html .= __( 'No pending tasks', 'rew-bulk-editor' );
+													$html .= __( 'No pending tasks', 'bulk-task-editor' );
 												
 												$html .= '</li>' . "\n";
 											}
@@ -604,7 +604,7 @@ class Rew_Bulk_Editor_Settings {
 												
 												$html .= '<li>' . "\n";
 												
-													$html .= __( 'No completed tasks', 'rew-bulk-editor' );
+													$html .= __( 'No completed tasks', 'bulk-task-editor' );
 												
 												$html .= '</li>' . "\n";
 											}
@@ -635,26 +635,26 @@ class Rew_Bulk_Editor_Settings {
 											
 											$html .= '<li>' . "\n";
 											
-												$html .= '<a href="'.admin_url('post-new.php?post_type=post-type-task').'">'.__('Post Type Task', 'rew-bulk-editor').'</a>' . "\n";
+												$html .= '<a href="'.admin_url('post-new.php?post_type=post-type-task').'">'.__('Post Type Task', 'bulk-task-editor').'</a>' . "\n";
 											
 											$html .= '</li>' . "\n";
 											
 											$html .= '<li>' . "\n";
 											
-												$html .= '<a href="'.admin_url('post-new.php?post_type=taxonomy-task').'">'.__('Taxonomy Task', 'rew-bulk-editor').'</a>' . "\n";
+												$html .= '<a href="'.admin_url('post-new.php?post_type=taxonomy-task').'">'.__('Taxonomy Task', 'bulk-task-editor').'</a>' . "\n";
 											
 											$html .= '</li>' . "\n";
 											
 											$html .= '<li>' . "\n";
 											
-												$html .= '<a href="'.admin_url('post-new.php?post_type=user-task').'">'.__('User Task', 'rew-bulk-editor').'</a>' . "\n";
+												$html .= '<a href="'.admin_url('post-new.php?post_type=user-task').'">'.__('User Task', 'bulk-task-editor').'</a>' . "\n";
 											
 											$html .= '</li>' . "\n";
 											
 											/*
 											$html .= '<li>' . "\n";
 											
-												$html .= '<a href="'.admin_url('post-new.php?post_type=data-task').'">'.__('Imported Data', 'rew-bulk-editor').'</a>' . "\n";
+												$html .= '<a href="'.admin_url('post-new.php?post_type=data-task').'">'.__('Imported Data', 'bulk-task-editor').'</a>' . "\n";
 											
 											$html .= '</li>' . "\n";
 											*/
@@ -757,7 +757,7 @@ class Rew_Bulk_Editor_Settings {
 				
 				$html     .= '<p class="submit">' . "\n";
 					$html .= '<input type="hidden" name="tab" value="' . esc_attr( $tab ) . '" />' . "\n";
-					$html .= '<input name="Submit" type="submit" class="button-primary" value="' . esc_attr( __( 'Save Settings', 'rew-bulk-editor' ) ) . '" />' . "\n";
+					$html .= '<input name="Submit" type="submit" class="button-primary" value="' . esc_attr( __( 'Save Settings', 'bulk-task-editor' ) ) . '" />' . "\n";
 				$html     .= '</p>' . "\n";
 			
 			$html         .= '</form>' . "\n";

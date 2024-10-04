@@ -905,8 +905,8 @@ class Rew_Bulk_Editor_Admin_API {
 					$image_thumb = wp_get_attachment_thumb_url( $data );
 				}
 				$html .= '<img id="' . $option_name . '_preview" class="image_preview" src="' . $image_thumb . '" /><br/>' . "\n";
-				$html .= '<input id="' . $option_name . '_button" type="button" data-uploader_title="' . __( 'Upload an image', 'rew-bulk-editor' ) . '" data-uploader_button_text="' . __( 'Use image', 'rew-bulk-editor' ) . '" class="image_upload_button button" value="' . __( 'Upload new image', 'rew-bulk-editor' ) . '" />' . "\n";
-				$html .= '<input id="' . $option_name . '_delete" type="button" class="image_delete_button button" value="' . __( 'Remove image', 'rew-bulk-editor' ) . '" />' . "\n";
+				$html .= '<input id="' . $option_name . '_button" type="button" data-uploader_title="' . __( 'Upload an image', 'bulk-task-editor' ) . '" data-uploader_button_text="' . __( 'Use image', 'bulk-task-editor' ) . '" class="image_upload_button button" value="' . __( 'Upload new image', 'bulk-task-editor' ) . '" />' . "\n";
+				$html .= '<input id="' . $option_name . '_delete" type="button" class="image_delete_button button" value="' . __( 'Remove image', 'bulk-task-editor' ) . '" />' . "\n";
 				$html .= '<input id="' . $option_name . '" class="image_data_field" type="hidden" name="' . $option_name . '" value="' . $data . '"/><br/>' . "\n";
 			break;
 			
