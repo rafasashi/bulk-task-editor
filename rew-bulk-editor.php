@@ -1,7 +1,7 @@
 <?php 
 /**
  * Plugin Name: Bulk Task Editor
- * Plugin URI: https://code.recuweb.com
+ * Plugin URI: https://code.recuweb.com/get/bulk-task-editor/
  * Version: 1.0.1.40
  * Description: Bulk Edit posts, terms and users
  * Author: Rafasashi

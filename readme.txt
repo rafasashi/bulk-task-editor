@@ -1,6 +1,7 @@
 === Bulk Task Editor ===
 Author: Rafasashi
 Author URI: https://code.recuweb.com
+Donate link: https://code.recuweb.com/feature/bulk-edit/
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Requires WP: 6.4.3
