@@ -1,4 +1,4 @@
-=== REW Bulk Editor ===
+=== Bulk Task Editor ===
 Author: Rafasashi
 Author URI: https://code.recuweb.com
 License: GPLv3

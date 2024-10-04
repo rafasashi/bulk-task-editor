@@ -1,4 +1,4 @@
-# Bulk Task Editor (BTE)
+# Bulk Task Editor
 
 **Bulk Task Editor** (BTE) is a WordPress plugin designed to simplify and accelerate your content management workflow.
 
