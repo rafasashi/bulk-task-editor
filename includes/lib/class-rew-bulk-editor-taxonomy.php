@@ -99,25 +99,25 @@ class Rew_Bulk_Editor_Taxonomy {
 			'name'                       => $this->plural,
 			'singular_name'              => $this->single,
 			'menu_name'                  => $this->plural,
-			'all_items'                  => sprintf( __( 'All %s', 'bulk-task-editor' ), $this->plural ),
-			'edit_item'                  => sprintf( __( 'Edit %s', 'bulk-task-editor' ), $this->single ),
-			'view_item'                  => sprintf( __( 'View %s', 'bulk-task-editor' ), $this->single ),
-			'update_item'                => sprintf( __( 'Update %s', 'bulk-task-editor' ), $this->single ),
-			'add_new_item'               => sprintf( __( 'Add New %s', 'bulk-task-editor' ), $this->single ),
-			'new_item_name'              => sprintf( __( 'New %s Name', 'bulk-task-editor' ), $this->single ),
-			'parent_item'                => sprintf( __( 'Parent %s', 'bulk-task-editor' ), $this->single ),
-			'parent_item_colon'          => sprintf( __( 'Parent %s:', 'bulk-task-editor' ), $this->single ),
-			'search_items'               => sprintf( __( 'Search %s', 'bulk-task-editor' ), $this->plural ),
-			'popular_items'              => sprintf( __( 'Popular %s', 'bulk-task-editor' ), $this->plural ),
-			'separate_items_with_commas' => sprintf( __( 'Separate %s with commas', 'bulk-task-editor' ), $this->plural ),
-			'add_or_remove_items'        => sprintf( __( 'Add or remove %s', 'bulk-task-editor' ), $this->plural ),
-			'choose_from_most_used'      => sprintf( __( 'Choose from the most used %s', 'bulk-task-editor' ), $this->plural ),
-			'not_found'                  => sprintf( __( 'No %s found', 'bulk-task-editor' ), $this->plural ),
+			'all_items'                  => sprintf( esc_html__( 'All %s', 'bulk-task-editor' ), esc_html($this->plural) ),
+			'edit_item'                  => sprintf( esc_html__( 'Edit %s', 'bulk-task-editor' ), esc_html($this->single) ),
+			'view_item'                  => sprintf( esc_html__( 'View %s', 'bulk-task-editor' ), esc_html($this->single) ),
+			'update_item'                => sprintf( esc_html__( 'Update %s', 'bulk-task-editor' ), esc_html($this->single) ),
+			'add_new_item'               => sprintf( esc_html__( 'Add New %s', 'bulk-task-editor' ), esc_html($this->single) ),
+			'new_item_name'              => sprintf( esc_html__( 'New %s Name', 'bulk-task-editor' ), esc_html($this->single) ),
+			'parent_item'                => sprintf( esc_html__( 'Parent %s', 'bulk-task-editor' ), esc_html($this->single) ),
+			'parent_item_colon'          => sprintf( esc_html__( 'Parent %s:', 'bulk-task-editor' ), esc_html($this->single) ),
+			'search_items'               => sprintf( esc_html__( 'Search %s', 'bulk-task-editor' ), esc_html($this->plural) ),
+			'popular_items'              => sprintf( esc_html__( 'Popular %s', 'bulk-task-editor' ), esc_html($this->plural) ),
+			'separate_items_with_commas' => sprintf( esc_html__( 'Separate %s with commas', 'bulk-task-editor' ), esc_html($this->plural) ),
+			'add_or_remove_items'        => sprintf( esc_html__( 'Add or remove %s', 'bulk-task-editor' ), esc_html($this->plural) ),
+			'choose_from_most_used'      => sprintf( esc_html__( 'Choose from the most used %s', 'bulk-task-editor' ), esc_html($this->plural) ),
+			'not_found'                  => sprintf( esc_html__( 'No %s found', 'bulk-task-editor' ), esc_html($this->plural) ),
 		);
 		//phpcs:enable
 		$args = array(
 			'label'                 => $this->plural,
-			'labels'                => apply_filters( $this->taxonomy . '_labels', $labels ),
+			'labels'                => $labels,
 			'hierarchical'          => true,
 			'public'                => true,
 			'show_ui'               => true,
@@ -137,7 +137,7 @@ class Rew_Bulk_Editor_Taxonomy {
 
 		$args = array_merge( $args, $this->taxonomy_args );
 
-		register_taxonomy( $this->taxonomy, $this->post_types, apply_filters( $this->taxonomy . '_register_args', $args, $this->taxonomy, $this->post_types ) );
+		register_taxonomy( $this->taxonomy, $this->post_types, $args );
 	}
 
 }

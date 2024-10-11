@@ -298,7 +298,7 @@ class Rew_Bulk_Editor {
 				
 					if( !empty($post_type) ){
 						
-						echo $post_type->label;
+						echo esc_html($post_type->label);
 					}
 				}
 			}
@@ -336,7 +336,7 @@ class Rew_Bulk_Editor {
 				
 					if( !empty($taxonomy) ){
 						
-						echo $taxonomy->label;
+						echo esc_html($taxonomy->label);
 					}
 				}
 			}
@@ -370,7 +370,7 @@ class Rew_Bulk_Editor {
 				
 				if( !empty($task['rewbe_data_type']) ){
 				
-					echo strtoupper($task['rewbe_post_type']);
+					echo esc_html(strtoupper($task['rewbe_post_type']));
 				}
 			}
 			
@@ -505,7 +505,7 @@ class Rew_Bulk_Editor {
 					'type'        	=> 'checkbox_multi',
 					'options'	  	=> $this->get_post_type_statuses($post_type->name),
 					'default'     	=> '',
-					'style'			=> 'margin-right:5px;',
+					'style'			=> 'margin-right:5px;float:left;',
 				);
 
 				// content
@@ -884,6 +884,15 @@ class Rew_Bulk_Editor {
 						),							
 					),$post_type),
 				);
+				
+				// replace
+				
+				$actions[] = $this->get_find_replace_action_field(array(
+							
+					'post_title'	=> 'Title',
+					'post_content'	=> 'Content',
+					'post_excerpt'	=> 'Excerpt',
+				));
 				
 				// delete
 				
@@ -1377,7 +1386,7 @@ class Rew_Bulk_Editor {
 					
 				),
 				'default' 		=> array('user_login','user_nicename'),
-				'style'			=> 'margin-right:5px;',
+				'style'			=> 'margin-right:5px;float:left;',
 			);
 			
 			// meta
@@ -1759,7 +1768,7 @@ class Rew_Bulk_Editor {
 			
 			if( is_numeric($task['rewbe_progress']) ){
 				
-				$data = $task['rewbe_progress'] . '%';
+				$data = esc_html($task['rewbe_progress'] . '%');
 			}
 			else{
 				
@@ -1772,7 +1781,7 @@ class Rew_Bulk_Editor {
 		}
 		else{
 			
-			$data = '<span id="rewbe_task_processed" style="width:65px;display:block;">' . ( is_numeric($task['rewbe_progress']) ? $task['rewbe_progress'] : 0 ) . '%</span>';
+			$data = '<div id="rewbe_task_processed" style="width:65px;display:block;">' . ( is_numeric($task['rewbe_progress']) ? $task['rewbe_progress'] : 0 ) . '%</div>';
 		}
 		
 		return array(
@@ -1805,6 +1814,60 @@ class Rew_Bulk_Editor {
 				),
 			),
 		);
+	}
+	
+	public function get_find_replace_action_field($options){
+		
+		return array(
+					
+			'label' 	=> 'Find and replace',
+			'id' 		=> 'find_replace',
+			'fields' 	=> array(
+				array(
+					
+					'name' 			=> 'match',
+					'label' 		=> 'Find',
+					'type'			=> 'text',
+					'placeholder'	=> 'text to find',
+				),
+				array(
+					
+					'name' 		=> 'fx',
+					'type'		=> 'radio',
+					'options'	=> array(
+						
+						'str_replace'	=> 'Exact Match',
+						'str_ireplace'	=> 'Case Insensitive',
+						'preg_replace'	=> 'Regular Expression',
+					),
+					'default' => 'str_replace',
+				),
+				array(
+					
+					'name' 			=> 'rep_with',
+					'label' 		=> 'Replace with',
+					'type'			=> 'text',
+					'placeholder'	=> 'replacement',
+					'description'	=> 'Leave empty to remove occurrences',
+				),
+				array(
+					
+					'name' 		=> 'contents',
+					'label' 	=> 'Search in',
+					'type'		=> 'checkbox_multi',
+					'options'	=> $options,
+					'style'		=> 'margin-right:5px;float:left;',
+				),
+				array(
+							
+					'name' 			=> 'meta',
+					'type'			=> 'array',
+					'keys'			=> false,
+					'placeholder'	=> 'meta_name',
+				),
+			),
+		);
+		
 	}
 	
 	public function get_edit_meta_action_field(){
@@ -2087,13 +2150,13 @@ class Rew_Bulk_Editor {
 			
 			if( !empty($task['rewbe_action']) ){
 				
-				echo '<code>'. $task['rewbe_action'] . '</code>';
+				echo '<code>'. esc_html($task['rewbe_action']) . '</code>';
 			}
 		}
 		elseif( $column == 'progress' ){
 			
 			
-			echo $task['rewbe_progress'] . '%';
+			echo esc_html($task['rewbe_progress'] . '%');
 		}
 		
 		return $column;
@@ -2188,6 +2251,30 @@ class Rew_Bulk_Editor {
 	public function get_data_actions($slug,$task){
 		
 		return $this->parse_actions(apply_filters('rewbe_data_actions',array(),$slug,$task));
+	}
+	
+	public function sanitize_regex($pattern) {
+		
+		$first_char = substr($pattern, 0, 1);
+		$last_char = substr($pattern, -1);
+
+		if( $first_char === $last_char && strlen($pattern) > 2 ){
+			
+			$delimiter = $first_char;
+		} 
+		else{
+			
+			$delimiter = '/';
+			
+			$pattern = $delimiter . $pattern . $delimiter;
+		}
+
+		if( @preg_match($pattern, '') === false ){
+			
+			throw new InvalidArgumentException("Invalid regex pattern: $pattern");
+		}
+
+		return $pattern;
 	}
 
 	public function sanitize_content($content,$allowed_html=null,$allowed_protocols=null){
@@ -2444,12 +2531,7 @@ class Rew_Bulk_Editor {
 		
 		if( in_array($screen->id,$this->get_task_types())){
 			
-			//wp_deregister_script('jquery-ui-core');
-			
-			wp_register_script( 'jquery-ui-core', esc_url( $this->assets_url ) . 'js/jquery-ui.js', array('jquery'), $this->_version );
-			wp_enqueue_script( 'jquery-ui-core' );	
-			
-			wp_register_script( $this->_token . '-admin', esc_url( $this->assets_url ) . 'js/admin.js', array( 'jquery' ), $this->_version.time(), true );
+			wp_register_script( $this->_token . '-admin', esc_url( $this->assets_url ) . 'js/admin.js', array( 'jquery', 'jquery-ui-core' ), $this->_version.time(), true );
 			wp_enqueue_script( $this->_token . '-admin' );
 		}
 		
@@ -2488,7 +2570,7 @@ class Rew_Bulk_Editor {
 		
 		if( current_user_can('edit_posts')&& !empty($_GET['s']) && !empty($_GET['id']) ){
 			
-			if( $s =  apply_filters( 'get_search_query', $_GET['s'] ) ){
+			if( $s =  apply_filters( 'get_search_query', sanitize_text_field($_GET['s']) ) ){
 				
 				$input_id = sanitize_title($_GET['id']);
 				
@@ -2535,7 +2617,7 @@ class Rew_Bulk_Editor {
 		
 		if( current_user_can('edit_posts') ){
 			
-			if( $s =  apply_filters( 'get_search_query', $_GET['s'] ) ){
+			if( $s =  apply_filters( 'get_search_query', sanitize_text_field($_GET['s']) ) ){
 				
 				$taxonomy = sanitize_title($_GET['taxonomy']);
 				
@@ -2599,11 +2681,11 @@ class Rew_Bulk_Editor {
 	
 	public function render_task_process(){
 		
-		if( !empty($_GET['task']) && is_array($_GET['task']) ){
+		if( !empty($_GET['task']) && is_array($_GET['task']) && !empty($_GET['task']['post_ID']) ){
 			
-			$task = $_GET['task'];
-			
-			$post_id = intval($task['post_ID']);
+			$task = $this->sanitize_task_meta($_GET['task']);
+
+			$post_id = intval($_GET['task']['post_ID']);
 			
 			$post = get_post($post_id);
 			
@@ -2639,13 +2721,13 @@ class Rew_Bulk_Editor {
 
 	public function render_task_preview(){
 		
-		if( !empty($_GET['task']) && is_array($_GET['task']) ){
+		if( !empty($_GET['task']) && is_array($_GET['task']) && !empty($_GET['task']['post_ID']) ){
 			
-			$task = $_GET['task'];
+			$task = $this->sanitize_task_meta($_GET['task']);
 			
 			$page = intval($_GET['page']);
 			
-			$post_id = intval($task['post_ID']);
+			$post_id = intval($_GET['task']['post_ID']);
 			
 			$post = get_post($post_id);
 			
@@ -2682,15 +2764,15 @@ class Rew_Bulk_Editor {
 					
 					echo '<td>';
 					
-						echo '#' . $item_id;
+						echo esc_html('#' . $item_id);
 					
 					echo '</td>';
 					
 					echo '<td>';
 					
-						echo '<a href="'.$item_url.'" target="_blank">';
+						echo '<a href="'.esc_url($item_url).'" target="_blank">';
 
-							echo !empty($item_name) ? $item_name : 'N/A';
+							echo !empty($item_name) ? esc_html($item_name) : 'N/A';
 							
 						echo '</a>';
 					
@@ -2772,6 +2854,10 @@ class Rew_Bulk_Editor {
 								elseif( $action == 'duplicate_post' ){
 									
 									add_action('rewbe_do_post_duplicate_post',array($this,'duplicate_post'),10,2);
+								}
+								elseif( $action == 'find_replace' ){
+									
+									add_action('rewbe_do_post_find_replace',array($this,'find_replace'),10,2);
 								}
 								elseif( $action == 'delete_post' ){
 									
@@ -2975,7 +3061,7 @@ class Rew_Bulk_Editor {
 					
 					update_post_meta($task_id,$this->_base.'progress',$prog);
 					
-					echo $prog;
+					echo esc_html($prog);
 				}
 			}
 		}
@@ -3084,7 +3170,7 @@ class Rew_Bulk_Editor {
 				update_post_meta($task_id,$this->_base.'scheduled',$total_items);
 			}
 				
-			echo $prog;
+			echo esc_html($prog);
 		}
 		
 		wp_die();
@@ -3647,6 +3733,189 @@ class Rew_Bulk_Editor {
 			do_action('rewbe_duplicated_posts',$post_ids,$args,$level);
 			
 			return $post_ids;
+		}
+	}
+	
+	public function find_replace($object,$args){
+		
+		$fx = !empty($args['fx']) ? sanitize_title($args['fx']) : 'str_replace';
+		
+		if( $fx == 'preg_match' ){
+			
+			$match = !empty($args['match']) ? $this->sanitize_regex($args['match']) : '';
+		}
+		else{
+			
+			$match = !empty($args['match']) ? sanitize_text_field($args['match']) : '';
+		}
+		
+		$rep_with = !empty($args['rep_with']) ? sanitize_text_field($args['rep_with']) : '';
+		
+		$contents = !empty($args['contents']) ? array_map('sanitize_title', $args['contents']) : array();
+		
+		$meta = !empty($args['meta']) ? array_map('sanitize_text_field', $args['meta']) : array();
+
+		if( !empty($match) && !empty($fx) ){
+			
+			if( $object instanceof WP_Post ){
+				
+				if( !empty($contents) ){
+					
+					// update post
+					
+					$post_args = array(
+					
+						'ID' => $object->ID
+					);
+					
+					if( in_array('post_title',$contents) ){
+						
+						$post_args['post_title'] = $this->replace_in_content($match,$rep_with,$object->post_title,$fx);
+					}
+					
+					if( in_array('post_content',$contents) ){
+						
+						$post_args['post_content'] = $this->replace_in_content($match,$rep_with,$object->post_content,$fx);
+					}
+					
+					if( in_array('post_excerpt',$contents) ){
+						
+						$post_args['post_excerpt'] = $this->replace_in_content($match,$rep_with,$object->post_excerpt,$fx);
+					}
+					
+					wp_update_post($post_args);
+				}
+				
+				if( !empty($meta) ){
+					
+					// update post meta
+					
+					foreach( $meta as $meta_name ){
+						
+						$value = $this->replace_in_content($match,$rep_with,get_post_meta($object->ID,$meta_name,true),$fx);
+					
+						update_post_meta($object->ID,$meta_name,$value);
+					}
+				}
+				
+				$object = get_post($object->ID);
+			}
+			elseif ($object instanceof WP_Term) {
+				
+				if( !empty($contents) ){
+					
+					$term_args = array();
+					
+					if( in_array('name',$contents) ){
+						
+						$term_args['name'] = $this->replace_in_content($match,$rep_with,$object->name,$fx);
+					}
+
+					if( in_array('description',$contents) ){
+						
+						$term_args['description'] = $this->replace_in_content($match,$rep_with,$object->description,$fx);
+					}
+					
+					if (!empty($term_args)) {
+						
+						wp_update_term($object->term_id, $object->taxonomy, $term_args);
+					}
+				}
+				
+				if( !empty($meta) ){
+					
+					// update term meta
+					
+					foreach( $meta as $meta_name ){
+						
+						$value = $this->replace_in_content($match,$rep_with,get_term_meta($object->term_id,$meta_name,true),$fx);
+					
+						update_term_meta($object->term_id,$meta_name,$value);
+					}
+				}
+				
+				$object = get_term($object->term_id);
+			}
+			elseif ($object instanceof WP_User) {
+				
+				if( !empty($contents) ){
+					
+					$user_args = array(
+					
+						'ID' => $object->ID,
+					);
+					
+					if( in_array('nickname',$contents) ){
+						
+						$user_args['nickname'] = $this->replace_in_content($match,$rep_with,$object->nickname,$fx);
+					}
+
+					if( in_array('first_name',$contents) ){
+						
+						$user_args['first_name'] = $this->replace_in_content($match,$rep_with,$object->first_name,$fx);
+					}
+					
+					if( in_array('last_name',$contents) ){
+						
+						$user_args['last_name'] = $this->replace_in_content($match,$rep_with,$object->last_name,$fx);
+					}
+
+					if( in_array('description',$contents) ){
+						
+						$user_args['description'] = $this->replace_in_content($match,$rep_with,$object->description,$fx);
+					}
+					
+					if( in_array('user_url',$contents) ){
+						
+						$user_args['user_url'] = $this->replace_in_content($match,$rep_with,$object->user_url,$fx);
+					}
+					
+					wp_update_user($user_args);
+				}
+				
+				if( !empty($meta) ){
+					
+					// update user meta
+					
+					foreach( $meta as $meta_name ){
+						
+						$value = $this->replace_in_content($match,$rep_with,get_user_meta($object->ID,$meta_name,true),$fx);
+					
+						update_user_meta($object->ID,$meta_name,$value);
+					}
+				}
+				
+				$object = get_user($object->ID);
+			}
+		}
+		
+		return $object;
+	}
+	
+	public function replace_in_content($match,$rep_with,$content,$fx){
+		
+		switch($fx){
+			
+			case 'str_replace':
+			
+				return str_replace($match,$rep_with,$content);
+			
+			case 'str_ireplace':
+			
+				return str_ireplace($match,$rep_with,$content);
+			
+			case 'preg_replace':
+			
+				if( @preg_match($match, '') === false ){
+					
+					throw new InvalidArgumentException("Invalid regex pattern: $match");
+				}
+				
+				return preg_replace($match,$rep_with,$content);
+			
+			default:
+			
+				throw new InvalidArgumentException("Invalid function type: $fx");
 		}
 	}
 	
@@ -4863,7 +5132,7 @@ class Rew_Bulk_Editor {
 	 * @since 1.0.0
 	 */
 	public function __clone() {
-		_doing_it_wrong( __FUNCTION__, esc_html( __( 'Cloning of Rew_Bulk_Editor is forbidden' ) ), esc_attr( $this->_version ) );
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cloning of Rew_Bulk_Editor is forbidden', 'bulk-task-editor' ), esc_attr( $this->_version ) );
 
 	} // End __clone ()
 
@@ -4873,7 +5142,7 @@ class Rew_Bulk_Editor {
 	 * @since 1.0.0
 	 */
 	public function __wakeup() {
-		_doing_it_wrong( __FUNCTION__, esc_html( __( 'Unserializing instances of Rew_Bulk_Editor is forbidden' ) ), esc_attr( $this->_version ) );
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Unserializing instances of Rew_Bulk_Editor is forbidden', 'bulk-task-editor' ), esc_attr( $this->_version ) );
 	} // End __wakeup ()
 
 	/**

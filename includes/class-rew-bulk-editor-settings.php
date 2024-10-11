@@ -328,7 +328,7 @@ class Rew_Bulk_Editor_Settings {
 				'title' 		=> 'Bulk Product Editor',
 				'addon_link' 	=> 'https://code.recuweb.com/get/bulk-product-editor/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
 				'addon_name' 	=> 'woo-bulk-product-editor',
-				'logo_url' 		=> 'https://d3ddkiw8cptmcg.cloudfront.net/c/u/3a09f4cf991c32bd735fa06db67889e5/2024/08/17074428/bulk-product-editor-1-300x300.png',
+				'logo_url' 		=> $this->parent->assets_url . '/images/addons/bulk-product-editor-1-300x300.png',
 				'description'	=> 'Bulk Product Editor is a WordPress plugin designed to streamline and accelerate your store management workflow all without overloading your server.',
 				'author' 		=> 'Code Market',
 				'author_link' 	=> 'https://code.recuweb.com/about-us/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
@@ -338,7 +338,7 @@ class Rew_Bulk_Editor_Settings {
 				'title' 		=> 'OpenAI Bulk Editor',
 				'addon_link' 	=> 'https://code.recuweb.com/get/openai-bulk-editor/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
 				'addon_name' 	=> 'openai-bulk-editor',
-				'logo_url' 		=> 'https://d3ddkiw8cptmcg.cloudfront.net/c/u/3a09f4cf991c32bd735fa06db67889e5/2024/09/19122612/openai-bulk-editor-300x300.png',
+				'logo_url' 		=> $this->parent->assets_url . '/images/addons/openai-bulk-editor-300x300.png',
 				'description'	=> 'Accelerate your content management workflow using OpenAI API to edit post types, taxonomies, users, and imported data, all while keeping your server load minimal.',
 				'author' 		=> 'Code Market',
 				'author_link' 	=> 'https://code.recuweb.com/about-us/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
@@ -348,7 +348,7 @@ class Rew_Bulk_Editor_Settings {
 				'title' 		=> 'Language Switcher',
 				'addon_link' 	=> 'https://code.recuweb.com/get/language-switcher-everywhere/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
 				'addon_name' 	=> 'language-switcher-everywhere',
-				'logo_url' 		=> 'https://code.recuweb.com/c/u/3a09f4cf991c32bd735fa06db67889e5/2018/07/language-switcher-everywhere-squared-300x300.png',
+				'logo_url' 		=> $this->parent->assets_url . '/images/addons/language-switcher-everywhere-squared-300x300.png',
 				'description'	=> 'Extends Language Switcher to add languages to custom post types and taxonomies like WooCommerce products or tags',
 				'author' 		=> 'Code Market',
 				'author_link' 	=> 'https://code.recuweb.com/about-us/?utm_source='.$domain.'&utm_medium=referral&utm_campaign='.$campaign,
@@ -366,7 +366,7 @@ class Rew_Bulk_Editor_Settings {
 		
 		$html = '<p> ' . $this->settings[ $section['id'] ]['description'] . '</p>' . "\n";
 		
-		echo wp_kses_normalize_entities($html); //phpcs:ignore
+		echo wp_kses($html,apply_filters('rewbe_allowed_admin_html',array())); //phpcs:ignore
 	}
 
 	/**
@@ -674,7 +674,7 @@ class Rew_Bulk_Editor_Settings {
 		}
 		elseif( $tab == 'addons' ){
 			
-			$html .= '<h3 style="margin-bottom:25px;">' . wp_kses_normalize_entities($this->settings[$tab]['title']) . '</h3>' . PHP_EOL;
+			$html .= '<h3 style="margin-bottom:25px;">' . esc_html($this->settings[$tab]['title']) . '</h3>' . PHP_EOL;
 
 			$html .= '<div class="settings-form-wrapper" style="margin-top:25px;">';
 				
@@ -690,14 +690,14 @@ class Rew_Bulk_Editor_Settings {
 								
 									$html .= '<h3>';
 									
-										$html .= '<a href="'.$addon['addon_link'].'" target="_blank" style="text-decoration:none;">';
+										$html .= '<a href="'.esc_url($addon['addon_link']).'" target="_blank" style="text-decoration:none;">';
 											
 											if( !empty($addon['logo_url']) ){
 												
-												$html .= '<img class="plugin-icon" src="'.$addon['logo_url'].'" />';
+												$html .= '<img class="plugin-icon" src="'.esc_url($addon['logo_url']).'" />';
 											}
 											
-											$html .= $addon['title'];	
+											$html .= esc_html($addon['title']);	
 											
 										$html .= '</a>';
 										
@@ -707,8 +707,8 @@ class Rew_Bulk_Editor_Settings {
 								
 								$html .= '<div class="desc column-description">';
 							
-									$html .= '<p>'.$addon['description'].'</p>';
-									$html .= '<p class="authors"> <cite>By <a target="_blank" href="'.$addon['author_link'].'">'.$addon['author'].'</a></cite></p>';
+									$html .= '<p>'.esc_html($addon['description']).'</p>';
+									$html .= '<p class="authors"> <cite>By <a target="_blank" href="'.esc_url($addon['author_link']).'">'.esc_html($addon['author']).'</a></cite></p>';
 								
 								$html .= '</div>';
 								
@@ -764,8 +764,8 @@ class Rew_Bulk_Editor_Settings {
 		}
 		
 		$html             .= '</div>' . "\n";
-
-		echo wp_kses_normalize_entities($html); //phpcs:ignore
+		
+		echo wp_kses($html,apply_filters('rewbe_allowed_admin_html',array())); //phpcs:ignore
 	}
 
 	/**
@@ -792,7 +792,7 @@ class Rew_Bulk_Editor_Settings {
 	 * @since 1.0.0
 	 */
 	public function __clone() {
-		_doing_it_wrong( __FUNCTION__, esc_html( __( 'Cloning of Rew_Bulk_Editor_API is forbidden.' ) ), esc_attr( $this->parent->_version ) );
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cloning of Rew_Bulk_Editor_API is forbidden.', 'bulk-task-editor'  ), esc_attr( $this->parent->_version ) );
 	} // End __clone()
 
 	/**
@@ -801,7 +801,7 @@ class Rew_Bulk_Editor_Settings {
 	 * @since 1.0.0
 	 */
 	public function __wakeup() {
-		_doing_it_wrong( __FUNCTION__, esc_html( __( 'Unserializing instances of Rew_Bulk_Editor_API is forbidden.' ) ), esc_attr( $this->parent->_version ) );
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Unserializing instances of Rew_Bulk_Editor_API is forbidden.', 'bulk-task-editor'  ), esc_attr( $this->parent->_version ) );
 	} // End __wakeup()
 
 }

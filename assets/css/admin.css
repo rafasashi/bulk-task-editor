@@ -73,3 +73,19 @@ input:disabled{
     border-radius: 3px;
 	cursor: pointer;
 }
+.form-field{
+	margin:10px 0;
+	display: flow-root;
+	clear:left;
+}
+.form-field label{
+	display:block;
+	margin-bottom:5px;
+}
+.meta-input-group{
+	display:block;
+}
+.input-group-row{
+	display:flex;
+	width:100%;
+}

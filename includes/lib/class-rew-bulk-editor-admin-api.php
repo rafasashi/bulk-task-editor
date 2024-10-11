@@ -21,7 +21,11 @@ class Rew_Bulk_Editor_Admin_API {
 		
 		$this->parent = $parent;
 		
-		add_action( 'save_post', array( $this, 'save_meta_boxes' ), 10, 1 );
+		add_action('rewbe_allowed_admin_html', array( $this, 'add_allowed_default_html' ), 10, 1 );
+		add_action('rewbe_allowed_admin_html', array( $this, 'add_allowed_form_html' ), 10, 1 );
+		add_action('rewbe_allowed_admin_html', array( $this, 'add_allowed_table_html' ), 10, 1 );
+		
+		add_action('save_post', array( $this, 'save_meta_boxes' ), 10, 1 );
 	}
 
 	/**
@@ -203,7 +207,7 @@ class Rew_Bulk_Editor_Admin_API {
 							$checked = true;
 						}
 						
-						$html .= '<label for="' . esc_attr( $field['id'] . '_' . $k ) . '" style="margin-right:5px;"><input type="radio" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label> ';
+						$html .= '<label for="' . esc_attr( $field['id'] . '_' . $k ) . '" style="margin-right:5px;float:left;"><input type="radio" ' . checked( $checked, true, false ) . ' name="' . esc_attr( $option_name ) . '" value="' . esc_attr( $k ) . '" id="' . esc_attr( $field['id'] . '_' . $k ) . '" /> ' . $v . '</label> ';
 					}
 				
 				$html .='</div>';
@@ -343,9 +347,9 @@ class Rew_Bulk_Editor_Admin_API {
 				
 				$html .= '<div id="'.$field['id'].'" class="meta-input">';
 					
-					$html .= ' <a href="#" class="add-input-group" data-target="'.$field['id'].'" style="line-height:40px;">Add Field</a>';
-				
-					$html .= '<ul class="meta-input-group">';
+					$html .= '<a href="#" class="add-input-group" data-target="'.$field['id'].'" style="line-height:40px;">Add Field</a>';
+					
+					$html .= '<ul class="meta-input-group" style="display:grid;">';
 						
 						if( !empty($data['key']) ){
 							
@@ -953,16 +957,275 @@ class Rew_Bulk_Editor_Admin_API {
 				
 				break;
 		}
-
-		if ( ! $echo ) {
+		
+		$allowed_html = apply_filters('rewbe_allowed_admin_html',array());
+		
+		if ( !$echo ){
 			
-			return wp_kses_normalize_entities($html);
+			return wp_kses($html,$allowed_html);
 		}
 
-		echo wp_kses_normalize_entities($html); //phpcs:ignore
+		echo wp_kses($html,$allowed_html);
 
 	}
+	
+	public function add_allowed_default_html($html){
+		
+		return array_merge($html,array(
+		
+			'h1' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'h2' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'h3' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array()
+			),
+			'img' => array(
+				'src' 	=> array(),
+				'alt' 	=> array(),
+				'title' => array(),
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'div' => array(
+			
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+				
+				'data-taxonomy'		=> array(),
+				'data-hierarchical'	=> array(),
+				'data-operator'		=> array(),
+				'data-context'		=> array(),
+				'data-multi'		=> array(),
+				
+				'data-uploader_title'		=> array(),
+				'data-uploader_button_text'	=> array(),
+			),
+			'p' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'a' => array(
+			
+				'href' => array(),
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+				
+				'data-target'	=> array(),
+				'data-html'		=> array(),
+			),
+			'i' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'b' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'br' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'span' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'ul' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'ol' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'li' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'code' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+		));
+	}
+	
+	public function add_allowed_form_html($html) {
+		
+		return array_merge($html, array(
+		
+			'label' => array(
+			
+				'for'   => array(),
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'form' => array(
+			
+				'action' => array(),
+				'method' => array(),
+				'style'  => array(),
+				'class'  => array(),
+				'id'     => array(),
+				//'enctype' => array(),
+			),
+			'input' => array(
+			
+				'type'        => array(),
+				'name'        => array(),
+				'value'       => array(),
+				'style'       => array(),
+				'class'       => array(),
+				'id'          => array(),
+				'checked'     => array(),
+				'required'    => array(),
+				'disabled'    => array(),
+				'placeholder' => array(),
+				'min'         => array(),
+				'max'         => array(),
+				'maxlength'   => array(),
+				'minlength'   => array(),
+				'pattern'     => array(),
+				'step'        => array(),
+				'data-value'  => array(),
+			),
+			'textarea' => array(
+			
+				'name'        => array(),
+				'rows'        => array(),
+				'cols'        => array(),
+				'style'       => array(),
+				'class'       => array(),
+				'id'          => array(),
+				'placeholder' => array(),
+				'required'    => array(),
+				'disabled'    => array(),
+			),
+			'select' => array(
+			
+				'name'        => array(),
+				'style'       => array(),
+				'class'       => array(),
+				'id'          => array(),
+				'required'    => array(),
+				'disabled'    => array(),
+			),
+			'option' => array(
+			
+				'value'     => array(),
+				'selected'  => array(),
+				'style'     => array(),
+				'class'     => array(),
+				'id'        => array(),
+				'disabled'  => array(),
+			),
+			'button' => array(
+			
+				'type' 		=> array(),
+				'style' 	=> array(),
+				'class' 	=> array(),
+				'id'    	=> array(),
+				'disabled' 	=> array(),
+				'name'   	=> array(),
+				'value'  	=> array(),
+			),
+		));
+	}
 
+	public function add_allowed_table_html($html){
+			
+		return array_merge($html, array(
+		
+			'table' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+				'border' => array(),
+				'cellpadding' => array(),
+				'cellspacing' => array(),
+			),
+			'thead' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'tbody' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'tfoot' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'tr' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'th' => array(
+				'style'    => array(),
+				'class'    => array(),
+				'id'       => array(),
+				'colspan'  => array(),
+				'rowspan'  => array(),
+				'width'    => array(),
+				'height'   => array(),
+				'scope'    => array(),
+				'align'    => array(),
+				'valign'   => array(),
+			),
+			'td' => array(
+				'style'    => array(),
+				'class'    => array(),
+				'id'       => array(),
+				'colspan'  => array(),
+				'rowspan'  => array(),
+				'width'    => array(),
+				'height'   => array(),
+				'align'    => array(),
+				'valign'   => array(),
+			),
+			'caption' => array(
+				'style' => array(),
+				'class' => array(),
+				'id'    => array(),
+			),
+			'col' => array(
+				'style'   => array(),
+				'class'   => array(),
+				'span'    => array(),
+				'width'   => array(),
+			),
+			'colgroup' => array(
+				'style'   => array(),
+				'class'   => array(),
+				'span'    => array(),
+			),
+		));
+	}
+	
 	public function get_operator_options(){
 		
 		return array(
@@ -1192,11 +1455,11 @@ class Rew_Bulk_Editor_Admin_API {
 			return;
 		}
 		
-		$html = '<div class="form-field" style="margin:10px 0;">';
+		$html = '<div class="form-field">';
 			
 			if( !empty($field['label']) ){
 				
-				$html .= '<label for="' . $field['id'] . '" style="display:block;">';
+				$html .= '<label for="' . $field['id'] . '">';
 					
 					$html .= '<b>' . $field['label'] . '</b>';
 				
@@ -1207,13 +1470,16 @@ class Rew_Bulk_Editor_Admin_API {
 		
 		$html .= '</div>' . PHP_EOL;
 		
+		$allowed_html = apply_filters('rewbe_allowed_admin_html',array());
+		
 		if($echo){
 			
-			echo $html;
+			echo wp_kses($html,$allowed_html);
+			
 		}
 		else{
 			
-			return $html;
+			return wp_kses($html,$allowed_html);
 		}
 	}
 	
