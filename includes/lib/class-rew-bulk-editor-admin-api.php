@@ -1523,7 +1523,7 @@ class Rew_Bulk_Editor_Admin_API {
 		
 		foreach ( $fields as $field ) {
 			
-			if( !empty($field['id']) ){
+			if( !empty($field['id']) && !empty($field['type']) ){
 				
 				if ( isset( $_REQUEST[ $field['id'] ] ) ) {
 					
