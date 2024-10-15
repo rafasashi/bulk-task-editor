@@ -47,7 +47,7 @@ class Rew_Bulk_Editor_Admin_API {
 		
 		// Check for prefix on option name.
 		
-		$option_name = ( isset( $data['prefix'] ) ? $data['prefix'] : '' ) . ( !empty($field['name']) ? $field['name'] : $field['id']);
+		$option_name = ( isset( $data['prefix'] ) ? $data['prefix'] : '' ) . ( !empty($field['name']) ? $field['name'] : ( isset($field['id']) ? $field['id'] : '' ) );
 
 		// Get default
 			
@@ -946,8 +946,8 @@ class Rew_Bulk_Editor_Admin_API {
 				}
 				
 				if( !empty($field['description']) ){
-					
-					$html .= '<span class="description" style="display:block;margin-bottom:7px;font-style:italic;">' . $field['description'] . '</span>' . PHP_EOL;
+
+					$html .= '<div class="description" style="display:block;margin-bottom:7px;font-style:italic;">' . $field['description'] . '</div>' . PHP_EOL;
 				}
 				
 				if ( !$post ){
@@ -974,21 +974,25 @@ class Rew_Bulk_Editor_Admin_API {
 		return array_merge($html,array(
 		
 			'h1' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
 			),
 			'h2' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
 			),
 			'h3' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array()
 			),
 			'img' => array(
+			
 				'src' 	=> array(),
 				'alt' 	=> array(),
 				'title' => array(),
@@ -1012,6 +1016,7 @@ class Rew_Bulk_Editor_Admin_API {
 				'data-uploader_button_text'	=> array(),
 			),
 			'p' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
@@ -1027,41 +1032,52 @@ class Rew_Bulk_Editor_Admin_API {
 				'data-html'		=> array(),
 			),
 			'i' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
 			),
 			'b' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
 			),
 			'br' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
 			),
 			'span' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
+				
+				'data-type'		=> array(),
+				'data-steps'	=> array(),
 			),
 			'ul' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
 			),
 			'ol' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
 			),
 			'li' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),
 			),
 			'code' => array(
+			
 				'style' => array(),
 				'class' => array(),
 				'id'    => array(),

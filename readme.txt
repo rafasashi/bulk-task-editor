@@ -6,7 +6,7 @@ License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Requires WP: 6.4.3
 Requires PHP: 7.4.28
-Stable Tag: 1.0.2
+Stable Tag: 1.0.3
 Tested up to: 6.6
 
 Bulk Task Editor (BTE) is a WordPress plugin designed to simplify and accelerate your content management workflow.
