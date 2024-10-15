@@ -663,7 +663,7 @@
 			
 			if( $('#rewbe_task_processed').length > 0 ){
 				
-				$("#rewbe_task_processed").empty().addClass("loading loading-left");
+				$("#rewbe_task_processed").addClass("loading loading-right");
 				
 				var post_id = $("#post_ID").val();
 				
@@ -689,12 +689,12 @@
 							}
 							else{
 								
-								$("#rewbe_task_processed").removeClass("loading loading-left");
+								$("#rewbe_task_processed").removeClass("loading loading-right");
 							}
 						}
 						else{
 							
-							$('#rewbe_task_processed').empty().html('<i>Check the console log</i>').removeClass("loading loading-left");
+							$('#rewbe_task_processed').empty().html('<i>Check the console log</i>').removeClass("loading loading-right");
 							
 							console.log(prog);
 						}
@@ -715,7 +715,7 @@
 							
 							console.error('Error processing task: ' + error);
 							
-							$("#rewbe_task_processed").removeClass("loading loading-left");
+							$("#rewbe_task_processed").removeClass("loading loading-right");
 						}
 					}
 				});
