@@ -57,7 +57,7 @@ class Rew_Bulk_Editor_Admin_API {
 		
 		$data = '';
 			
-		if ( !empty( $field['data'] ) ) {
+		if ( isset( $field['data'] ) ) {
 			
 			$data = $field['data'];
 		}

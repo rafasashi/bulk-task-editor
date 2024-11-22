@@ -1766,7 +1766,7 @@ class Rew_Bulk_Editor {
 	
 		if( !empty($task[$this->_base.'process_status']) && $task[$this->_base.'process_status']  == 'pause' ){
 			
-			if( is_numeric($task['rewbe_progress']) ){
+			if( !empty($task['rewbe_progress']) && is_numeric($task['rewbe_progress']) ){
 				
 				$data = esc_html($task['rewbe_progress'] . '%');
 			}
