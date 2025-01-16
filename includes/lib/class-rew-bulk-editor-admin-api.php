@@ -24,8 +24,6 @@ class Rew_Bulk_Editor_Admin_API {
 		add_action('rewbe_allowed_admin_html', array( $this, 'add_allowed_default_html' ), 10, 1 );
 		add_action('rewbe_allowed_admin_html', array( $this, 'add_allowed_form_html' ), 10, 1 );
 		add_action('rewbe_allowed_admin_html', array( $this, 'add_allowed_table_html' ), 10, 1 );
-		
-		add_action('save_post', array( $this, 'save_meta_boxes' ), 10, 1 );
 	}
 
 	/**
@@ -193,7 +191,7 @@ class Rew_Bulk_Editor_Admin_API {
 				$html .='</div>';
 				
 			break;
-
+            
 			case 'radio':
 			
 				$html .='<div style="width:fit-content;">';
@@ -213,7 +211,39 @@ class Rew_Bulk_Editor_Admin_API {
 				$html .='</div>';
 				
 			break;
+            
+            case 'process_status' :
 
+                $html .= $this->display_field(array(
+                    
+                    'id'        => $field['id'],
+                    'name'      => $option_name,
+                    'type'      => 'select',
+                    'options'   => $field['options'],
+                    'style'     => 'height:32px;width:68%;',
+                
+                ),$post,$echo);
+                
+                $html .= $this->display_field(array(
+                    
+                    'type' => 'update_button',
+                    
+                ),$post,$echo);
+                
+            break;
+            
+            case 'update_button':
+                
+                $html .= '<div id="bulk-editor-update" style="float:right;">';
+                
+                    $html .= '<input type="submit" name="publish" class="button button-primary button-large" value="Update">';
+                
+                    $html .= '<div class="update-loader"></div>';
+                
+                $html .= '</div>';
+                
+            break;
+            
 			case 'select':
 				
 				$html .= '<select name="' . esc_attr( $option_name ) . '" id="' . esc_attr( $field['id'] ) . '"' . $style . $required . $disabled . '>';
@@ -288,7 +318,7 @@ class Rew_Bulk_Editor_Admin_API {
 									
 									if( $set_keys === true ){
 									
-										$html .= '<input placeholder="name" type="text" name="'.$option_name.'[key][]" style="width:20%;float:left;" value="'.$data['key'][$e].'">';
+										$html .= '<input placeholder="name" type="text" name="'.$option_name.'[key][]" style="height:30px;width:20%;float:left;" value="'.$data['key'][$e].'">';
 									}
 									else{
 										
@@ -365,9 +395,9 @@ class Rew_Bulk_Editor_Admin_API {
 
 								$html .= '<li class="'.$class.'" style="display:inline-block;width:100%;">';
 									
-									$html .= '<input placeholder="key" type="text" name="'.$option_name.'[key][]" style="width:20%;float:left;" value="'.$data['key'][$e].'">';
+									$html .= '<input placeholder="key" type="text" name="'.$option_name.'[key][]" style="height:30px;width:20%;float:left;" value="'.$data['key'][$e].'">';
 									
-									$html .= '<input placeholder="value" type="text" name="'.$option_name.'[value][]" style="width:20%;float:left;" value="'.$value.'">';
+									$html .= '<input placeholder="value" type="text" name="'.$option_name.'[value][]" style="height:30px;width:20%;float:left;" value="'.$value.'">';
 									
 									$html .= '<select name="'.$option_name.'[type][]" style="width:80px;float:left;">';
 										
@@ -940,7 +970,7 @@ class Rew_Bulk_Editor_Admin_API {
 			break;
 			default:
 				
-				if ( !$post ){
+				if ( !$post && isset($field['id']) ){
 					
 					$html .= '<label for="' . esc_attr( $field['id'] ) . '">' . PHP_EOL;
 				}
@@ -950,7 +980,7 @@ class Rew_Bulk_Editor_Admin_API {
 					$html .= '<div class="description" style="display:block;margin-bottom:7px;font-style:italic;">' . $field['description'] . '</div>' . PHP_EOL;
 				}
 				
-				if ( !$post ){
+				if ( !$post && isset($field['id']) ){
 					
 					$html .= '</label>' . PHP_EOL;
 				}
@@ -1011,7 +1041,8 @@ class Rew_Bulk_Editor_Admin_API {
 				'data-operator'		=> array(),
 				'data-context'		=> array(),
 				'data-multi'		=> array(),
-				
+				'data-type'		    => array(),
+				'data-steps'	    => array(),
 				'data-uploader_title'		=> array(),
 				'data-uploader_button_text'	=> array(),
 			),
@@ -1055,8 +1086,6 @@ class Rew_Bulk_Editor_Admin_API {
 				'class' => array(),
 				'id'    => array(),
 				
-				'data-type'		=> array(),
-				'data-steps'	=> array(),
 			),
 			'ul' => array(
 			
@@ -1431,8 +1460,8 @@ class Rew_Bulk_Editor_Admin_API {
 	 */
 	public function meta_box_content( $post, $args ) {
 
-		$fields = apply_filters( 'rewbe_' . $post->post_type . '_custom_fields', array(), $post->post_type );
-
+		$fields = apply_filters( 'rewbe_' . $post->post_type . '_custom_fields', array() );
+        
 		if ( ! is_array( $fields ) || 0 === count( $fields ) ) {
 			return;
 		}
@@ -1470,21 +1499,32 @@ class Rew_Bulk_Editor_Admin_API {
 		if ( ! is_array( $field ) || 0 === count( $field ) || empty($field['type'])  ) {
 			return;
 		}
-		
-		$html = '<div class="form-field">';
-			
-			if( !empty($field['label']) ){
-				
-				$html .= '<label for="' . $field['id'] . '">';
-					
-					$html .= '<b>' . $field['label'] . '</b>';
-				
-				$html .= '</label>';
-			}
-			
-			$html .= $this->display_field( $field, $post, false );
-		
-		$html .= '</div>' . PHP_EOL;
+
+        if( $field['id'] == $this->parent->_base . 'process_status' ){
+            
+            $html = '<div id="major-publishing-actions" style="margin:0 -12px -12px;">';
+                
+                $html .= $this->display_field( $field, $post, false );
+            
+            $html .= '</div>' . PHP_EOL;
+        }
+        else{
+            
+            $html = '<div class="form-field">';
+                
+                if( !empty($field['label']) ){
+                    
+                    $html .= '<label for="' . $field['id'] . '">';
+                        
+                        $html .= '<b>' . $field['label'] . '</b>';
+                    
+                    $html .= '</label>';
+                }
+                
+                $html .= $this->display_field( $field, $post, false );
+            
+            $html .= '</div>' . PHP_EOL;
+        }
 		
 		$allowed_html = apply_filters('rewbe_allowed_admin_html',array());
 		
@@ -1496,44 +1536,6 @@ class Rew_Bulk_Editor_Admin_API {
 		else{
 			
 			return wp_kses($html,$allowed_html);
-		}
-	}
-	
-	/**
-	 * Save metabox fields.
-	 *
-	 * @param  integer $post_id Post ID.
-	 * @return void
-	 */
-	public function save_meta_boxes( $post_id = 0 ) {
-
-		if( !$post_id || isset($_POST['_inline_edit']) || isset($_GET['bulk_edit']) ){
-			
-			return;
-		}
-		
-		$post_type = get_post_type( $post_id );
-
-		$fields = apply_filters( 'rewbe_' . $post_type . '_custom_fields', array(), $post_type );
-		
-		if ( ! is_array( $fields ) || 0 === count( $fields ) ) {
-			
-			return;
-		}
-		
-		foreach ( $fields as $field ) {
-			
-			if( !empty($field['id']) && !empty($field['type']) ){
-				
-				if ( isset( $_REQUEST[ $field['id'] ] ) ) {
-					
-					update_post_meta( $post_id, $field['id'], $this->validate_input( $_REQUEST[$field['id']], $field['type'] ) ); //phpcs:ignore
-				} 
-				else {
-					
-					update_post_meta( $post_id, $field['id'], '' );
-				}
-			}
 		}
 	}
 }

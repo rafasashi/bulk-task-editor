@@ -157,6 +157,23 @@
 					}
 					
 					$(this).next(".arr-input-group").append($clone);
+
+                    // Reset select elements to the marked selected option or the first option
+                    
+                    $clone.find('select').each(function () {
+                        
+                        var $select = $(this);
+                        var $selectedOption = $select.find('option[selected]'); // Look for a selected option
+
+                        if ($selectedOption.length > 0) {
+                            
+                            $select.val($selectedOption.val()); // Use the selected option's value
+                        } 
+                        else {
+                            
+                            $select.val($select.find('option:first').val()); // Fallback to the first option
+                        }
+                    });
 				}
 			});
 			
@@ -214,6 +231,23 @@
 					}
 					
 					$(this).next(".meta-input-group").append($clone);
+                    
+                    // Reset select elements to the marked selected option or the first option
+                    
+                    $clone.find('select').each(function () {
+                        
+                        var $select = $(this);
+                        var $selectedOption = $select.find('option[selected]'); // Look for a selected option
+
+                        if ($selectedOption.length > 0) {
+                            
+                            $select.val($selectedOption.val()); // Use the selected option's value
+                        } 
+                        else {
+                            
+                            $select.val($select.find('option:first').val()); // Fallback to the first option
+                        }
+                    });
 				}
 			});
 			
@@ -567,6 +601,80 @@
 			set_author_field(id);
 		});
 		
+        // update task
+        
+        var savingTask = false;
+        
+        function update_task(btn){
+            
+            if( savingTask === false ){
+                
+                savingTask = true;
+                
+                $(btn).hide();
+                
+                $('.update-loader').addClass('loading');
+                
+                $.ajax({
+                    url : ajaxurl,
+                    type: "GET",
+                    dataType : "json",
+                    data : {
+                        action 	: "save_task",
+                        task 	: $("#post").serializeObject(),
+                    },
+                }).done(function( data ) {
+                    
+                    savingTask = false;
+                    
+                    $(btn).show();
+                
+                    $('.update-loader').removeClass('loading');
+                    
+                    $('#rewbe_process_status').val(data.status);
+                    
+                    $('#rewbe_task_scheduled').text(data.scheduled + '%');
+                    
+                    $('#rewbe_task_processed').text(data.processed + '%');
+                    
+                    if( data.steps > 0 ){
+                        
+                        $('#rewbe_task_scheduled').attr('data-steps',data.steps);
+                    }
+                    
+                    if( data.status != 'pause' ){
+                    
+                        if( data.scheduled < 100 ){
+                            
+                            load_task_schedule();
+                        }
+                        else if( data.processed < 100 ){
+                            
+                            load_task_progess();
+                        }
+                    }
+                    
+                    // Check if the current URL matches the pattern
+                    
+                    if ( window.location.href.includes('wp-admin/post-new.php') ) {
+                        
+                        var post_id = $("#post_ID").val();
+                        
+                        var newUrl = '/wp-admin/post.php?post=' + post_id + '&action=edit';
+
+                        window.history.replaceState(null, '', newUrl);
+                    }
+                });
+            }
+        }
+                
+        $('#bulk-editor-update input[type="submit"]').on('click', function(e) {
+			
+            e.preventDefault();
+
+			update_task(this);
+		});
+        
 		// task process
 		
 		function load_task_items(){
@@ -606,7 +714,7 @@
 		
 		load_task_items();
 		
-		$('#bulk-editor-filters').on('change', 'input, select, textarea', function() {
+		$('#bulk-editor-filters').on('change', 'select:not(:first), input, textarea', function() {
 			
 			load_task_items();
 		});
@@ -615,7 +723,7 @@
 			
 			if( $('#rewbe_task_scheduled').length > 0 ){
 				
-				var steps 	= $('#rewbe_task_scheduled').data('steps');
+				var steps 	= $('#rewbe_task_scheduled').attr('data-steps');
 				
 				if( steps > 0 ){
 					
@@ -677,27 +785,34 @@
 					},
 					success: function(prog){
 						
-						var response = prog;
-						
-						if( !isNaN(prog) && !isNaN(parseFloat(prog)) ){
-							
-							$('#rewbe_task_processed').empty().html(prog+'%');
-							
-							if( prog < 100 ){
-								
-								load_task_progess();
-							}
-							else{
-								
-								$("#rewbe_task_processed").removeClass("loading loading-right");
-							}
-						}
-						else{
-							
-							$('#rewbe_task_processed').empty().html('<i>Check the console log</i>').removeClass("loading loading-right");
-							
-							console.log(prog);
-						}
+                        if( !$('#rewbe_task_scheduled').hasClass('loading') ){
+                            
+                            var response = prog;
+                            
+                            if( !isNaN(prog) && !isNaN(parseFloat(prog)) ){
+                                
+                                $('#rewbe_task_processed').empty().html(prog+'%');
+                                
+                                if( prog < 100 ){
+                                    
+                                    load_task_progess();
+                                }
+                                else{
+                                    
+                                    $("#rewbe_task_processed").removeClass("loading loading-right");
+                                }
+                            }
+                            else{
+                               
+                                $("#rewbe_task_processed").removeClass("loading loading-right");
+                                
+                                open_task_console(prog);
+                            }
+                        }
+                        else{
+                            
+                            $("#rewbe_task_processed").removeClass("loading loading-right");
+                        }
 					},
 					error: function(xhr, status, error){
 						
@@ -722,18 +837,116 @@
 			}
 		}		
 		
-		load_task_schedule();
+        if( $('#rewbe_process_status').val() != 'pause' ){
+        
+            if( $('#rewbe_task_scheduled').text() == '100%' ){
+            
+                load_task_progess();
+            }
+            else{
+                
+                //load_task_schedule();
+            }
+        }
 		
+        // filter fields
+        
+        function load_task_filters(){
+
+			clearTimeout(selectingFilters);
+			
+			var post_id = $("#post_ID").val();
+    
+			selectingFilters = setTimeout(function() {
+    
+				if( $("#rewbe_task_filters").length == 0 ){
+					
+					$('#bulk-editor-filters .form-field').not(':first').remove();
+
+					$('#bulk-editor-filters .form-field:first').after('<div id="rewbe_task_filters"></div>')
+                }
+				
+				$("#rewbe_task_filters").empty().addClass("loading");
+				
+                var type = $('#bulk-editor-filters .form-field:first select').val();
+
+				$.ajax({
+					url : ajaxurl,
+					type: "GET",
+					dataType : "html",
+					data : {
+						action 	: "render_task_filters",
+						pid 	: post_id,
+                        type    : type,
+					},
+                    beforeSend: function() {
+                        
+                        load_action_fields();
+                    },
+                    
+				}).done(function( data ) {
+					
+                    $("#rewbe_task_filters").empty().removeClass("loading").html(data);
+					
+                    $("#rewbe_task_filters").find('.authors-input').each(function(e){
+						
+						var id = "#" + $(this).attr('id');
+						
+						set_author_field(id);
+					});	
+					
+					$("#rewbe_task_filters").find('.arr-input').each(function(e){
+						
+						var id = "#" + $(this).attr('id');
+						
+						set_array_field(id);
+					});
+					
+					$("#rewbe_task_filters").find('.meta-input').each(function(e){
+						
+						var id = "#" + $(this).attr('id');
+						
+						set_meta_field(id);
+					});
+					
+					$("#rewbe_task_filters").find('.date-input').each(function(e){
+						
+						var id = "#" + $(this).attr('id');
+						
+						set_date_field(id);
+					});
+					
+					$("#rewbe_task_filters").find('.tags-input').each(function(e){
+						
+						var id = "#" + $(this).attr('id');
+						
+						set_taxonomy_field(id);
+					});
+                    
+                    load_task_items();
+				});
+
+			},100);
+		}
+        
+        var selectingFilters;
+
+		$("#bulk-editor-filters .form-field:first").on('change', function(e){
+			
+			load_task_filters();
+		});
+        
 		// action fields
 		
 		function load_action_fields(){
 			
-			clearTimeout(selecting);
+			clearTimeout(selectingAction);
 			
-			var post_id 	= $("#post_ID").val();
-			var bulk_action = $("#rewbe_action").val();
+			var post_id = $("#post_ID").val();
+            var type    = $('#bulk-editor-filters .form-field:first select').val();
+			var action  = $("#rewbe_action").val();
 			
-			selecting = setTimeout(function() {
+			selectingAction = setTimeout(function() {
 
 				if( $("#rewbe_action_fields").length == 0 ){
 					
@@ -751,12 +964,23 @@
 					data : {
 						action 	: "render_task_action",
 						pid 	: post_id,
-						ba 		: bulk_action,
+                        type 	: type,
+						ba 		: action,
 					},
 				}).done(function( data ) {
-					
-					$("#rewbe_action_fields").empty().removeClass("loading").html(data);
-					
+                    
+                    var html = $('<div>').html(data);
+
+                    // Extract options from the first field and replace in the original field
+                    var firstField = html.find('.form-field:first');
+                    var newOptions = firstField.find('select').html();
+                    $('#bulk-editor-task .form-field:first select').html(newOptions);
+
+                    // Append remaining fields to #rewbe_action_fields
+                    html.find('.form-field').not(':first').appendTo("#rewbe_action_fields");
+                    
+                    $("#rewbe_action_fields").removeClass("loading");
+        
 					$("#rewbe_action_fields").find('.authors-input').each(function(e){
 						
 						var id = "#" + $(this).attr('id');
@@ -796,7 +1020,7 @@
 			},100);
 		}
 		
-		var selecting;
+		var selectingAction;
 
 		$("#rewbe_action").on('change', function(e){
 			
@@ -840,8 +1064,8 @@
 				});
 			}
 			else if ( id == 'bulk-editor-progress' && $('#rewbe_task_processed').length > 0 ) {
-				
-				actionBtns = $('<button/>', {
+                
+                actionBtns = $('<button/>', {
 					html: '<span class="dashicons dashicons-update" aria-hidden="true"></span>',
 					class: 'handle-order-higher',
 					click: function(e) {
@@ -853,10 +1077,39 @@
 					}
 				});
 			}
-			
+            else if ( id == 'bulk-editor-filters' ){
+            
+                actionBtns = $('<button/>', {
+					html: '<span class="dashicons dashicons-update" aria-hidden="true"></span>',
+					class: 'handle-order-higher',
+					click: function(e) {
+						
+						e.preventDefault();
+						e.stopPropagation();
+						
+						load_task_filters();
+					}
+				});
+            }
+            
 			$(this).find('h2').append(actionBtns);
 		});
 		
+        consoleBtn = $('<button/>', {
+            html: '<span class="dashicons dashicons-editor-code" aria-hidden="true" ></span>',
+            class: 'handle-order-higher',
+            style: 'position:absolute;z-index:9999;right:5px;top:5px;cursor:pointer;background:#fff;border:none;padding:5px;',
+            click: function(e) {
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                open_task_console();
+            }
+        });
+        
+        $('#titlewrap').append(consoleBtn);
+        
 		// set preview button
 		
 		function set_preview_button(){
@@ -865,7 +1118,7 @@
 						
 			if( $("#rew_preview_dialog").length == 0 ){
 				
-				$('body').append('<div id="rew_preview_dialog" title="Content Manager"><div id="rew_preview_items" class="loading"><table></table></div></div>');
+				$('body').append('<div id="rew_preview_dialog" title="Matching Items"><div id="rew_preview_items" class="loading"><table></table></div></div>');
 				
 				$("#rew_preview_dialog").dialog({
 				
@@ -910,7 +1163,52 @@
 				$("#rew_preview_dialog").dialog('open');
 			});
 		}
-		
+        
+        function open_task_console(message){
+            
+            if( $("#rew_console_dialog").length == 0 ){
+				
+                $('body').append('<div id="rew_console_dialog" title="Task Console"><div id="rew_console_items"><table></table></div></div>');
+                
+                $("#rew_console_dialog").dialog({
+                
+                    autoOpen	: false,
+                    
+                    width		: Math.round($(window).width() * 0.5),  // 50% of current window width
+                    height		: Math.round($(window).height() * 0.5), // 50% of current window height
+                    minWidth	: 250,
+                    minHeight	: 250,
+                    resizable	: true,
+                    position: {
+                        my: "center",
+                        at: "center",
+                        of: window
+                    },
+                    create : function (event) {
+                        
+                        $(event.target).parent().css({ 
+                        
+                            'position'	: 'fixed', 
+                            'left'		: 50, 
+                            'top'		: 150,
+                        });
+                        
+                    },
+                    close : function (event) {
+                        
+                        // do something
+                    },
+                });
+            }
+                            
+            if( message ){
+                
+                $('#rew_console_items table').append('<tr><td>' + message + '<hr/></td></tr>' );
+            }
+            
+            $("#rew_console_dialog").dialog('open');
+        }
+        
 		function load_task_preview(page){
 			
 			$.ajaxQueue({
@@ -941,6 +1239,49 @@
 				}
 			});
 		}
+        
+        function set_sidebar(){
+            
+            var sideSortables = $("#side-sortables");
+            var wpAdminBar = $("#wpadminbar");
+            var offset = sideSortables.offset().top;
+            var adminBarHeight = wpAdminBar.length ? wpAdminBar.outerHeight() + 20 : 0; // Get the height of the admin bar
+
+            $(window).on("scroll resize", function () {
+                
+                // Only apply sticky behavior if viewport is wider than 850px
+                
+                if ($(window).width() > 850) {
+                    
+                    if ($(window).scrollTop() > offset) {
+                       
+                        sideSortables.css({
+                            position: "fixed",
+                            top: adminBarHeight + "px", // Adjust the top position to account for the admin bar
+                            zIndex: "100",
+                            width: sideSortables.parent().width(), // Maintain width
+                        });
+                    } 
+                    else {
+                        
+                        sideSortables.css({
+                            position: "static",
+                            width: "",
+                        });
+                    }
+                } 
+                else {
+                    
+                    // Reset styles if viewport is smaller than 850px
+                    sideSortables.css({
+                        position: "static",
+                        width: "",
+                    });
+                }
+            });
+        }
+        
+        set_sidebar();
 	});
 	
 })(jQuery);
