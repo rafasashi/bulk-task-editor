@@ -1570,9 +1570,9 @@ class Rew_Bulk_Editor {
         
         $screen = get_current_screen();
         
-        if( !empty($screen) && $screen->base === 'post' && !empty($_POST['post_type']) ){
+        if( !empty($screen) && $screen->base === 'post' && !empty($_REQUEST['post_type']) ){
             
-            $task = $this->sanitize_task_meta($_POST);
+            $task = $this->sanitize_task_meta($_REQUEST);
         }
         else{
                         
@@ -2700,15 +2700,15 @@ class Rew_Bulk_Editor {
         
         $results = false;
         
-        if( current_user_can('edit_posts') && is_array($_GET['task']) && !empty($_GET['task']['post_ID']) ){
+        if( current_user_can('edit_posts') && is_array($_POST['task']) && !empty($_POST['task']['post_ID']) ){
             
-            $post_title = sanitize_text_field($_GET['task']['post_title']);
+            $post_title = sanitize_text_field($_POST['task']['post_title']);
             
-            $task = $this->sanitize_task_meta($_GET['task']);
+            $task = $this->sanitize_task_meta($_POST['task']);
             
-            $post_id = intval($_GET['task']['post_ID']);
+            $post_id = intval($_POST['task']['post_ID']);
             
-            $post_type = sanitize_title($_GET['task']['post_type']);
+            $post_type = sanitize_title($_POST['task']['post_type']);
             
             $old_task = $this->get_task_meta($post_id);
 				
@@ -2875,11 +2875,11 @@ class Rew_Bulk_Editor {
     
 	public function render_task_process(){
 		
-		if( !empty($_GET['task']) && is_array($_GET['task']) && !empty($_GET['task']['post_ID']) ){
+		if( !empty($_POST['task']) && is_array($_POST['task']) && !empty($_POST['task']['post_ID']) ){
 			
-			$task = $this->sanitize_task_meta($_GET['task']);
+			$task = $this->sanitize_task_meta($_POST['task']);
 
-			$post_id = intval($_GET['task']['post_ID']);
+			$post_id = intval($_POST['task']['post_ID']);
 			
 			$post = get_post($post_id);
 			
@@ -2915,13 +2915,13 @@ class Rew_Bulk_Editor {
 
 	public function render_task_preview(){
 		
-		if( !empty($_GET['task']) && is_array($_GET['task']) && !empty($_GET['task']['post_ID']) ){
+		if( !empty($_POST['task']) && is_array($_POST['task']) && !empty($_POST['task']['post_ID']) ){
 			
-			$task = $this->sanitize_task_meta($_GET['task']);
+			$task = $this->sanitize_task_meta($_POST['task']);
 			
-			$page = intval($_GET['page']);
+			$page = intval($_POST['page']);
 			
-			$post_id = intval($_GET['task']['post_ID']);
+			$post_id = intval($_POST['task']['post_ID']);
 			
 			$post = get_post($post_id);
 			

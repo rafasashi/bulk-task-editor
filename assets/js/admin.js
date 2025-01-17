@@ -617,7 +617,7 @@
                 
                 $.ajax({
                     url : ajaxurl,
-                    type: "GET",
+                    type: "POST",
                     dataType : "json",
                     data : {
                         action 	: "save_task",
@@ -694,7 +694,7 @@
 				
 				$.ajax({
 					url : ajaxurl,
-					type: "GET",
+					type: "POST",
 					dataType : "html",
 					data : {
 						action 	: "render_task_process",
@@ -1096,7 +1096,7 @@
 		});
 		
         consoleBtn = $('<button/>', {
-            html: '<span class="dashicons dashicons-editor-code" aria-hidden="true" ></span>',
+            html: '<span class="dashicons dashicons-bell" aria-hidden="true" ></span>',
             class: 'handle-order-higher',
             style: 'position:absolute;z-index:9999;right:5px;top:5px;cursor:pointer;background:#fff;border:none;padding:5px;',
             click: function(e) {
@@ -1168,7 +1168,7 @@
             
             if( $("#rew_console_dialog").length == 0 ){
 				
-                $('body').append('<div id="rew_console_dialog" title="Task Console"><div id="rew_console_items"><table></table></div></div>');
+                $('body').append('<div id="rew_console_dialog" title="Task Console"><div id="rew_console_items" style="width:100%;"><table></table></div></div>');
                 
                 $("#rew_console_dialog").dialog({
                 
@@ -1214,7 +1214,7 @@
 			$.ajaxQueue({
 				
 				url : ajaxurl,
-				type: 'GET',
+				type: 'POST',
 				data: {
 					action 	: "render_task_preview",
 					task 	: $("#post").serializeObject(),
