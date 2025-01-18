@@ -179,7 +179,7 @@ class Rew_Bulk_Editor {
         $this->load_plugin_textdomain();
 		
         add_action( 'init', array( $this, 'load_localisation' ), 0 );
-		
+
         add_action( 'init', function(){
             
             $this->register_post_type( 'post-type-task', __( 'Post tasks', 'bulk-task-editor' ), __( 'Post task', 'bulk-task-editor' ), '', array(
@@ -266,7 +266,20 @@ class Rew_Bulk_Editor {
                 'menu_icon' 			=> '',
             ));
             
+            add_filter( 'cron_schedules', function($schedules){
+                
+                $schedules['one_minute'] = array(
+                    
+                    'interval' => 60,
+                    'display'  => __('Every Minute'),
+                );
+                
+                return $schedules;
+            });
+            
         },1);
+        
+        add_action('rewbe_process_cron_task',array($this,'process_cron_task'));
         
         add_action('transition_post_status', function($new_status, $old_status, $post) {
 
@@ -1601,7 +1614,7 @@ class Rew_Bulk_Editor {
 		$options = array(
 		
 			'ajax' 	=> 'AJAX',
-			//'cron' 	=> 'CRON',
+			'cron' 	=> 'CRON',
 		);
 		
 		return array(
@@ -2755,6 +2768,10 @@ class Rew_Bulk_Editor {
             
                 $sc_steps = ceil($total/$this->sc_items);
             }
+            else{
+                
+                wp_clear_scheduled_hook('rewbe_process_cron_task',array($post_id));
+            }
             
             if( !empty($changes) || $status == 'reschedule' ){
 
@@ -2989,14 +3006,42 @@ class Rew_Bulk_Editor {
 				if( $call_method == 'ajax' ){
 					
                     $prog = $this->process_task($task_type,$task);
-                    
-					echo esc_html($prog);
 				}
+                else{
+                    
+                    if ( !wp_next_scheduled('rewbe_process_cron_task',array($task_id)) ){
+                        
+                        wp_schedule_event(time(),'one_minute','rewbe_process_cron_task',array($task_id));
+                    }
+                    
+                    $prog = floatval(get_post_meta($task_id,$this->_base.'progress',true));
+                }
+                
+                echo esc_html($prog);
 			}
 		}
 		
 		wp_die();
 	}
+    
+    public function process_cron_task($task_id){
+                
+        $prog = 100;
+
+        if( $post = get_post($task_id) ){
+            
+            $task_type = $post->post_type;
+            
+            $task = $this->get_task_meta($task_id);
+            
+            $prog = $this->process_task($task_type,$task);
+        }
+  
+        if( $prog >= 100 ){
+        
+            wp_clear_scheduled_hook('rewbe_process_cron_task',array($task_id));
+        }
+    }
     
     public function process_task($task_type,$task){
         

@@ -650,7 +650,7 @@
                         }
                         else if( data.processed < 100 ){
                             
-                            load_task_progess();
+                            load_task_progress();
                         }
                     }
                     
@@ -750,7 +750,7 @@
 									
 									$("#rewbe_task_scheduled").removeClass("loading loading-right");
 									
-									load_task_progess();
+									load_task_progress();
 								}
 							},
 							error: function(xhr, status, error){
@@ -763,17 +763,19 @@
 			}
 			else{
 			
-				load_task_progess();
+				load_task_progress();
 			}
 		}
 		
-		function load_task_progess(){
+		function load_task_progress(){
 			
 			if( $('#rewbe_task_processed').length > 0 ){
 				
 				$("#rewbe_task_processed").addClass("loading loading-right");
 				
 				var post_id = $("#post_ID").val();
+                
+                var method = $("input[name='rewbe_call']:checked").val();
 				
 				$.ajaxQueue({
 					
@@ -795,7 +797,13 @@
                                 
                                 if( prog < 100 ){
                                     
-                                    load_task_progess();
+                                    var delay = method == 'cron' ? 30000 : 0;
+                                    
+                                    setTimeout(function(){
+                                        
+                                        load_task_progress();
+                                    
+                                    },delay);
                                 }
                                 else{
                                     
@@ -806,7 +814,10 @@
                                
                                 $("#rewbe_task_processed").removeClass("loading loading-right");
                                 
-                                open_task_console(prog);
+                                if (typeof prog === 'string' && prog.trim() !== '') {
+                                
+                                    open_task_console(prog);
+                                }
                             }
                         }
                         else{
@@ -818,7 +829,7 @@
 						
 						if( xhr.status === 500 || xhr.status === 504 ) {
 							 
-							console.log('Retrying after 10 seconds...');
+							open_task_console('Retrying after 10 seconds...','warning');
 							
 							setTimeout(function(){
 								
@@ -828,7 +839,7 @@
 						}
 						else{
 							
-							console.error('Error processing task: ' + error);
+							open_task_console('Error processing task: ' + error,'error');
 							
 							$("#rewbe_task_processed").removeClass("loading loading-right");
 						}
@@ -841,11 +852,7 @@
         
             if( $('#rewbe_task_scheduled').text() == '100%' ){
             
-                load_task_progess();
-            }
-            else{
-                
-                //load_task_schedule();
+                load_task_progress();
             }
         }
 		
@@ -1073,7 +1080,7 @@
 						e.preventDefault();
 						e.stopPropagation();
 						
-						load_task_progess();
+						load_task_progress();
 					}
 				});
 			}
@@ -1164,11 +1171,11 @@
 			});
 		}
         
-        function open_task_console(message){
+        function open_task_console(message,flag){
             
             if( $("#rew_console_dialog").length == 0 ){
 				
-                $('body').append('<div id="rew_console_dialog" title="Task Console"><div id="rew_console_items" style="width:100%;"><table></table></div></div>');
+                $('body').append('<div id="rew_console_dialog" title="Task Console"><div id="rew_console_items"><table></table></div></div>');
                 
                 $("#rew_console_dialog").dialog({
                 
@@ -1202,6 +1209,15 @@
             }
                             
             if( message ){
+                
+                if( flag == 'warning' ){
+                    
+                    message = '<span style="color:orange;">' + message + '</span>';
+                }
+                else if( flag == 'error' ){
+                    
+                    message = '<span style="color:red;">' + message + '</span>';
+                }
                 
                 $('#rew_console_items table').append('<tr><td>' + message + '<hr/></td></tr>' );
             }

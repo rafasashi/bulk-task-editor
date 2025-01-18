@@ -499,7 +499,7 @@ class Rew_Bulk_Editor_Settings {
 							$html .= '<div class="postbox ">' . "\n";
 								
 								$html .= '<div class="postbox-header">' . "\n";
-									$html .= '<h2 class="hndle ui-sortable-handle">Pending Tasks</h2>' . "\n";
+									$html .= '<h2 class="hndle ui-sortable-handle">Paused Tasks</h2>' . "\n";
 								$html .= '</div>' . "\n";
 								
 								$html .= '<div class="inside">' . "\n";
