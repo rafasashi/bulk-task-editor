@@ -25,7 +25,9 @@ Bulk Task Editor offers a variety of built-in tasks to kick-start your bulk edit
 - Bulk edit parent post (for hierarchical post types)
 - Bulk edit post format (whenever supported)
 - Bulk add, replace, or remove terms (for registered taxonomies)
-- Bulk duplicate posts (single or multisite via table prefix switching)
+- [Bulk duplicate posts (single or multisite via table prefix switching)](https://code.recuweb.com/2024/how-to-translate-a-wordpress-website-using-openai-and-bte/)
+- Bulk find and replace contents (in title, content, excerpt)
+- Bulk insert content before or after (in title, content, excerpt)
 - Bulk edit meta values
 - Bulk remove meta
 - Bulk rename meta
@@ -34,6 +36,7 @@ Bulk Task Editor offers a variety of built-in tasks to kick-start your bulk edit
 ### Taxonomies (Categories, Tags, etc.)
 
 - Bulk edit parent term (for hierarchical taxonomies)
+- Bulk find and replace contents (in name, description)
 - Bulk edit term meta values
 - Bulk remove term meta
 - Bulk rename term meta
@@ -42,6 +45,7 @@ Bulk Task Editor offers a variety of built-in tasks to kick-start your bulk edit
 ### Users
 
 - [Bulk add, replace, or remove user roles](https://code.recuweb.com/support/discussion/how-to-bulk-edit-user-roles/)
+- Bulk find and replace contents (in name, description, url)
 - Bulk edit user meta values
 - Bulk remove user meta
 - Bulk rename user meta
