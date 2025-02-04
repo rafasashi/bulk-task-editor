@@ -461,6 +461,86 @@ class Rew_Bulk_Editor_Admin_API {
 				$html .= '</div>';
 
 			break;
+            case 'search':
+				
+				if( 	!isset($data['s']) 
+					|| 	!is_array($data['s']) 
+                    || 	!isset($data['in']) 
+					|| 	!is_array($data['in']) 
+					|| 	!isset($data['op']) 
+					|| 	!is_array($data['op']) 
+				){
+
+					$data = [
+					
+						's' 	=> [ 0 => is_string($data) ? $data : '' ], 
+                        'in' 	=> [ 0 => 'post_content' ],		
+						'op' 	=> [ 0 => 'like' ],						
+					];
+				}
+				
+				$compare_options = array(
+                
+                    'like'      => 'LIKE',
+                    'not-like'  => 'NOT LIKE',
+                );
+				
+				$html .= '<div id="'.$field['id'].'" class="search-input">';
+					
+					$html .= '<a href="#" class="add-input-group" data-target="'.$field['id'].'" style="line-height:40px;">Add Field</a>';
+					
+					$html .= '<ul class="search-input-group" style="display:grid;">';
+						
+						if( !empty($data['s']) ){
+							
+							foreach( $data['s'] as $e => $s ) {
+
+								$class='input-group-row';
+
+								$column = str_replace('\\\'','\'',$data['in'][$e]);
+                                
+                                $compare = str_replace('\\\'','\'',$data['op'][$e]);
+
+								$html .= '<li class="'.$class.'" style="display:inline-block;width:100%;">';
+									
+									$html .= '<input placeholder="Search keyword" type="text" name="'.$option_name.'[s][]" style="height:30px;width:30%;float:left;" value="'.$s.'">';
+									
+									$html .= '<select name="'.$option_name.'[in][]" style="width:100px;float:left;">';
+										
+										foreach ( $field['options'] as $k => $v ) {
+											
+											$selected = $k === $column ? true : false;
+											
+											$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+										}
+									
+									$html .= '</select> ';
+                                    
+									$html .= '<select name="'.$option_name.'[op][]" style="width:100px;float:left;">';
+										
+										foreach ( $compare_options as $k => $v ) {
+											
+											$selected = $k === $compare ? true : false;
+											
+											$html .= '<option ' . selected( $selected, true, false ) . ' value="' . esc_attr( $k ) . '">' . $v . '</option>';
+										}
+									
+									$html .= '</select> ';
+
+									if( $e > 0 ){
+										
+										$html .= '<a class="remove-input-group" href="#">x</a> ';
+									}
+
+								$html .= '</li>';						
+							}
+						}
+					
+					$html .= '</ul>';					
+					
+				$html .= '</div>';
+
+			break;            
 			case 'dates':
 				
 				if( 	!isset($data['type']) 
@@ -866,6 +946,72 @@ class Rew_Bulk_Editor_Admin_API {
 							
 						$html .= '</select> ';
 					}
+					
+					$html .= '<span class="close m-0 p-0 border-0 bg-transparent">x</span>';
+					
+				$html .= '</div>';
+					
+			break;
+            case 'tasks':
+				
+				$html .= '<div class="auto-input tasks-input" id="'.$field['id'].'" data-type="'.$field['task_type'].'">';
+					
+					$html .= '<div class="autocomplete">';
+						
+						$html .= '<input style="width:60%;margin-bottom:5px;" type="text" placeholder="Search task...">';
+						
+						$html .= '<div class="autocomplete-items"></div>';
+					
+					$html .= '</div>';
+					
+					$html .= '<div class="data">';
+						
+						$html .= '<input type="hidden" value="-1" name="'.$option_name.'[]"/>';
+						
+						if( !empty($data) && is_array($data) ){
+							
+                            $i = 0;
+                            
+							foreach( $data as $id ){
+								
+								$id = intval($id);
+								
+								if( $id > 0 ){
+									
+									if( $task = get_post($id) ){
+										
+                                        ++$i;
+                                        
+										$html .= $this->display_field(array(
+									
+											'id'        => $field['id'],
+											'name'      => $option_name,
+											'type' 	    => 'task',
+                                            'number' 	=> $i,
+											'data'	    => array(
+											
+												'id' 	    => $task->ID,
+												'name' 	    => $task->post_title . ' - #' . $task->ID,
+                                            )
+											
+										),null,false);
+									}
+								}
+							}
+						}
+						
+					$html .= '</div>';
+					
+				$html .= '</div>';
+				
+			break;
+            case 'task':
+			
+				$html .= '<div class="item">';
+					
+                    $html .= '<input style="width:60%;float:left;" type="text" value="Task '.$field['number'].' - ' . $data['name'] . '" disabled="disabled"/>';
+
+					$html .= '<input type="hidden" value="' . $data['id'] . '" name="'.$option_name.'[]"/>';
 					
 					$html .= '<span class="close m-0 p-0 border-0 bg-transparent">x</span>';
 					
