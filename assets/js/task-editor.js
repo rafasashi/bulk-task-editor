@@ -72,7 +72,7 @@
     };
 	
 	$(document).ready(function(){
-
+        
 		// requests handler
 		
 		var ajaxQueue = $({});
@@ -518,7 +518,7 @@
 			set_taxonomy_field(id);
 		});
 		
-		// authors
+		// task
 
 		function set_task_field(id){
 			
@@ -662,13 +662,18 @@
 
 		function set_author_field(id){
 			
-			let multi = $(id).attr("data-multi");
+			let multi       = $(id).attr("data-multi");
+            let callback    = $(id).attr("data-callback");
 			
 			if( $(id + " .item").length > 0 && multi == 'false' ){
 				
 				$(id + " .autocomplete").hide();
 			}
-			
+			else{
+                
+                $(id + " .autocomplete").show();
+            }
+            
 			// handle the click of close button on the tags
 
 			$(document).on("click", id + " .data .item .close", function() {
@@ -767,7 +772,7 @@
 						dataType : "json",
 						data : {
 							
-							action 	: "render_author_suggestions",
+							action 	: callback,
 							id		: id,
 							s 		: query,
 						},
@@ -1255,7 +1260,7 @@
 			load_action_fields();
 		});
 		
-		// set action buttons
+		// set refresh buttons
 		
 		$('.postbox').each(function() {
 			

@@ -669,6 +669,7 @@ class Rew_Bulk_Editor {
                 
                     'id'          	=> $this->_base . 'post_authors',
                     'type'        	=> 'authors',
+                    'placeholder'   => 'Search author...',
                     'multi'			=> true,
                 );
             }
@@ -994,9 +995,10 @@ class Rew_Bulk_Editor {
 						'fields' 	=> array(
 							array(
 								
-								'name' 		=> 'ids',
-								'type'		=> 'authors',
-								'multi'		=> false,
+								'name' 		    => 'ids',
+								'type'		    => 'authors',
+                                'placeholder'   => 'Search author...',
+								'multi'		    => false,
 							),
 						),
 					);
@@ -1564,9 +1566,10 @@ class Rew_Bulk_Editor {
 				'fields' 	=> array(
 					array(
 					
-						'name' 	=> 'reassign',
-						'label' => 'Reassign contents to',
-						'type'	=> 'authors',
+						'name' 	        => 'reassign',
+						'label'         => 'Reassign contents to',
+						'type'	        => 'authors',
+                        'placeholder'   => 'Search author...',
 					),
 					array(
 						
@@ -2000,7 +2003,7 @@ class Rew_Bulk_Editor {
 			),
 		);
 	}
-
+    
 	public function compare_arrays($oldArray,$newArray,$ignoreKeys=array()) {
 
 		$changes = array();
@@ -2420,7 +2423,7 @@ class Rew_Bulk_Editor {
 		return $pattern;
 	}
 
-	public function sanitize_content($content,$allowed_html=null,$allowed_protocols=null){
+	static public function sanitize_content($content,$allowed_html=null,$allowed_protocols=null){
 		
 		if( is_null($allowed_html) ){
 			
@@ -2972,8 +2975,8 @@ class Rew_Bulk_Editor {
 		
 		if( current_user_can('edit_posts') ){
 			
-			if( $s =  apply_filters( 'get_search_query', sanitize_text_field($_GET['s']) ) ){
-				
+            if( $s = apply_filters('get_search_query', sanitize_text_field($_GET['s']) ) ){
+                
 				$taxonomy = sanitize_title($_GET['taxonomy']);
 				
 				$hierarchical = !empty($_GET['h']) ? filter_var($_GET['h'], FILTER_VALIDATE_BOOLEAN) : false;
@@ -2983,7 +2986,7 @@ class Rew_Bulk_Editor {
 				$context = !empty($_GET['c']) ? sanitize_title($_GET['c']) : 'filter';
 				
 				if( $taxonomy = get_taxonomy($taxonomy) ){
-
+                      
 					if( $terms = get_terms(array(
 						
 						'orderby' 		=> 'count',
@@ -3049,7 +3052,7 @@ class Rew_Bulk_Editor {
             $post_type = sanitize_title($_POST['task']['post_type']);
             
             $old_task = $this->get_task_meta($post_id);
-				
+            
             $changes = $this->compare_arrays($old_task,$task,array(
                 
                 'rewbe_id',

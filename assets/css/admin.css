@@ -3,6 +3,9 @@ input:disabled{
     background: #eee;
 	font-weight: bold;
 }
+.auto-input {
+    min-height: 35px !important;
+}
 .auto-input .item {
     margin-bottom: 5px;
 }
@@ -12,19 +15,18 @@ input:disabled{
 	margin-top:2px;
 }
 .auto-input .autocomplete input{
-	
     padding-right: 20px
 }
-
+.authors-input .autocomplete {
+	display:none;
+}
 .loading, .auto-input .autocomplete input.loading{
-	
     background-size: 25px;
 	background-repeat: no-repeat;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' style='margin:auto;background:transparent;display:block;' width='58px' height='58px' viewBox='0 0 100 100' preserveAspectRatio='xMidYMid'%3E%3Crect x='17.5' y='30' width='15' height='40' fill='%236a6a6a'%3E%3Canimate attributeName='y' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='18;30;30' keySplines='0 0.5 0.5 1;0 0.5 0.5 1' begin='-0.19230769230769232s'%3E%3C/animate%3E%3Canimate attributeName='height' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='64;40;40' keySplines='0 0.5 0.5 1;0 0.5 0.5 1' begin='-0.19230769230769232s'%3E%3C/animate%3E%3C/rect%3E%3Crect x='42.5' y='30' width='15' height='40' fill='%23979797'%3E%3Canimate attributeName='y' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='20.999999999999996;30;30' keySplines='0 0.5 0.5 1;0 0.5 0.5 1' begin='-0.09615384615384616s'%3E%3C/animate%3E%3Canimate attributeName='height' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='58.00000000000001;40;40' keySplines='0 0.5 0.5 1;0 0.5 0.5 1' begin='-0.09615384615384616s'%3E%3C/animate%3E%3C/rect%3E%3Crect x='67.5' y='30' width='15' height='40' fill='%23bdbdbd'%3E%3Canimate attributeName='y' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='20.999999999999996;30;30' keySplines='0 0.5 0.5 1;0 0.5 0.5 1'%3E%3C/animate%3E%3Canimate attributeName='height' repeatCount='indefinite' dur='0.9615384615384615s' calcMode='spline' keyTimes='0;0.5;1' values='58.00000000000001;40;40' keySplines='0 0.5 0.5 1;0 0.5 0.5 1'%3E%3C/animate%3E%3C/rect%3E%3C/svg%3E");
 }
 
 .loading-right, .auto-input .autocomplete input.loading{
-	
    background-position: center right;
 }
 
@@ -44,6 +46,7 @@ input:disabled{
 	right: 0;
 	max-height: 150px;
 	overflow-y: auto;
+    overflow-x: hidden;
 }
 .auto-input .autocomplete-items div {
 	padding: 10px;

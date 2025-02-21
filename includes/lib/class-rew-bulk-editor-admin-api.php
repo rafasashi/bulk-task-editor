@@ -21,9 +21,9 @@ class Rew_Bulk_Editor_Admin_API {
 		
 		$this->parent = $parent;
 		
-		add_action('rewbe_allowed_admin_html', array( $this, 'add_allowed_default_html' ), 10, 1 );
-		add_action('rewbe_allowed_admin_html', array( $this, 'add_allowed_form_html' ), 10, 1 );
-		add_action('rewbe_allowed_admin_html', array( $this, 'add_allowed_table_html' ), 10, 1 );
+		add_action($this->parent->_base.'allowed_admin_html', array( $this, 'add_allowed_default_html' ), 10, 1 );
+		add_action($this->parent->_base.'allowed_admin_html', array( $this, 'add_allowed_form_html' ), 10, 1 );
+		add_action($this->parent->_base.'allowed_admin_html', array( $this, 'add_allowed_table_html' ), 10, 1 );
 	}
 
 	/**
@@ -827,7 +827,7 @@ class Rew_Bulk_Editor_Admin_API {
 				
 				$context = !empty($field['context']) ? $field['context'] : 'filter';
 				
-				$html .= '<div class="auto-input tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-hierarchical="'.$hierarchical.'" data-operator="'.$operator.'" data-context="'.$field['context'].'">';
+                $html .= '<div class="auto-input tags-input" id="'.$field['id'].'" data-taxonomy="'.$field['taxonomy'].'" data-hierarchical="'.$hierarchical.'" data-operator="'.$operator.'" data-context="'.$field['context'].'">';
 
 					$html .= '<div class="autocomplete">';
 						
@@ -1020,11 +1020,11 @@ class Rew_Bulk_Editor_Admin_API {
 			break;
 			case 'authors':
 				
-				$html .= '<div class="auto-input authors-input" id="'.$field['id'].'" data-multi="'.( !empty($field['multi']) ? 'true' : 'false' ).'">';
+				$html .= '<div class="auto-input authors-input loading" id="'.$field['id'].'" data-multi="'.( !empty($field['multi']) ? 'true' : 'false' ).'" data-callback="'.( !empty($field['callback']) ? $field['callback'] : 'render_author_suggestions' ).'">';
 					
 					$html .= '<div class="autocomplete">';
 						
-						$html .= '<input style="width:60%;margin-bottom:5px;" type="text" placeholder="Search author...">';
+						$html .= '<input style="width:60%;margin-bottom:5px;" type="text" placeholder="'.$placeholder.'">';
 						
 						$html .= '<div class="autocomplete-items"></div>';
 					
@@ -1042,21 +1042,39 @@ class Rew_Bulk_Editor_Admin_API {
 								
 								if( $id > 0 ){
 									
-									if( $user = get_user_by('id',$id) ){
-										
-										$html .= $this->display_field(array(
-									
-											'id'    => $field['id'],
-											'name'  => $option_name,
-											'type' 	=> 'author',
-											'data'	=> array(
-											
-												'id' 	=> $user->ID,
-												'name' 	=> $user->display_name . ' (' . $user->user_email . ')',
-											)
-											
-										),null,false);
-									}
+                                    if( $field['callback'] == 'render_author_suggestions' ){
+                                        
+                                        if( $user = get_user_by('id',$id) ){
+                                            
+                                            $html .= $this->display_field(array(
+                                        
+                                                'id'    => $field['id'],
+                                                'name'  => $option_name,
+                                                'type' 	=> 'user',
+                                                'data'	=> array(
+                                                
+                                                    'id' 	=> $user->ID,
+                                                    'name' 	=> $user->display_name . ' (' . $user->user_email . ')',
+                                                )
+                                                
+                                            ),null,false);
+                                        }
+                                    }
+                                    elseif( $post = get_post($id) ){
+                                        
+                                        $html .= $this->display_field(array(
+                                    
+                                            'id'    => $field['id'],
+                                            'name'  => $option_name,
+                                            'type' 	=> 'user',
+                                            'data'	=> array(
+                                            
+                                                'id' 	=> $post->ID,
+                                                'name' 	=> $post->post_title . ' - #' . $post->ID,
+                                            )
+                                            
+                                        ),null,false);
+                                    }
 								}
 							}
 						}
@@ -1147,7 +1165,7 @@ class Rew_Bulk_Editor_Admin_API {
 	
 	public function add_allowed_default_html($html){
 		
-		return array_merge($html,array(
+		$default_html = array_merge($html,array(
 		
 			'h1' => array(
 			
@@ -1187,6 +1205,7 @@ class Rew_Bulk_Editor_Admin_API {
 				'data-operator'		=> array(),
 				'data-context'		=> array(),
 				'data-multi'		=> array(),
+                'data-callback'     => array(),
 				'data-type'		    => array(),
 				'data-steps'	    => array(),
 				'data-uploader_title'		=> array(),
@@ -1258,6 +1277,13 @@ class Rew_Bulk_Editor_Admin_API {
 				'id'    => array(),
 			),
 		));
+        
+        foreach( $default_html as $tag => $args ){
+            
+            $html[$tag] = isset($html[$tag]) ? array_merge($args,$html[$tag]) : $args;
+        }
+        
+        return $html;
 	}
 	
 	public function add_allowed_form_html($html) {
