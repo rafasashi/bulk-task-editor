@@ -25,6 +25,7 @@ Bulk Task Editor offers a variety of built-in tasks to kick-start your bulk edit
 - Bulk edit parent post (for hierarchical post types)
 - Bulk edit post format (whenever supported)
 - Bulk add, replace, or remove terms (for registered taxonomies)
+- Bulk export posts (CSV)
 - [Bulk duplicate posts (single or multisite via table prefix switching)](https://code.recuweb.com/2024/how-to-translate-a-wordpress-website-using-openai-and-bte/)
 - Bulk find and replace contents (in title, content, excerpt)
 - Bulk insert content before or after (in title, content, excerpt)

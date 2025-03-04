@@ -625,41 +625,39 @@ class Rew_Bulk_Editor_Settings {
 							$html .= '<div class="postbox ">' . "\n";
 								
 								$html .= '<div class="postbox-header">' . "\n";
-									$html .= '<h2 class="hndle ui-sortable-handle">New Task</h2>' . "\n";
+									$html .= '<h2 class="hndle ui-sortable-handle">Manage Tasks</h2>' . "\n";
 								$html .= '</div>' . "\n";
 								
 								$html .= '<div class="inside">' . "\n";
 									$html .= '<div class="main">' . "\n";
 									
-										$html .= '<ul>' . "\n";
+										$html .= '<table style="width:100%;">' . "\n";
 											
-											$html .= '<li>' . "\n";
+											$html .= '<tr>' . "\n";
+                                                
+                                                $html .= '<td><a class="button button-link" href="'.admin_url('edit.php?post_type=post-type-task').'">'.__('All Post Type Tasks', 'bulk-task-editor').'</a></td>' . "\n";
+                                                
+												$html .= '<td style="text-align:right;"><a class="button button-small" href="'.admin_url('post-new.php?post_type=post-type-task').'">'.__('Add New', 'bulk-task-editor').'</a></td>' . "\n";
 											
-												$html .= '<a href="'.admin_url('post-new.php?post_type=post-type-task').'">'.__('Post Type Task', 'bulk-task-editor').'</a>' . "\n";
+											$html .= '</tr>' . "\n";
 											
-											$html .= '</li>' . "\n";
+											$html .= '<tr>' . "\n";
+                                                
+                                                $html .= '<td><a class="button button-link" href="'.admin_url('edit.php?post_type=taxonomy-task').'">'.__('All Taxonomy Tasks', 'bulk-task-editor').'</a></td>' . "\n";
+                                                
+												$html .= '<td style="text-align:right;"><a class="button button-small" href="'.admin_url('post-new.php?post_type=taxonomy-task').'">'.__('Add New', 'bulk-task-editor').'</a></td>' . "\n";
 											
-											$html .= '<li>' . "\n";
+											$html .= '</tr>' . "\n";
 											
-												$html .= '<a href="'.admin_url('post-new.php?post_type=taxonomy-task').'">'.__('Taxonomy Task', 'bulk-task-editor').'</a>' . "\n";
+											$html .= '<tr>' . "\n";
+                                                
+                                                $html .= '<td><a class="button button-link" href="'.admin_url('edit.php?post_type=user-task').'">'.__('All User Tasks', 'bulk-task-editor').'</a></td>' . "\n";
+                                                
+												$html .= '<td style="text-align:right;"><a class="button button-small" href="'.admin_url('post-new.php?post_type=user-task').'">'.__('Add New', 'bulk-task-editor').'</a></td>' . "\n";
 											
-											$html .= '</li>' . "\n";
+											$html .= '</tr>' . "\n";
 											
-											$html .= '<li>' . "\n";
-											
-												$html .= '<a href="'.admin_url('post-new.php?post_type=user-task').'">'.__('User Task', 'bulk-task-editor').'</a>' . "\n";
-											
-											$html .= '</li>' . "\n";
-											
-											/*
-											$html .= '<li>' . "\n";
-											
-												$html .= '<a href="'.admin_url('post-new.php?post_type=data-task').'">'.__('Imported Data', 'bulk-task-editor').'</a>' . "\n";
-											
-											$html .= '</li>' . "\n";
-											*/
-											
-										$html .= '</ul>' . "\n";
+										$html .= '</table>' . "\n";
 									
 									$html .= '</div>' . "\n";
 								$html .= '</div>' . "\n";

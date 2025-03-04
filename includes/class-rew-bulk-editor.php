@@ -1055,12 +1055,83 @@ class Rew_Bulk_Editor {
 						}
 					}
 				}
+                
+                // export csv
+                
+                $actions[] = array(
+                    
+                    'label' 	=> 'Export Data - CSV',
+                    'id' 		=> 'export_data',
+                    'fields' 	=> array(
+                        array(
+                            
+                            'name'  => 'format',
+                            'type'  => 'hidden',
+                            'data'  => 'csv',
+                        ),
+                        array(
+                            
+                            'label'     => 'Separator',
+                            'name'      => 'separator',
+                            'type'      => 'select',
+                            'options'   => $this->get_csv_separator_options(),
+                            'default'   => $this->get_current_csv_separator(),
+                        ),
+                        array(
+                            
+                            'label'     => 'Path',
+                            'name'      => 'path',
+                            'type'      => 'text',
+                            'default'   => trailingslashit(wp_upload_dir()['basedir']).'bte_exports/'.$task['rewbe_id'],
+                        ),
+                        array(
+                            
+                            'label'         => 'File Name',
+                            'name'          => 'filename',
+                            'type'          => 'text',
+                            'default'       => 'exported_data',
+                            'description'   => 'without .csv extension',
+                        ),
+                        array(
+                            
+                            'label'     => 'Fields',
+                            'name'      => 'fields',
+                            'type'      => 'checkbox_multi',
+                            'style'     => 'width:250px;',
+                            'options'   => $this->get_post_type_attributes(),
+                            //'default'   => array_keys($this->get_post_type_attributes()),
+                            'default'   => array(
+                                
+                                'ID',
+                                'post_title',
+                                'post_content',
+                                'post_type',
+                            ),
+                        ),
+                        array(
+                            
+                            'label'         => 'URLs',
+                            'name' 			=> 'urls',
+                            'type'			=> 'checkbox_multi',
+                            'style'         => 'width:250px;',
+                            'options'       => $this->get_post_url_options(),
+                        ),
+                        array(
+                            
+                            'label'         => 'Meta',
+                            'name' 			=> 'meta',
+                            'type'			=> 'array',
+                            'keys'			=> false,
+                            'placeholder'	=> 'meta_name',
+                        ),
+                    ),
+                );
 			}
 			
 			return $actions;
 			
 		},0,3);
-
+        
 		add_filter('rewbe_post_taxonomy_action_fields',function($fields,$taxonomy,$post_type){
 			
 			if( in_array($post_type->name,array(
@@ -2104,6 +2175,14 @@ class Rew_Bulk_Editor {
         
         return $types;
 	}
+    
+    public function get_post_url_options(){
+        
+        return array(
+        
+            'permalink' => 'Permalink',
+        );
+    }
 	
 	public function get_post_type_options(){
 		
@@ -2259,6 +2338,36 @@ class Rew_Bulk_Editor {
 		}
         
         return $actions;
+    }
+    
+    public function get_post_type_attributes(){
+    
+        return array(
+            'ID'                    => 'Post ID',
+            'post_title'            => 'Post Title',
+            'post_name'             => 'Post Name (slug)',
+            'post_author'           => 'Post Author ID',
+            'post_parent'           => 'Parent Post ID',
+            'post_status'           => 'Post Status',
+            'post_type'             => 'Post Type',
+            'post_date'             => 'Post Publish Date',
+            'post_date_gmt'         => 'Post Publish Date (GMT)',
+            'post_modified'         => 'Post Last Modified Date',
+            'post_modified_gmt'     => 'Post Last Modified Date (GMT)',           
+            'post_excerpt'          => 'Post Excerpt',
+            'post_content'          => 'Post Content',
+            'comment_status'        => 'Comment Status',           
+            'comment_count'         => 'Comment Count',
+            'ping_status'           => 'Ping Status',
+            'post_password'         => 'Post Password',
+            'to_ping'               => 'To Ping URLs',
+            'pinged'                => 'Already Pinged URLs',
+            'post_content_filtered' => 'Filtered Post Content',
+            'guid'                  => 'Global Unique Identifier',
+            'menu_order'            => 'Menu Order',
+            'post_mime_type'        => 'Post MIME Type',
+            'filter'                => 'Post Filter Type',
+        );
     }
     
 	public function get_post_type_statuses($post_type,$exclude=array()){
@@ -3157,6 +3266,8 @@ class Rew_Bulk_Editor {
                 $processed  = intval(get_post_meta($post_id,$this->_base.'progress',true));
             }
             
+            do_action('rewbe_task_saved',$task);
+            
             $results = array(
                 
                 'status'    => $status == 'reschedule' ? 'running' : $status,
@@ -3484,12 +3595,16 @@ class Rew_Bulk_Editor {
                         
                         add_action('rewbe_do_post_edit_tax_'.$taxonomy,array($this,'edit_post_taxonomy'),10,2);
                     }
+                    elseif( $action == 'export_data' ){
+                        
+                        add_action('rewbe_do_post_export_data',array($this,'export_post_data'),10,4);
+                    }
                     
-                    foreach( $query->posts as $post ){
+                    foreach( $query->posts as $iteration => $post ){
                         
                         //update_post_meta($post->ID,$this->_base.$task_id,time());
         
-                        apply_filters('rewbe_do_post_'.$action,$post,$args);
+                        apply_filters('rewbe_do_post_'.$action,$post,$args,$task,$iteration);
                         
                         delete_post_meta($post->ID,$this->_base.$task_id);
                     }
@@ -3558,11 +3673,11 @@ class Rew_Bulk_Editor {
                         add_action('rewbe_do_term_delete_term',array($this,'delete_term'),10,2);
                     }
                     
-                    foreach( $query->terms as $term ){
+                    foreach( $query->terms as $iteration => $term ){
                         
                         //update_term_meta($term->term_id,$this->_base.$task_id,time());
         
-                        apply_filters('rewbe_do_term_'.$action,$term,$args);
+                        apply_filters('rewbe_do_term_'.$action,$term,$args,$task,$iteration);
                          
                         delete_term_meta($term->term_id,$this->_base.$task_id);
                     }
@@ -3626,11 +3741,11 @@ class Rew_Bulk_Editor {
                         add_action('rewbe_do_user_rename_meta',array($this,'rename_user_meta'),10,2);
                     }
                     
-                    foreach ( $users as $user ){
+                    foreach ( $users as $iteration => $user ){
                         
                         //update_user_meta($user->ID,$this->_base.$task_id,time());
         
-                        apply_filters('rewbe_do_user_'.$action,$user,$args);
+                        apply_filters('rewbe_do_user_'.$action,$user,$args,$task,$iteration);
                         
                         delete_user_meta($user->ID,$this->_base.$task_id);
                     }
@@ -4964,7 +5079,237 @@ class Rew_Bulk_Editor {
 			}
 		}
 	}
-	
+    
+    public function get_csv_separator_options(){
+        
+        return array(
+        
+            'semicolon' => 'Semicolon',
+            'comma'     => 'Comma',
+        );
+    }
+    
+    public function get_current_csv_separator(){
+
+        $accept_language = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
+
+        $semicolon_locales = ['fr', 'de', 'it', 'es', 'nl', 'pl', 'sv', 'da', 'fi', 'pt', 'ru'];
+
+        $languages = explode(',', $accept_language);
+        $scores = [];
+
+        foreach ($languages as $lang) {
+            
+            if (strpos($lang,';q=') !== false){
+                
+                list($lang_code,$q_value) = explode(';q=',$lang);
+                
+                $priority = (float) $q_value;
+            } 
+            else {
+                
+                $lang_code = trim($lang);
+                
+                $priority = 0.5; // Default q=0.5 if not specified
+            }
+            
+            $lang_base = explode('-', $lang_code)[0];
+
+            // Sum priority scores for each language
+            
+            if (!isset($scores[$lang_base])) {
+                
+                $scores[$lang_base] = 0;
+            }
+            
+            $scores[$lang_base] += $priority;
+        }
+
+        arsort($scores);
+        
+        $top_language = array_key_first($scores);
+
+        foreach ($semicolon_locales as $locale) {
+            
+            if( stripos($top_language, $locale) === 0 ){
+                
+                return 'semicolon';
+            }
+        }
+
+        return 'comma';
+    }
+    
+	public function export_post_data($post,$args,$task,$iteration=0) {
+        
+        if ( !empty($args['format']) && !empty($args['path'])  && !empty($args['filename']) && !empty($args['fields']) && is_array($args['fields']) ){
+            
+            $format     = sanitize_title($args['format']);
+            $path       = trailingslashit(wp_normalize_path($args['path']));
+            $filename   = sanitize_title($args['filename']);
+            
+            $prog = isset($task['rewbe_progress']) ? floatval($task['rewbe_progress']) : 0;
+           
+            // Ensure the directory exists
+            
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+        
+            WP_Filesystem();
+            
+            global $wp_filesystem;
+            
+            $parent = $path;
+
+            $paths_to_create = [];
+
+            // Traverse up the directory tree to find the first existing parent
+            
+            while( !$wp_filesystem->exists($parent) && $parent !== '/' && $parent !== '.' && $parent !== '' ){
+                
+                $paths_to_create[] = $parent;
+                
+                $parent = dirname($parent);
+            }
+
+            // Create directories in order
+            
+            while( !empty($paths_to_create) ){
+                
+                $dir_to_create = array_pop($paths_to_create);
+                
+                $wp_filesystem->mkdir($dir_to_create);
+            }
+            
+            if( !$wp_filesystem->exists($path) ){
+                
+                die('Path could not be created: ' . $path);
+            }
+            
+            if ( $format == 'csv' ) {
+                
+                $filename .= '.csv';
+                
+                $file_path = $path . $filename;
+                
+                if( $wp_filesystem->exists($file_path) ){
+                    
+                    if( $prog == 0 && $iteration == 0 ){
+                        
+                        if( !$wp_filesystem->delete($file_path) ){
+                            
+                            die('Error deleting existing file in: '.$file_path);
+                        }
+                        
+                        $is_new = true;
+                    }
+                    else{
+                        
+                        $is_new = false;
+                    }
+                }
+                else{
+                    
+                    $is_new = true;
+                }
+
+                $separator  = isset($args['separator']) && sanitize_title($args['separator']) == 'semicolon' ? ';' : ',';
+            
+                $enclosure = "\"";
+
+                $post_data  = array();
+                $fields     = array();
+                
+                // export fields
+                
+                foreach( $args['fields'] as $field ) {
+                    
+                    if( $field = sanitize_text_field($field) ){
+                        
+                        $fields[]   = $field;
+                        $post_data[] = isset($post->$field) ? $this->sanitize_csv_field($post->$field,$separator,$enclosure) : '';
+                    }
+                }
+                
+                // export urls
+                
+                $urls = !empty($args['urls']) ? array_map('sanitize_title', $args['urls']) : array();
+                
+                $options = $this->get_post_url_options();
+                
+                if( !empty($urls) ){
+                    
+                    foreach( $urls as $url ){
+                     
+                        if( $url == 'permalink' ){
+                            
+                            $fields[] = $url;
+                            
+                            $post_data[] = get_permalink($post);
+                        }
+                    }
+                }
+                
+                // export metadata
+                
+                $meta = !empty($args['meta']['value']) ? array_map('sanitize_text_field', $args['meta']['value']) : array();
+                
+                if( !empty($meta) ){
+                    
+                    $metadata = get_post_meta($post->ID);
+                    
+                    foreach( $meta as $key ){
+                        
+                        $fields[] = $key;
+                        
+                        $post_data[] = isset($metadata[$key][0]) ? $this->sanitize_csv_field($metadata[$key][0],$separator,$enclosure) : '';
+                    }
+                }
+                
+                $file_handle = fopen($file_path,'a');
+
+                if( $is_new ){
+                    
+                    fwrite($file_handle, "\xEF\xBB\xBF");
+                    
+                    fputcsv($file_handle, $fields,$separator,$enclosure);
+                    
+                    //fputs($file_handle,implode($separator,$fields).PHP_EOL);
+                }
+                
+                fputcsv($file_handle, $post_data,$separator,$enclosure);
+                //dump($post_data);
+                //fputs($file_handle,implode($separator,$post_data).PHP_EOL);
+                
+                fclose($file_handle);   
+            }
+        }
+    }
+    
+    private function sanitize_csv_field($str,$separator,$enclosure) {
+
+        $str = (string)$str;
+        
+        // Remove leading and trailing spaces using regex
+        
+        $str = preg_replace('/^[\s]+|[\s]+$/u', '', $str);
+        
+        // Replace none breaking space
+        
+        $str = str_replace("\xC2\xA0", " ", $str); // UTF-8 NBSP
+        //$str = str_replace("&nbsp;", " ", $str);   // HTML entity
+        
+        // Escape breaking space
+        /*
+        $str = preg_replace(
+            ["/\r/", "/\n/", "/\t/", "/\f/", "/\v/"], 
+            ["\\r", "\\n", "\\t", "\\f", "\\v"], 
+            $str
+        );
+        */
+        
+        return $str;
+    }
+    
 	public function edit_term_parent($term,$args){
 		
 		if( isset($args['id']) && is_numeric($args['id']) ){

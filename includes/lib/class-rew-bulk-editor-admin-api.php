@@ -173,7 +173,7 @@ class Rew_Bulk_Editor_Admin_API {
 			break;
 
 			case 'checkbox_multi':
-			
+               
 				$html .='<div style="width:fit-content;">';
 					
 					foreach ( $field['options'] as $k => $v ) {

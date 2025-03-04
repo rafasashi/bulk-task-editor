@@ -6,7 +6,7 @@ License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Requires WP: 6.4.3
 Requires PHP: 7.4.28
-Stable Tag: 1.0.4
+Stable Tag: 1.0.11
 Tested up to: 6.6
 
 Bulk Task Editor (BTE) is a WordPress plugin designed to simplify and accelerate your content management workflow.
@@ -35,6 +35,7 @@ Here is an overview of the default tasks you can perform:
 * Bulk edit parent post (for hierarchical post types)
 * Bulk edit post format (whenever supported)
 * Bulk add, replace, or remove terms (for registered taxonomies)
+* Bulk export posts (CSV)
 * [Bulk duplicate posts (single or multisite via table prefix switching)](https://code.recuweb.com/2024/how-to-translate-a-wordpress-website-using-openai-and-bte/)
 * Bulk find and replace contents (in title, content, excerpt)
 * Bulk insert content before or after (in title, content, excerpt)
