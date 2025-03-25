@@ -657,6 +657,16 @@ class Rew_Bulk_Editor_Settings {
 											
 											$html .= '</tr>' . "\n";
 											
+                                            /*
+											$html .= '<tr>' . "\n";
+                                                
+                                                $html .= '<td><a class="button button-link" href="'.admin_url('edit.php?post_type=data-task').'">'.__('All Data Tasks', 'bulk-task-editor').'</a></td>' . "\n";
+                                                
+												$html .= '<td style="text-align:right;"><a class="button button-small" href="'.admin_url('post-new.php?post_type=data-task').'">'.__('Add New', 'bulk-task-editor').'</a></td>' . "\n";
+											
+											$html .= '</tr>' . "\n";
+                                            */
+                                            
 										$html .= '</table>' . "\n";
 									
 									$html .= '</div>' . "\n";

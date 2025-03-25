@@ -895,7 +895,7 @@
 				
 			if( $('#rew_preview_items').length > 0 ){
 			
-				$('#rew_preview_items table').empty();
+				$('#rew_preview_items table tbody').empty();
 	
 				$('#rew_preview_items').addClass('loading');
 			}
@@ -904,7 +904,7 @@
 			
 			processing = setTimeout(function() {
 				
-				$.ajax({
+				$.ajaxQueue({
 					url : ajaxurl,
 					type: "POST",
 					dataType : "html",
@@ -1039,22 +1039,17 @@
 					},
 					error: function(xhr, status, error){
 						
-						if( xhr.status === 500 || xhr.status === 504 ) {
-							 
-							open_task_console('Retrying after 10 seconds...','warning');
-							
-							setTimeout(function(){
-								
-								$.ajaxQueue(this);
-								
-							}.bind(this),10000);
-						}
-						else{
-							
-                            open_task_console('Error processing task: ' + xhr.responseText,'error');
-							
-							$("#rewbe_task_processed").removeClass("loading loading-right");
-						}
+						open_task_console('Error ' + xhr.status  + ' processing task: ' + xhr.responseText,'error');
+
+                        open_task_console('Retrying after 10 seconds...','warning');
+                        
+                        //$("#rewbe_task_processed").removeClass("loading loading-right");
+                        
+                        setTimeout(function(){
+                            
+                            $.ajaxQueue(this);
+                            
+                        }.bind(this),10000);
 					}
 				});
 			}
@@ -1089,7 +1084,7 @@
 				
                 var type = $('#bulk-editor-filters .form-field:first select').val();
 
-				$.ajax({
+				$.ajaxQueue({
 					url : ajaxurl,
 					type: "GET",
 					dataType : "html",
@@ -1100,7 +1095,7 @@
 					},
                     beforeSend: function() {
                         
-                        load_action_fields();
+                        
                     },
                     
 				}).done(function( data ) {
@@ -1149,6 +1144,8 @@
 						set_taxonomy_field(id);
 					});
                     
+                    load_action_fields();
+                    
                     load_task_items();
 				});
 
@@ -1183,15 +1180,16 @@
 				
 				$("#rewbe_action_fields").empty().addClass("loading");
 				
-				$.ajax({
+				$.ajaxQueue({
 					url : ajaxurl,
-					type: "GET",
+					type: "POST",
 					dataType : "html",
 					data : {
 						action 	: "render_task_action",
 						pid 	: post_id,
                         type 	: type,
 						ba 		: action,
+                        task 	: $("#post").serializeObject(),
 					},
 				}).done(function( data ) {
                     
@@ -1351,14 +1349,14 @@
 						
 			if( $("#rew_preview_dialog").length == 0 ){
 				
-				$('body').append('<div id="rew_preview_dialog" title="Matching Items"><div id="rew_preview_items" class="loading"><table></table></div></div>');
+				$('body').append('<div id="rew_preview_dialog" title="Matching Items"><div id="rew_preview_items" class="loading" style="width:fit-content;margin:0;padding:0;"><table class="wp-list-table widefat fixed striped table-view-list" style="border:none;"><tbody></tbody></table></div></div>');
 				
 				$("#rew_preview_dialog").dialog({
 				
 					autoOpen	: false,
 					
-					width		: Math.round($(window).width() * 0.5),  // 50% of current window width
-					height		: Math.round($(window).height() * 0.5), // 50% of current window height
+					width		: Math.round($(window).width() * 0.8),  // 80% of current window width
+					height		: Math.round($(window).height() * 0.8), // 80% of current window height
 					minWidth	: 250,
 					minHeight	: 250,
 					resizable	: true,
@@ -1466,11 +1464,11 @@
 					
 					if( page == 1 ){
 						
-						$('#rew_preview_items table').empty().html(data);
+						$('#rew_preview_items table tbody').empty().html(data);
 					}
 					else{
 						
-						$('#rew_preview_items table').append(data);
+						$('#rew_preview_items table tbody').append(data);
 					}
 				
 					$('#rew_preview_items').removeClass('loading');

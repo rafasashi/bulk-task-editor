@@ -420,6 +420,8 @@ class Rew_Bulk_Editor {
 		
 		add_action('add_meta_boxes', function(){
             
+            global $post;
+            
 			remove_meta_box('submitdiv',$this->get_task_types(), 'side');
   
             $this->admin->add_meta_box (
@@ -441,7 +443,7 @@ class Rew_Bulk_Editor {
 			$this->admin->add_meta_box (
 				
 				'bulk-editor-filters',
-				__( 'Filter', 'bulk-task-editor' ), 
+				$post->post_type == 'data-task' ? __( 'Dataset', 'bulk-task-editor' ) : __( 'Filter', 'bulk-task-editor' ), 
 				$this->get_task_types(),
 				'advanced'
 			);
@@ -473,9 +475,9 @@ class Rew_Bulk_Editor {
                 }
 				
 				// actions 
-                
-                $fields[] = $this->get_actions_field('post-type-task',$item_type,$task);
 
+                $fields[] = $this->get_actions_field('post-type-task',$item_type,$task);
+                
 				$actions = $this->get_post_type_actions($item_type,$task);
 
 				foreach( $actions as $action ){
@@ -534,7 +536,7 @@ class Rew_Bulk_Editor {
 				
                 $total = $this->count_task_items('post-type-task',$task);
                 
-                $sc_steps = ceil($total/$this->sc_items);
+                $sc_steps = $this->get_schedule_steps('post-type-task',$total);
                 
                 $fields[]= $this->get_progress_scheduled_field('post_type',$task,$sc_steps);
                 
@@ -546,7 +548,7 @@ class Rew_Bulk_Editor {
 		});	
         
 		add_action('rewbe_post_type_filters',function($filters,$item_type,$task=null){
-
+            
             // post type
             
             $post_type = get_post_type_object($item_type);
@@ -745,29 +747,17 @@ class Rew_Bulk_Editor {
 			
 		},0,3);
         
-		add_action('rewbe_post_type_actions',function($actions,$task_type,$task){
+		add_action('rewbe_post_type_actions',function($actions,$post_type,$task){
 
-			if( $post_type = get_post_type_object($task_type) ){
+			if( $post_type = get_post_type_object($post_type) ){
 				
 				global $wpdb;
 				
 				$action = !empty($task['rewbe_action']) ? $task['rewbe_action'] : 'none';
-
+                
                 // multitasking
                 
-				$actions[] = array(
-					
-					'label' 	=> 'Run Multiple Tasks',
-					'id' 		=> 'run_multiple_tasks',
-					'fields' 	=> array(
-						array(
-							
-							'name' 		=> 'name',
-							'type'		=> 'tasks',
-							'task_type'	=> 'post-type-task',
-						),
-					),
-				);
+				$actions[] = $this->get_multitask_action_field('post-type-task');
                 
 				// post type
 				
@@ -1249,7 +1239,7 @@ class Rew_Bulk_Editor {
 
                 $total = $this->count_task_items('taxonomy-task',$task);
                 
-                $sc_steps = ceil($total/$this->sc_items);
+                $sc_steps = $this->get_schedule_steps('taxonomy-task',$total);
                 
                 $fields[]= $this->get_progress_scheduled_field('taxonomy',$task,$sc_steps);
                 
@@ -1372,6 +1362,10 @@ class Rew_Bulk_Editor {
 			
 			$taxonomy = get_taxonomy($taxonomy);
 			
+            // multitasking
+                
+            $actions[] = $this->get_multitask_action_field('taxonomy-task');
+                
 			// parent
 			
 			if( $taxonomy->hierarchical ){
@@ -1497,7 +1491,7 @@ class Rew_Bulk_Editor {
 
 				$total = $this->count_task_items('user-task',$task);
 					
-				$sc_steps = ceil($total/$this->sc_items);
+				$sc_steps = $this->get_schedule_steps('user-task',$total);
 					
 				$fields[]= $this->get_progress_scheduled_field('user',$task,$sc_steps);
 					
@@ -1597,6 +1591,10 @@ class Rew_Bulk_Editor {
         
 		add_action('rewbe_user_actions',function($actions){
 			
+            // multitasking
+                
+			$actions[] = $this->get_multitask_action_field('user-task');
+                
 			// role
 			
 			$actions[] = array(
@@ -1665,17 +1663,288 @@ class Rew_Bulk_Editor {
 			
 		},0,2);
         
-        add_action('rewbe_data_filters',function($filters,$item_type,$task=null){
+		add_filter('rewbe_data-task_custom_fields', function($fields=array()){
+            
+            $task = $this->get_current_task('data-task');
+			
+			if( !empty($task[$this->_base.'data_type']) ){
+                
+                $item_type = $task[$this->_base.'data_type'];
+                
+                $filters = $this->get_data_filters($item_type,$task);
+                
+                foreach( $filters as $filter ){
+                    
+                    $filter['metabox'] = array('name'=>'bulk-editor-filters');
+                    
+                    $fields[] = $filter;
+                }
+                
+				// actions 
+                
+                $fields[] = $this->get_actions_field('data-task',$item_type,$task);
+
+				$actions = $this->get_data_actions($item_type,$task);
+
+				foreach( $actions as $action ){
+					
+					if( $action['id'] == $task[$this->_base.'action'] ){
+						
+						if( !empty($action['fields']) ){
+							
+							foreach( $action['fields'] as $field ){
+								
+								if( !empty($field['type']) && $field['type'] != 'html' ){
+									
+									// register without field
+									
+									$fields[]=array(
+									
+										'metabox' 	=> array('name'=>'bulk-editor-task'),
+										'id'        => $field['name'],
+									);
+								}
+							}
+						}
+					}
+				}
+
+				if( $curr_action = $task[$this->_base.'action'] ){
+
+					if( $actions = $this->get_data_actions($item_type,$task) ){
+						
+						foreach( $actions as $action ){
+						
+							if( $curr_action == $action['id'] && !empty($action['fields']) ){
+								
+								foreach( $action['fields'] as $field ){
+									
+									$field['metabox'] = array('name'=>'bulk-editor-task');
+									
+									$fields[] = $field;
+								}
+							}
+						}
+					}
+				}
+				
+				// process
+				
+				$fields[]= $this->get_process_items_field('data');
+				
+				$fields[]= $this->get_per_process_field($task);
+				
+				$fields[]= $this->get_process_calling_field($task);
+				
+				$fields[]= $this->get_process_status_field($task);
+				
+				// progress
+				
+                $total = $this->count_task_items('data-task',$task);
+                
+                $sc_steps = $this->get_schedule_steps('data-task',$total);
+                
+                $fields[]= $this->get_progress_scheduled_field('data',$task,$sc_steps);
+                
+                $fields[]= $this->get_progress_processed_field($task);
+			}
+			
+			return $fields;
+            
+		});	
+        
+		add_action('rewbe_data_filters',function($filters,$item_type,$task=null){
+
+            // data type
+            
+            $filters[]=array(
+            
+                'id'          	=> $this->_base . 'data_type',
+                'label'       	=> 'Type',
+                'type'        	=> 'select',
+                'options'	  	=> $this->get_data_type_options(),
+            );
+            
+            if( $item_type == 'rest' ){
+                
+                $filters[]=array(
+            
+                    'id'          	=> $this->_base . 'data_source',
+                    'label'       	=> 'Source URL',
+                    'type'        	=> 'url',
+                    'placeholder'	=> 'https://',
+                    'description'   => 'REST API url where the data source is located',
+                );
+                
+                $filters[]=array(
+            
+                    'id'          	=> $this->_base . 'data_method',
+                    'label'       	=> 'Method',
+                    'type'        	=> 'select',
+                    'options'	    => array(
+                    
+                        'get'   => 'GET',
+                        'post'  => 'POST',
+                    ),
+                    'default' => 'get',
+                );
+            }
+            elseif( $item_type == 'directory' ){
+                
+                $filters[]=array(
+                
+                    'id'          	=> $this->_base . 'data_source',
+                    'label'       	=> 'Folder Path',
+                    'type'        	=> 'text',
+                    'placeholder'	=> '/path/folder/',
+                    'description'   => 'Local directory path where the data is located',
+                );
+            }
+            else{
+                
+                $filters[]=array(
+                
+                    'id'          	=> $this->_base . 'data_source',
+                    'label'       	=> 'Source Path',
+                    'type'        	=> 'text',
+                    'placeholder'	=> '/path/file',
+                    'description'   => 'Local file path where the data source is located',
+                );
+            }
+           
+            if( $item_type == 'csv' ){
+                
+                $filters[] = array(
+                    
+                    'id'        => $this->_base . 'data_separator',
+                    'label'     => 'Separator',
+                    'name'      => 'separator',
+                    'type'      => 'select',
+                    'options'   => $this->get_csv_separator_options(),
+                    'default'   => $this->get_current_csv_separator(),
+                );
+            }
             
             return $filters;
 			
 		},0,3);
         
-        add_action('rewbe_data_actions',function($actions){
+		add_action('rewbe_data_actions',function($actions,$post_type,$task){
+
+            if( !empty($task[$this->_base.'data_type']) ){
+                
+                $type = sanitize_title($task[$this->_base.'data_type']);
+               
+                if( $args = $this->parse_data_task_parameters($task) ){
+                    
+                    if( $type == 'directory' ){
+                        
+                        $actions[] = array(
+                            
+                            'label' 	    => 'Import Featured Images',
+                            'id' 		    => 'import_post_thumbnail',
+                            'fields' 	    => array(
+                                array(
+            
+                                    'name'          => 'type',
+                                    'label'       	=> 'Post Type',
+                                    'type'        	=> 'select',
+                                    'options'	  	=> $this->get_post_type_options('thumbnail'),
+                                ),
+                                array(
+                                    'name' 		    => 'name',
+                                    'type'		    => 'text',
+                                    'label'	        => 'Meta Key',
+                                    'default'	    => '_thumb_name_',
+                                    'description'   => 'Meta key used to find the post to be associated with the image.',
+                                ),
+                                array(
+                                    'name' 		    => 'value',
+                                    'type'		    => 'text',
+                                    'label'	        => 'Meta Value',
+                                    'default'	    => 'prefix-{%FILENAME%}-suffix',
+                                    'description'   => 'Pattern to find the post via meta key. {%FILENAME%} is dynamically replaced.',
+                                ),
+                                array(
+							
+                                    'name' 			=> 'existing',
+                                    'type'			=> 'select',
+                                    'label'			=> 'Existing Thumbnail',
+                                    'default' 		=> 'skip',
+                                    'options'		=> array(
+                                    
+                                        'skip'		=> 'Skip',
+                                        'replace'	=> 'Replace',
+                                    ),
+                                    'description'   => 'How to handle entries with an existing thumbnail',
+                                ),
+                            ),
+                        );
+                    }
+                    elseif( $items = $this->get_dataset($args,1,1) ){
+                        
+                        $item = reset($items);
+                        
+                        $options = array_keys($item);
+                        
+                        $fields = array();
+                        
+                        $fields[] = array(
+                            
+                            'name' 		    => 'primary',
+                            'type'		    => 'select',
+                            'label'	        => 'Primary Field',
+                            'options'       => array('Select a field')+$options,
+                            'description'   => 'This primary identifier should have distinct values for all entries to prevent duplicates',
+                        );
+                        
+                        $fields[] = array(
+							
+							'name' 			=> 'existing',
+							'type'			=> 'select',
+							'label'			=> 'Existing Record',
+							'default' 		=> 'skip',
+							'options'		=> array(
+							
+								'skip'		=> 'Skip',
+								'overwrite'	=> 'Overwrite',
+							),
+                            'description'   => 'How to handle entries when the primary identifier matches an existing record',
+						);
+                        
+                        if( !isset($options['post_type']) ){
+                            
+                            // TODO select default post type
+                        }
+                        
+                        if( !isset($options['post_status']) ){
+                            
+                            // TODO select default status
+                        }
+                        
+                        $fields[] = array(
+                            
+                            'name' 		=> 'fields',
+                            'type'		=> 'data_fields',
+                            'label'	    => 'Data Mapping',
+                            'options'   => $options,
+                            'attrs'     => $this->get_post_type_attributes(true),
+                            
+                        );
+                        
+                        $actions[] = array(
+                            
+                            'label' 	    => 'Import Data - Post Type',
+                            'id' 		    => 'import_post_type',
+                            'fields' 	    => $fields,
+                        );
+                    }
+                }
+            }
 
 			return $actions;
-            
-		},0,2);
+			
+		},0,3);
         
         add_action('rewbe_post_type_statuses',function($statuses,$post_type){
             
@@ -2011,8 +2280,34 @@ class Rew_Bulk_Editor {
 				),
 			),
 		);
-		
 	}
+    
+    public function get_multitask_action_field($task_type){
+        
+        return array(
+            
+            'label' 	=> 'Run Multiple Tasks',
+            'id' 		=> 'run_multiple_tasks',
+            'fields' 	=> array(
+                array(
+                    
+                    'name' 		=> 'tasks',
+                    'label'     => 'Tasks',
+                    'type'		=> 'tasks',
+                    'task_type'	=> $task_type,
+                ),
+                array(
+                    
+                    'name' 		=> 'per_process',
+                    'label'     => 'Tasks per process',
+                    'type'		=> 'number',
+                    'default'   => 1,
+                    'min'       => 1,
+                    'step'      => 1,
+                ),
+            ),
+        );
+    }
 	
 	public function get_edit_meta_action_field(){
 	
@@ -2181,10 +2476,11 @@ class Rew_Bulk_Editor {
         return array(
         
             'permalink' => 'Permalink',
+            'thumbnail' => 'Thumbnail',
         );
     }
 	
-	public function get_post_type_options(){
+	public function get_post_type_options($supports=false){
 		
 		$post_types = get_post_types('','objects');
 		
@@ -2192,6 +2488,11 @@ class Rew_Bulk_Editor {
 		
 		foreach( $post_types as $post_type ){
 			
+            if( !empty($supports) && !post_type_supports($post_type->name,$supports) ){
+                
+                continue;
+            }
+            
 			if( !in_array($post_type->name,array_merge($this->get_task_types(),array(
 
 				'revision',
@@ -2275,7 +2576,18 @@ class Rew_Bulk_Editor {
 		
 		return $options;
 	}
-	
+    
+	public function get_data_type_options(){
+        
+        return array(
+        
+            //'csv'     => 'CSV File',
+            'json'      => 'JSON File',
+            'directory' => 'Directory',
+            //'rest'    => 'REST API',
+        );
+    }
+    
 	public function add_default_columns($columns){
 		
 		$new_columns = array(
@@ -2340,9 +2652,10 @@ class Rew_Bulk_Editor {
         return $actions;
     }
     
-    public function get_post_type_attributes(){
+    public function get_post_type_attributes($extended=false){
     
-        return array(
+        $attrs = array(
+        
             'ID'                    => 'Post ID',
             'post_title'            => 'Post Title',
             'post_name'             => 'Post Name (slug)',
@@ -2368,6 +2681,21 @@ class Rew_Bulk_Editor {
             'post_mime_type'        => 'Post MIME Type',
             'filter'                => 'Post Filter Type',
         );
+        
+        if( $extended === true ){
+            
+            $attrs += array(
+            
+                //'tax_input'       => 'Taxonomies > Array',
+                //'meta_input'      => 'Metadata > Array',
+                'meta'              => 'Meta:{name} > Value',
+                'term_id'           => 'Taxonomy:{name} > Term id',
+                'term_slug'         => 'Taxonomy:{name} > Term slug',
+                'term_name'         => 'Taxonomy:{name} > Term name',
+            );
+        }
+            
+        return $attrs;
     }
     
 	public function get_post_type_statuses($post_type,$exclude=array()){
@@ -2441,7 +2769,7 @@ class Rew_Bulk_Editor {
         }
         elseif( $post_type == 'data-task' ){
         
-            $task[$this->_base.'data_type'] = 'csv';
+            $task[$this->_base.'data_type'] = 'json';
         }
         
         return $task;
@@ -2531,7 +2859,63 @@ class Rew_Bulk_Editor {
 
 		return $pattern;
 	}
-
+    
+    static public function sanitize_post_field($field_type, $value) {
+        
+        switch ($field_type) {
+            case 'ID':
+                return absint($value);
+                
+            case 'post_author':
+                return absint($value);
+                
+            case 'post_date':
+            case 'post_date_gmt':
+            case 'post_modified':
+            case 'post_modified_gmt':
+                // Validate date format
+                $timestamp = strtotime($value);
+                return $timestamp ? sanitize_text_field($value) : null;
+                
+            case 'post_content':
+                return wp_kses_post($value);
+                
+            case 'post_title':
+                return sanitize_text_field($value);
+                
+            case 'post_excerpt':
+                return sanitize_textarea_field($value);
+                
+            case 'post_status':
+                return sanitize_key($value);
+                
+            case 'post_type':
+                return sanitize_key($value);
+                
+            case 'post_name':
+                return sanitize_title($value);
+                
+            case 'post_password':
+                return sanitize_text_field($value);
+                
+            case 'post_parent':
+                return absint($value);
+                
+            case 'menu_order':
+                return absint($value);
+                
+            case 'post_mime_type':
+                return sanitize_mime_type($value);
+                
+            case 'comment_status':
+            case 'ping_status':
+                return sanitize_key($value);
+                
+            default:
+                return sanitize_text_field($value);
+        }
+    }
+    
 	static public function sanitize_content($content,$allowed_html=null,$allowed_protocols=null){
 		
 		if( is_null($allowed_html) ){
@@ -3210,7 +3594,7 @@ class Rew_Bulk_Editor {
             
                 $total = $this->count_task_items($post_type,$task);
             
-                $sc_steps = ceil($total/$this->sc_items);
+                $sc_steps = $this->get_schedule_steps($post_type,$total);
             }
             else{
                 
@@ -3241,10 +3625,14 @@ class Rew_Bulk_Editor {
                 }
                 
                 $wpdb->query(
+                
+                    $wpdb->prepare(
                     
-                    $wpdb->prepare("DELETE FROM $table WHERE meta_key = %s", $this->_base.$post_id)
+                        "DELETE FROM $table WHERE meta_key LIKE %s", 
+                        $this->_base . $post_id . '%'
+                    )
                 );
-
+                
                 // reset scheduler
                 
                 update_post_meta($post_id,$this->_base . 'scheduled',0);
@@ -3383,52 +3771,114 @@ class Rew_Bulk_Editor {
 			
 			$items = $this->retrieve_task_items($post->post_type,$task,100);
 			
-			foreach( $items as $item ){
+			foreach( $items as $i => $item ){
+                
+                if( $post->post_type == 'user-task' ){
+                    
+                    $item = $item->data;
+                    
+                    unset($item->user_pass,$item->user_activation_key);
+                }
+                elseif($post->post_type == 'post-type-task'){
+                    
+                    unset($item->post_password);
+                }
+                
+                $item = (array) $item;
+                
+                if( $i === 0 ){
+                    
+                    $cols = array_keys($item);
+                    
+                    echo '<tr>';
+                        
+                        foreach( $cols as $col ){
+                            
+                            echo '<th>';
+                            
+                                echo $col;
+                            
+                            echo '</th>';
+                        }
+                        
+                    echo '</tr>';
+                }
+                
+                $values = array_values($item);
+                
+                echo '<tr>';
+                    
+                    foreach( $values as $j => $val ){
+                        
+                        $val = is_array($val) ? json_encode($val) : $val;
 
-				if( !empty($item->post_type) ){
-					
-					$item_id = $item->ID;
-					
-					$item_url = get_permalink($item_id);
-					
-					$item_name = $item->post_title;
-				}
-				elseif( !empty($item->term_id) ){
-					
-					$item_id = $item->term_id;
-					
-					$item_url = get_term_link($item_id);
-					
-					$item_name = $item->name;
-				}
-				elseif( !empty($item->user_email) ){
-					
-					$item_id = $item->ID;
-					
-					$item_url = '#';
-					
-					$item_name = $item->user_email;
-				}
-				
-				echo '<tr>';
-					
-					echo '<td>';
-					
-						echo esc_html('#' . $item_id);
-					
-					echo '</td>';
-					
-					echo '<td>';
-					
-						echo '<a href="'.esc_url($item_url).'" target="_blank">';
-
-							echo !empty($item_name) ? esc_html($item_name) : 'N/A';
-							
-						echo '</a>';
-					
-					echo '</td>';
-					
-				echo '</tr>';
+                        echo '<td>';
+                        
+                            if( $j === 0 ){
+                                        
+                                if( $post->post_type == 'post-type-task' ){
+                                
+                                    $item_url   = get_permalink($item['ID']);
+                                }
+                                elseif( $post->post_type == 'taxonomy-task' ){
+                                    
+                                    $item_url = get_term_link($item['term_id']);
+                                }
+                                
+                                if( !empty($item_url) ){
+                                    
+                                    echo '<a href="'.esc_url($item_url).'" target="_blank">';
+                                }
+                                
+                                    echo $val;
+                                
+                                if( !empty($item_url) ){
+                                    
+                                    echo '</a>';
+                                }
+                            }
+                            else{
+                                
+                                $len = strlen($val);
+                                
+                                $maxlen = 50;
+                                
+                                if( $len > $maxlen ){
+                                
+                                    echo '<textarea style="width:100%;background:transparent;border:none;height:40px;overflow:hidden;">';
+                                }
+                                
+                                echo $val;
+                                    
+                                if( $len > $maxlen ){
+                                    
+                                    echo '</textarea>';
+                                }
+                            }
+                        
+                        echo '</td>';
+                    }
+                    
+                echo '</tr>';
+            
+                
+                /*
+                else{
+                        
+                    if( $post->post_type == 'post-type-task' ){
+                        
+                        $item_id    = $item->ID;
+                        $item_url   = get_permalink($item_id);
+                        $item_name  = $item->post_title;
+                    }
+                    elseif( $post->post_type == 'taxonomy-task' ){
+                        
+                        $item_id    = $item->term_id;					
+                        $item_url   = get_term_link($item_id);
+                        $item_name  = $item->name;
+                    }
+                }
+                */
 			}
 		}
 
@@ -3602,11 +4052,16 @@ class Rew_Bulk_Editor {
                     
                     foreach( $query->posts as $iteration => $post ){
                         
-                        //update_post_meta($post->ID,$this->_base.$task_id,time());
-        
-                        apply_filters('rewbe_do_post_'.$action,$post,$args,$task,$iteration);
+                        if( $action == 'run_multiple_tasks' ){
+                            
+                            $this->process_subtask($task_type,$task_id,$args,$post,$iteration);
+                        }
+                        else{
+                            
+                            apply_filters('rewbe_do_post_'.$action,$post,$args,$task,$iteration);
                         
-                        delete_post_meta($post->ID,$this->_base.$task_id);
+                            delete_post_meta($post->ID,$this->_base.$task_id);
+                        }
                     }
                 }
             }
@@ -3675,11 +4130,16 @@ class Rew_Bulk_Editor {
                     
                     foreach( $query->terms as $iteration => $term ){
                         
-                        //update_term_meta($term->term_id,$this->_base.$task_id,time());
-        
-                        apply_filters('rewbe_do_term_'.$action,$term,$args,$task,$iteration);
+                        if( $action == 'run_multiple_tasks' ){
+                            
+                            $this->process_subtask($task_type,$task_id,$args,$term,$iteration);
+                        }
+                        else{   
+                        
+                            apply_filters('rewbe_do_term_'.$action,$term,$args,$task,$iteration);
                          
-                        delete_term_meta($term->term_id,$this->_base.$task_id);
+                            delete_term_meta($term->term_id,$this->_base.$task_id);
+                        }
                     }
                 }
             }
@@ -3743,17 +4203,66 @@ class Rew_Bulk_Editor {
                     
                     foreach ( $users as $iteration => $user ){
                         
-                        //update_user_meta($user->ID,$this->_base.$task_id,time());
-        
-                        apply_filters('rewbe_do_user_'.$action,$user,$args,$task,$iteration);
+                        if( $action == 'run_multiple_tasks' ){
+                            
+                            $this->process_subtask($task_type,$task_id,$args,$user,$iteration);
+                        }
+                        else{
+                            
+                            apply_filters('rewbe_do_user_'.$action,$user,$args,$task,$iteration);
                         
-                        delete_user_meta($user->ID,$this->_base.$task_id);
+                            delete_user_meta($user->ID,$this->_base.$task_id);
+                        }
                     }
                 }
             }
             elseif( $task_type == 'data-task' ){
                 
+                $files = $this->get_data_files($task_id);
                 
+                $remaining = max(0,( count($files) - 1 ) * $per_process );
+               
+                if( !empty($files) ){
+                    
+                    $source = $files[0];
+                    
+                    if( file_exists($source) && is_readable($source) ){
+                        
+                        $body = file_get_contents($source);
+                        
+                        if( $items = $this->parse_dataset($body,$task[$this->_base.'data_type']) ){
+                            
+                            $args = $this->parse_action_parameters($task_type,$task);
+                            
+                            // register default actions
+                            
+                            if( $action == 'import_post_type' ){
+                            
+                                add_action('rewbe_do_data_import_post_type',array($this,'import_post_data'),10,4);
+                            }
+                            elseif( $action == 'import_post_thumbnail' ){
+                            
+                                add_action('rewbe_do_data_import_post_thumbnail',array($this,'import_post_thumbnail'),10,4);
+                            }
+                            
+                            foreach( $items as $iteration => $item ){
+                                
+                                if( $action == 'run_multiple_tasks' ){
+                                    
+                                    $this->process_subtask($task_type,$task_id,$args,$item,$iteration);
+                                }
+                                else{
+                                    
+                                    apply_filters('rewbe_do_data_'.$action,$item,$args,$task,$iteration);
+                                }
+                            }
+                        }
+                        
+                        $wp_filesystem = $this->get_filesystem();
+                        
+                        $wp_filesystem->delete($source);
+                    }
+                }
             }
             
             $prog = round( ( $scheduled - $remaining ) / $scheduled * 100,2);
@@ -3762,6 +4271,125 @@ class Rew_Bulk_Editor {
         update_post_meta($task_id,$this->_base.'progress',$prog);
         
         return $prog;
+    }
+    
+    public function process_subtask($task_type,$task_id,$args,$object,$iteration){
+        
+        if( !empty($args['tasks']) ){
+            
+            $subtasks = array_filter(array_map('intval',$args['tasks']), function($id){
+                
+                return ( $id > 0 );
+            });
+            
+            if( !empty($subtasks) ){
+                
+                $per_subprocess = !empty($args['per_process']) ? intval($args['per_process']) : 1;
+                
+                $prefix = '';
+                $prev = 0;
+                
+                if( $task_type == 'post-type-task' ){
+                    
+                    $prefix = 'post_';
+                    
+                    $prev = intval(get_post_meta($object->ID,$this->_base.$task_id.'_prev_subtask',true));
+                }
+                elseif( $task_type == 'taxonomy-task' ){
+                    
+                    $prefix = 'term_';
+                    
+                    $prev = intval(get_term_meta($object->term_id,$this->_base.$task_id.'_prev_subtask',true));
+                }
+                elseif( $task_type == 'user-task' ){
+                    
+                    $prefix = 'user_';
+                    
+                    $prev = intval(get_user_meta($object->ID,$this->_base.$task_id.'_prev_subtask',true));
+                }
+                elseif( $task_type == 'data-task' ){
+                    
+                    
+                }
+                
+                $is_next = empty($prev) ? true : false; 
+                
+                $last = end($subtasks);
+                
+                $subprocess = 1;
+                
+                foreach( $subtasks as $subtask_id ){
+                    
+                    if( !$is_next && $subtask_id == $prev ){
+                        
+                        $is_next = true;
+                    }
+                    elseif( $is_next == true ){
+                        
+                        $subtask = $this->get_task_meta($subtask_id);
+                        
+                        $subaction = $subtask[$this->_base.'action'];
+                        
+                        $subargs = $this->parse_action_parameters($task_type,$subtask);
+                        
+                        apply_filters('rewbe_do_'.$prefix.$subaction,$object,$subargs,$subtask,$iteration);
+                        
+                        $prev = $subtask_id;
+                        
+                        if( $subprocess == $per_subprocess ){
+                            
+                            break;
+                        }
+                        else{
+                            
+                            ++$subprocess;
+                        }
+                    }
+                }
+                
+                if( $prev != $last ){
+                    
+                    if( $task_type == 'post-type-task' ){
+                        
+                        update_post_meta($object->ID,$this->_base.$task_id.'_prev_subtask',$prev);
+                    }
+                    elseif( $task_type == 'taxonomy-task' ){
+                        
+                        update_term_meta($object->term_id,$this->_base.$task_id.'_prev_subtask',$prev);
+                    }
+                    elseif( $task_type == 'user-task' ){
+                        
+                        update_user_meta($object->ID,$this->_base.$task_id.'_prev_subtask',$prev);
+                    }
+                    elseif( $task_type == 'data-task' ){
+                        
+                        
+                    }
+                }
+                elseif( $task_type == 'post-type-task' ){
+                    
+                    delete_post_meta($object->ID,$this->_base.$task_id);
+                
+                    delete_post_meta($object->ID,$this->_base.$task_id.'_prev_subtask');
+                }
+                elseif( $task_type == 'taxonomy-task' ){
+                    
+                    delete_term_meta($object->term_id,$this->_base.$task_id);
+                
+                    delete_term_meta($object->term_id,$this->_base.$task_id.'_prev_subtask');
+                }
+                elseif( $task_type == 'user-task' ){
+                    
+                    delete_user_meta($object->ID,$this->_base.$task_id);
+                
+                    delete_user_meta($object->ID,$this->_base.$task_id.'_prev_subtask');
+                }
+                elseif( $task_type == 'data-task' ){
+                    
+                    
+                }
+            }
+        }
     }
 	
 	public function render_task_schedule(){
@@ -3782,12 +4410,8 @@ class Rew_Bulk_Editor {
 			
             if( $total_items = $this->count_task_items($post->post_type,$task) ){
 				
-				/**	schedule task 
-				*	0: scheduled
-				*	t: processing
-				*	1: done
-				*/
-				
+				$sc_steps = $this->get_schedule_steps($post->post_type,$total_items);
+                
 				if( $post->post_type == 'post-type-task' ){
 					
 					$actions = $this->get_post_type_actions($task[$this->_base.'post_type'],$task);
@@ -3845,16 +4469,37 @@ class Rew_Bulk_Editor {
 				}
 				elseif( $post->post_type == 'data-task' ){
 					
-					$actions = $this->get_data_actions($task[$this->_base.'data_type'],$task);
+                    $type = $task[$this->_base.'data_type'];
+                    
+					$actions = $this->get_data_actions($type,$task);
 					
 					if( !empty($actions[$action]) ){
 						
-						// TODO schedule data action
-					}
+                        if( $args = $this->parse_data_task_parameters($task) ){
+                            
+                            $items = $this->get_dataset($args);
+                            
+                            if( !empty($items) ){
+                                
+                                // split items into sub datasets
+                                
+                                $per_process = apply_filters('rewbe_items_per_process',intval($task[$this->_base.'per_process']),$task);
+                                
+                                $pr_steps = ceil(count($items)/$per_process);
+                                
+                                for( $pr_step = 1; $pr_step <= $pr_steps; $pr_step++ ){
+                                
+                                    $offset = ($pr_step - 1) * $per_process;
+
+                                    $data = array_slice($items,$offset,$per_process);
+                                
+                                    $this->put_task_data($post->ID,$data,$pr_step,$type);
+                                }
+                            }
+                        }
+                    }
 				}
 				
-				$sc_steps = ceil( $total_items / $this->sc_items );
-               
 				$prog = ceil( $step / $sc_steps * 100 );
 			}
 				
@@ -3871,6 +4516,94 @@ class Rew_Bulk_Editor {
 		wp_die();
 	}
 	
+    public function get_filesystem(){
+        
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+
+        global $wp_filesystem;
+        
+        if( empty($wp_filesystem) ){
+            
+            WP_Filesystem();
+        }
+        
+        return $wp_filesystem;
+    }
+    
+    public function put_task_data($task_id,$items,$pr_step,$type='json'){
+    
+        $wp_filesystem = $this->get_filesystem();
+        
+        $path = $this->get_data_path($task_id,true);
+        
+        if( $pr_step == 1 ){
+            
+            if( $files = $this->get_data_files($task_id) ){
+                
+                foreach( $files as $file ){
+                    
+                    $wp_filesystem->delete($file);
+                }
+            }
+        }
+        
+        $content = json_encode($items,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);
+
+        $file_path = trailingslashit($path) . $pr_step;
+
+        $wp_filesystem->put_contents($file_path,$content,FS_CHMOD_FILE);
+        
+        return $file_path;
+    }
+    
+    public function get_data_path($task_id,$create=false){
+        
+        $upload = wp_upload_dir();
+        
+        $root = $upload['basedir'] . '/rewbe_data';
+        
+        $path = trailingslashit($root).$task_id;
+        
+        if( $create === true ){
+            
+            $wp_filesystem = $this->get_filesystem();
+
+            if( !$wp_filesystem->is_dir($path) ){
+                    
+                if( !$wp_filesystem->is_dir($root) ){
+                    
+                    $wp_filesystem->mkdir($root,0755,true);
+                }
+                
+                $wp_filesystem->mkdir($path,0755,true);
+            }
+        }
+        
+        return $path;
+    }
+        
+    public function get_data_files($task_id){
+        
+        $files = [];
+
+        if( $path = $this->get_data_path($task_id) ){
+            
+            $wp_filesystem = $this->get_filesystem();
+            
+            if( $file_list = $wp_filesystem->dirlist($path)){
+                
+                foreach( $file_list as $file_name => $file_info ){
+                    
+                    $files[] = trailingslashit($path) . $file_name;
+                }
+            }
+        }
+
+        natsort($files);
+
+        return array_values($files); // Reset array keys
+    }
+
 	public function update_post($args) {
 		
 		// unregister save_post
@@ -5140,6 +5873,280 @@ class Rew_Bulk_Editor {
         return 'comma';
     }
     
+    public function import_post_data($data,$args,$task,$iteration=0){
+        
+        if( !empty($args['fields']) && !empty($args['fields']['key']) && !empty($args['fields']['value']) ){
+            
+            $keys = array_keys($data);
+            
+            $primary = intval($args['primary']);
+            
+            $primary_key = $keys[$primary];
+            
+            $duplicate = !empty($args['existing']) ? sanitize_title($args['existing']) : 'skip';
+            
+            $mapping = array_combine($args['fields']['key'],$args['fields']['value']);
+            
+            $post   = array();
+            $meta   = array();
+            $terms  = array();
+            
+            $existing_id = null;
+            
+            foreach( $mapping as $key => $type ){
+                
+                if( $type == 'meta' ){
+                    
+                    $meta_name = (strpos($key, ':') !== false) ? explode(':',$key,2)[1] : $key;
+                    
+                    $meta_name = sanitize_text_field($meta_name);
+                    
+                    $meta_value = sanitize_meta($meta_name,$data[$key],'post');
+                    
+                    $meta[$meta_name] = $meta_value;
+                
+                    if( $key == $primary_key ){
+                        
+                        $query = new WP_Query(array(
+                            
+                            'post_type'         => 'any',
+                            'meta_key'          => $meta_name,
+                            'meta_value'        => $meta_value,
+                            'posts_per_page'    => 1
+                        ));
+                        
+                        if( $query->have_posts() ) {
+                            
+                            $existing_id = $query->posts[0]->ID;
+                        }
+                    }
+                }
+                elseif( strpos($type,'term_') === 0  ){
+                    
+                    $taxonomy = (strpos($key, ':') !== false) ? explode(':',$key,2)[1] : $key;
+                    
+                    if( $type == 'term_id' ){
+                        
+                        $value = intval($data[$key]);
+                        
+                        $term = get_term_by('id', $value, $taxonomy);
+                    }
+                    elseif( $type == 'term_slug' ){
+                        
+                        $value = sanitize_title($data[$key]);
+                        
+                        $term = get_term_by('slug',$value,$taxonomy);
+                    }
+                    elseif( $type == 'term_name' ){
+                        
+                        $value = sanitize_text_field($data[$key]);
+                        
+                        $term = get_term_by('name', $value, $taxonomy);
+                    }
+                    
+                    if( !empty($term) && !is_wp_error($term) ){
+                        
+                        $terms[] = $term;
+                        
+                        if( $key == $primary_key ){
+                            
+                            // TODO maybe prevent more than one item per term??
+                        }
+                    }
+                }
+                else{
+                    
+                    $value = self::sanitize_post_field($type,$data[$key]);
+                    
+                    $post[$type] = $value;
+                    
+                    if( $key == $primary_key ){
+                        
+                        if( $type == 'ID' ){
+                            
+                            if ( $existing_post = get_post($value) ) {
+                                
+                                $existing_id = $existing_post->ID;
+                            }
+                        } 
+                        elseif ($type == 'post_name') {
+                            
+                            $query = new WP_Query(array(
+                                
+                                'name'              => $value,
+                                'post_type'         => 'any',
+                                'posts_per_page'    => 1
+                            ));
+                            
+                            if( $query->have_posts() ){
+                                
+                                $existing_id = $query->posts[0]->ID;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if( empty($post['post_type']) ){
+                
+                // TODO set default post type
+                
+                $post['post_type'] = 'post';
+            }
+            
+            if( empty($post['post_status']) ){
+                
+                // TODO set default post status
+                
+                $post['post_status'] = 'draft';
+            }
+            
+            if( empty($post['post_author']) ){
+                
+                // TODO set default post author
+                
+                $post['post_author'] = 0;
+            }
+            
+            $post_id = null;
+            
+            if( $existing_id ){
+                
+                if( $duplicate == 'overwrite' ){
+                    
+                    $post['ID'] = $existing_id;
+                
+                    $post_id = wp_update_post($post);
+                }
+            } 
+            else{
+                
+                $post_id = wp_insert_post($post);
+            }
+           
+            if( !empty($post_id) ){
+                
+                foreach( $meta as $key => $value){
+                    
+                    update_post_meta($post_id,$key,$value);
+                }
+                
+                foreach( $terms as $term ) {
+                    
+                    wp_set_object_terms($post_id,$term->term_id,$term->taxonomy,true);
+                }
+            }
+        }
+    }
+    
+    public function import_post_thumbnail($data,$args,$task,$iteration=0){
+        
+        if( !empty($data['path']) && !empty($args['name']) && !empty($args['value']) && !empty($args['type']) ){
+            
+            // get post
+            
+            $path = realpath($data['path']);
+            
+            $filename = pathinfo($path, PATHINFO_FILENAME);
+            
+            $meta_name = sanitize_text_field($args['name']);
+            
+            $meta_value = str_replace('{%FILENAME%}',$filename,sanitize_text_field($args['value']));
+            
+            $post_type = sanitize_text_field($args['type']);
+            
+            $existing = !empty($args['existing']) ? sanitize_title($args['existing']) : 'skip';
+            
+            $posts = get_posts(array(
+                
+                'post_status'   => 'any',
+                'post_type'     => $post_type,
+                'numberposts'   => -1,
+                'meta_query'    => array(
+                
+                    array(
+                    
+                        'key'      => $meta_name,
+                        'value'    => $meta_value,
+                        'compare'  => '=',
+                    ),
+                ),
+            ));
+            
+            if( !empty($posts) ){
+                
+                foreach( $posts as $post ){
+                    
+                    if( $existing == 'replace' || !has_post_thumbnail($post->ID) ){
+                        
+                       $this->put_post_image($post,$path,'thumbnail');
+                    }
+                }
+            }
+        }
+    }
+
+    public function put_post_image($post,$path,$location='thumbnail'){
+        
+        if( is_numeric($post) ){
+            
+            $post = get_post($post);
+        }
+        
+        if( !empty($post) && is_object($post)  ){
+            
+            if ( !function_exists('media_handle_upload') ) {
+                
+                require_once(ABSPATH . "wp-admin" . '/includes/image.php');
+                require_once(ABSPATH . "wp-admin" . '/includes/file.php');
+                require_once(ABSPATH . "wp-admin" . '/includes/media.php');
+            }			
+            
+            if( file_exists($path) ){
+                
+                list($type,$ext) = explode('/',mime_content_type($path));
+                
+                if( $type == 'image' ){
+                    
+                    if ( $attach_id = media_handle_sideload( array(
+                    
+                        'name' 		=> $post->post_name . '.' . $ext,
+                        'tmp_name' 	=> $path,
+                    ), 
+                    null, 
+                    null, 
+                    array(
+                    
+                        'post_title' 	=> $post->post_title,
+                        'post_content'  => $post->post_content,
+                        
+                    ))){
+                        
+                        if( $location == 'thumbnail' ){
+                        
+                            set_post_thumbnail($post->ID, $attach_id);
+                        }
+                        else{
+                            
+                            // '_product_image_gallery'
+                            
+                            $gallery = get_post_meta($post->ID, $location, true);
+
+                            $ids = !empty($gallery) ? explode(',', $gallery) : array();
+
+                            if( !in_array($attach_id,$ids) ){
+                            
+                                $ids[] = $attach_id;
+
+                                update_post_meta($post->ID,$location, implode(',', $ids));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
 	public function export_post_data($post,$args,$task,$iteration=0) {
         
         if ( !empty($args['format']) && !empty($args['path'])  && !empty($args['filename']) && !empty($args['fields']) && is_array($args['fields']) ){
@@ -5150,13 +6157,7 @@ class Rew_Bulk_Editor {
             
             $prog = isset($task['rewbe_progress']) ? floatval($task['rewbe_progress']) : 0;
            
-            // Ensure the directory exists
-            
-            require_once(ABSPATH . 'wp-admin/includes/file.php');
-        
-            WP_Filesystem();
-            
-            global $wp_filesystem;
+            $wp_filesystem = $this->get_filesystem();
             
             $parent = $path;
 
@@ -5238,13 +6239,24 @@ class Rew_Bulk_Editor {
                 
                 if( !empty($urls) ){
                     
-                    foreach( $urls as $url ){
-                     
-                        if( $url == 'permalink' ){
+                    foreach( $urls as $type ){
+                        
+                        if( isset($options[$type]) ){
                             
-                            $fields[] = $url;
+                            $url = '';
                             
-                            $post_data[] = get_permalink($post);
+                            if( $type == 'permalink' ){
+                                
+                                $url = apply_filters('rew_prod_url',get_permalink($post));
+                            }
+                            elseif( $type == 'thumbnail' ){
+                                
+                                $url = apply_filters('rew_prod_url',get_the_post_thumbnail_url($post,'full'));
+                            }
+                            
+                            $fields[] = $type;
+                            
+                            $post_data[] = apply_filters('rew_prod_url',$url);
                         }
                     }
                 }
@@ -5277,7 +6289,7 @@ class Rew_Bulk_Editor {
                 }
                 
                 fputcsv($file_handle, $post_data,$separator,$enclosure);
-                //dump($post_data);
+                
                 //fputs($file_handle,implode($separator,$post_data).PHP_EOL);
                 
                 fclose($file_handle);   
@@ -5547,13 +6559,180 @@ class Rew_Bulk_Editor {
 			}
 		}
 		elseif( $task_type == 'data-task' ){
-			
-			
+            
+            if( $args = $this->parse_data_task_parameters($task) ){
+                
+                $items = count($this->get_dataset($args));
+            }
 		}
 		
 		return $items;
 	}
-	
+    
+    public function get_schedule_steps($task_type,$total){
+        
+        if( $task_type == 'data-task' ){
+            
+            $steps = 1;
+        }
+        else{
+            
+            $steps = ceil($total/$this->sc_items);
+        }
+        
+        return $steps;
+    }
+    
+    public function parse_data_task_parameters($task,$number=-1,$paged=1,$fields='all'){
+        
+        $args = array(
+        
+            'number'    => $number,
+            'paged'     => $paged,
+            'fields'    => $fields,
+            'query'     => array(),
+        );
+        
+        if( !empty($task[$this->_base.'data_source']) ){
+            
+            $args['type'] = !empty($task[$this->_base.'data_type']) ? sanitize_title($task[$this->_base.'data_type']) : 'json';
+            
+            if( $args['type'] == 'rest' ){
+                
+                $args['source'] = sanitize_url($task[$this->_base . 'data_source']);
+                
+                $args['method'] = !empty($task[$this->_base.'data_method']) ? sanitize_title($task[$this->_base.'data_method']) : 'get';
+                
+                $args['timeout'] = !empty($task[$this->_base.'data_timeout']) ? intval($task[$this->_base.'data_timeout']) : 15;
+            }
+            else{
+                
+                $args['source'] = realpath($task[$this->_base . 'data_source']);
+            }            
+        }
+        
+        return $args;
+    }
+    
+    public function get_dataset($args){
+        
+        $data = array();
+        
+        if( !empty($args['source']) ){
+           
+            $source = $args['source'];
+            
+            $type = $args['type'];
+            
+            $number = $args['number'];
+            
+            $paged = $args['paged'];
+            
+            $wp_filesystem = $this->get_filesystem();
+            
+            $data =array();
+            
+            if( $type == 'directory' ){
+                
+                $files = $wp_filesystem->dirlist($source);
+                
+                foreach( $files as $file_name => $file_info ){
+                    
+                    $data[] = array(
+                    
+                        'path' => trailingslashit($source) . $file_name,
+                    );
+                }
+            }
+            else{
+                
+                if( $type == 'rest' ){
+                     
+                    $method = $args['method'];
+                    
+                    $timeout = $args['timeout'];
+                
+                    $query = $args['query'];
+                
+                    if( $method == 'get' ){
+                        
+                        if( !empty($query) ){
+                            
+                            $source = add_query_arg($query,$source);
+                        }
+                        
+                        $response = wp_remote_get($source,array(
+                        
+                            'timeout' => $timeout,
+                        ));
+                    }
+                    elseif( $method == 'post' ){
+                       
+                        $response = wp_remote_post($source, array(
+                        
+                            'body'    => $query,
+                            'timeout' => $timeout,
+                        ));
+                    }
+                    
+                    if( !empty($response) ){
+                        
+                        if( !is_wp_error($response) ){
+                            
+                            $body = wp_remote_retrieve_body($response);
+                        }
+                    }
+                }
+                elseif( file_exists($source) && is_readable($source) ){
+                    
+                    $body = file_get_contents($source);
+                }
+               
+                if( !empty($body) ){
+                    
+                    $data = $this->parse_dataset($body,$type);
+                }
+            }
+
+            if( !empty($data) && $number > 0 ){
+                
+                $offset = ($paged - 1) * $number;
+
+                $data = array_slice($data,$offset,$number);
+            }
+        }
+        
+        return $data;
+    }
+    
+    public function parse_dataset($body,$type){
+        
+        $data = array();
+        
+        if( $type == 'csv' ){
+            
+            $rows = array_map('str_getcsv',explode(PHP_EOL,$body));
+
+            $rows = array_filter($rows);
+
+            if( !empty($rows) ){
+                   
+                $headers = array_shift($rows);
+
+                foreach( $rows as $row ){
+                    
+                    $data[] = array_combine($headers,$row);
+                }
+            }
+        }
+        else{
+            
+            $data = json_decode($body,true);
+        }
+        
+        return $data;
+    }
+    
 	public function retrieve_task_items($type,$task,$number=10,$paged=1,$fields='all'){
 		
 		$items = 0;
@@ -5585,7 +6764,10 @@ class Rew_Bulk_Editor {
 		}
 		elseif( $type == 'data-task' ){
 			
-			
+            if( $args = $this->parse_data_task_parameters($task,$number,$paged,$fields) ){
+            
+                $items = $this->get_dataset($args);
+            }
 		}
 		
 		return $items;
@@ -6169,23 +7351,25 @@ class Rew_Bulk_Editor {
 	
 	public function render_task_action(){
 		
-		if( current_user_can('edit_posts') && !empty($_GET['pid']) && !empty($_GET['type']) && !empty($_GET['ba']) ){
-			
-			if( $post_id = intval($_GET['pid']) ){
+		if( current_user_can('edit_posts') && !empty($_POST['task']) && !empty($_POST['pid']) && !empty($_POST['type']) && !empty($_POST['ba']) ){
+
+			if( $bulk_action = sanitize_title($_POST['ba']) ){	
+                
+                $post_id = intval($_POST['pid']);
 				
-				$post = get_post($post_id);
-               
-				if( $bulk_action = sanitize_title($_GET['ba']) ){
-					
+                if( $post = get_post($post_id) ){
+                    
                     $task_type = $post->post_type;
                     
-                    $item_type = sanitize_title($_GET['type']);
+                    $item_type = sanitize_title($_POST['type']);
 
+                    $task = $this->sanitize_task_meta($_POST['task']);
+                    
                     if( $field = $this->get_actions_field($task_type,$item_type,$task,$bulk_action) ){
                         
                         $this->admin->display_meta_box_field($field,$post);
                     }
-					
+                   
 					if( $actions = $this->get_task_actions($task_type,$item_type,$task) ){
 						
 						foreach( $actions as $action ){

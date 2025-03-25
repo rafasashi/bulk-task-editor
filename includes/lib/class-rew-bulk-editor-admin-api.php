@@ -35,7 +35,7 @@ class Rew_Bulk_Editor_Admin_API {
 	 * @return string
 	 */
 	public function display_field( $data = array(), $post = null, $echo = true ) {
-
+        
 		// Get field info.
 		if ( isset( $data['field'] ) ) {
 			$field = $data['field'];
@@ -279,6 +279,88 @@ class Rew_Bulk_Editor_Admin_API {
 				}
 				$html .= '</select> ';
 			break;
+            case 'data_fields':
+                
+                if( !empty($field['options']) ){
+                    
+                    if( !empty($data['key']) && !empty($data['value']) ){
+                        
+                        $data = array_combine($data['key'],$data['value']);
+                    }
+                    else{
+                        
+                        $data = array(
+                        
+                            'key'       => array(),
+                            'value'   => array(),
+                        );
+                    }
+                    
+                    foreach( $field['options'] as $option ) {
+                        
+                        $html .= '<div style="clear:both;">';
+                        
+                            $html .= $this->display_field(array(
+						
+                                'id' 	=> $field['id'] . '_key',
+                                'name' 	=> $option_name.'[key][]',
+                                'type'	=> 'hidden',
+                                'data'  => $option,
+                            
+                            ),null,false);
+                            
+                            $html .= $this->display_field(array(
+						
+                                'id' 	    => $field['id'] . '_key',
+                                'name' 	    => $option_name.'[key][]',
+                                'type'	    => 'text',
+                                'disabled'  => true,
+                                'data'      => $option,
+                                'style'     => 'float:left;width:40%;',
+                            
+                            ),null,false);
+                            
+                            $html .= '<div style="float:left;padding:6px;margin-bottom:5px;"> to </div>';
+                            
+                            $value = '';
+                           
+                            if( !empty($data[$option]) ){
+                                
+                                $value = $data[$option];
+                            }
+                            elseif( isset($field['attrs'][$option]) ){
+                                
+                                $value = $option;
+                            }
+                            elseif( strpos($option,'tax:') === 0 ){
+                                
+                                $value = 'term_slug';
+                            }
+                            elseif( strpos($option,'meta:') === 0 ){
+                                
+                                $value = 'meta';
+                            }
+                            
+                            $html .= $this->display_field(array(
+						
+                                'id' 			=> $field['id'] . '_value',
+                                'name' 			=> $option_name.'[value][]',
+                                'type'			=> 'select',
+                                'style'         => 'float:left;width:40%;',
+                                'data'          => $value,
+                                'options'		=> array(
+                                
+                                    '' => 'Select a field',
+                                    
+                                ) + $field['attrs'],
+                                
+                            ),null,false);
+                            
+                        $html .= '</div>';
+                    }   
+                }
+                
+            break;
 			case 'array':
 				
 				if( 	!isset($data['key']) 
@@ -1009,7 +1091,7 @@ class Rew_Bulk_Editor_Admin_API {
 			
 				$html .= '<div class="item">';
 					
-                    $html .= '<input style="width:60%;float:left;" type="text" value="Task '.$field['number'].' - ' . $data['name'] . '" disabled="disabled"/>';
+                    $html .= '<div style="padding:7px;width:54%;float:left;"><b>Task '.$field['number'].'</b> - <a href="'.admin_url('post.php?post='.$data['id'].'&action=edit').'" target="_blank">' . $data['name'] . '</a></div>';
 
 					$html .= '<input type="hidden" value="' . $data['id'] . '" name="'.$option_name.'[]"/>';
 					
@@ -1129,25 +1211,25 @@ class Rew_Bulk_Editor_Admin_API {
 			case 'select_multi':
 				if( !empty($field['description']) ){
 				
-					$html .= '<p class="description" style="margin-bottom:7px;font-style:italic;">' . $field['description'] . '</p>';
+					$html .= '<p class="description" style="clear:both;margin-bottom:7px;font-style:italic;">' . $field['description'] . '</p>';
 				}
 			break;
 			default:
 				
-				if ( !$post && isset($field['id']) ){
-					
-					$html .= '<label for="' . esc_attr( $field['id'] ) . '">' . PHP_EOL;
-				}
-				
 				if( !empty($field['description']) ){
-
+                      
+                    if ( !$post && isset($field['id']) ){
+                        
+                        $html .= '<label for="' . esc_attr( $field['id'] ) . '">' . PHP_EOL;
+                    }
+                    
 					$html .= '<div class="description" style="display:block;margin-bottom:7px;font-style:italic;">' . $field['description'] . '</div>' . PHP_EOL;
-				}
 				
-				if ( !$post && isset($field['id']) ){
-					
-					$html .= '</label>' . PHP_EOL;
-				}
+                    if ( !$post && isset($field['id']) ){
+                        
+                        $html .= '</label>' . PHP_EOL;
+                    }
+                }
 				
 				break;
 		}
