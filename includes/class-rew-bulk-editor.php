@@ -6247,8 +6247,22 @@ class Rew_Bulk_Editor {
                         update_post_meta($attach_id,$this->_base.'imported_filename',$filename);
                     }
                     
-                    if( !empty($attach_id) ){
-                    
+                    if( is_wp_error($attach_id) ){
+                        
+                        $error = $attach_id->errors;
+                       
+                        if( isset($error['upload_error']) ){
+                            
+                            // skip
+                        }
+                        else{
+                            
+                            print_r($error);
+                            die;
+                        }
+                    }
+                    elseif( is_numeric($attach_id) && !empty($attach_id) ){
+                        
                         if( $location == 'thumbnail' ){
                             
                             if( $insert == 'replace' || !has_post_thumbnail($post->ID) ){
@@ -6260,7 +6274,7 @@ class Rew_Bulk_Editor {
                             
                             $gallery = get_post_meta($post->ID, $location, true);
 
-                            $ids = !empty($gallery) ? explode(',', $gallery) : array();
+                            $ids = !empty($gallery) && is_string($gallery) ? explode(',',$gallery) : array();
                             
                             $index = intval($insert);
                             
@@ -6270,7 +6284,7 @@ class Rew_Bulk_Editor {
                             }
                             
                             $ids[$index] = $attach_id;
-
+                            
                             update_post_meta($post->ID,$location, implode(',',$ids));
                         }
                     }
