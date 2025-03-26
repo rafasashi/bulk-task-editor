@@ -1741,7 +1741,7 @@ class Rew_Bulk_Editor {
 				// progress
 				
                 $total = $this->count_task_items('data-task',$task);
-                
+               
                 $sc_steps = $this->get_schedule_steps('data-task',$total);
                 
                 $fields[]= $this->get_progress_scheduled_field('data',$task,$sc_steps);
@@ -1880,8 +1880,44 @@ class Rew_Bulk_Editor {
                                 ),
                             ),
                         );
+                        
+                        $actions[] = array(
+                            
+                            'label' 	    => 'Import Image Galleries',
+                            'id' 		    => 'import_image_gallery',
+                            'fields' 	    => array(
+                                array(
+            
+                                    'name'          => 'type',
+                                    'label'       	=> 'Post Type',
+                                    'type'        	=> 'select',
+                                    'options'	  	=> $this->get_post_type_options('thumbnail'),
+                                ),
+                                array(
+                                    'name' 		    => 'name',
+                                    'type'		    => 'text',
+                                    'label'	        => 'Meta Key',
+                                    'default'	    => '_thumb_name_',
+                                    'description'   => 'Meta key used to find the post to be associated with the image.',
+                                ),
+                                array(
+                                    'name' 		    => 'value',
+                                    'type'		    => 'text',
+                                    'label'	        => 'Meta Value',
+                                    'default'	    => 'prefix-{%FILENAME%}-suffix',
+                                    'description'   => 'Pattern to find the post via meta key. {%FILENAME%} is dynamically replaced.',
+                                ),
+                                array(
+                                    'name' 		    => 'gallery',
+                                    'type'		    => 'text',
+                                    'label'	        => 'Gallery Name',
+                                    'default'	    => '_product_image_gallery', // _product_image_gallery
+                                    'description'   => 'Meta key used to store the ids of the gallery images.',
+                                ),
+                            ),
+                        );
                     }
-                    elseif( $items = $this->get_dataset($args,1,1) ){
+                    elseif( $items = $this->get_dataset($args) ){
                         
                         $item = reset($items);
                         
@@ -4221,7 +4257,7 @@ class Rew_Bulk_Editor {
                 $files = $this->get_data_files($task_id);
                 
                 $remaining = max(0,( count($files) - 1 ) * $per_process );
-               
+                
                 if( !empty($files) ){
                     
                     $source = $files[0];
@@ -4243,6 +4279,10 @@ class Rew_Bulk_Editor {
                             elseif( $action == 'import_post_thumbnail' ){
                             
                                 add_action('rewbe_do_data_import_post_thumbnail',array($this,'import_post_thumbnail'),10,4);
+                            }
+                            elseif( $action == 'import_image_gallery' ){
+                            
+                                add_action('rewbe_do_data_import_image_gallery',array($this,'import_image_gallery'),10,4);
                             }
                             
                             foreach( $items as $iteration => $item ){
@@ -4436,7 +4476,7 @@ class Rew_Bulk_Editor {
 					$actions = $this->get_taxonomy_actions($task[$this->_base.'taxonomy'],$task);
 					
 					if( !empty($actions[$action]) ){
-							
+						
 						$args = $this->parse_term_task_parameters($task,$this->sc_items,$step);
 						
 						if( $ids = get_terms($args) ){
@@ -4481,19 +4521,26 @@ class Rew_Bulk_Editor {
                             
                             if( !empty($items) ){
                                 
-                                // split items into sub datasets
-                                
                                 $per_process = apply_filters('rewbe_items_per_process',intval($task[$this->_base.'per_process']),$task);
                                 
-                                $pr_steps = ceil(count($items)/$per_process);
+                                $pr_steps = ceil($this->sc_items / $per_process); 
+
+                                $start = ( $pr_steps * ($step - 1) ) + 1; 
+
+                                $end = $start + $pr_steps - 1;
                                 
-                                for( $pr_step = 1; $pr_step <= $pr_steps; $pr_step++ ){
+                                for( $pr_step = $start; $pr_step <= $end; $pr_step++ ){
                                 
                                     $offset = ($pr_step - 1) * $per_process;
-
-                                    $data = array_slice($items,$offset,$per_process);
-                                
-                                    $this->put_task_data($post->ID,$data,$pr_step,$type);
+                                    
+                                    if( $data = array_slice($items,$offset,$per_process) ){
+                                    
+                                        $this->put_task_data($post->ID,$data,$pr_step,$type);
+                                    }
+                                    else{
+                                        
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -6076,17 +6123,70 @@ class Rew_Bulk_Editor {
             if( !empty($posts) ){
                 
                 foreach( $posts as $post ){
-                    
-                    if( $existing == 'replace' || !has_post_thumbnail($post->ID) ){
-                        
-                       $this->put_post_image($post,$path,'thumbnail');
-                    }
+                       
+                    $this->put_post_image($post,$path,'thumbnail',$existing);
                 }
             }
         }
     }
 
-    public function put_post_image($post,$path,$location='thumbnail'){
+    public function import_image_gallery($data,$args,$task,$iteration=0){
+        
+        if( !empty($data['path']) && !empty($args['name']) && !empty($args['value']) && !empty($args['type']) ){
+            
+            // get post
+            
+            $path = realpath($data['path']);
+            
+            $filename = pathinfo($path,PATHINFO_FILENAME);
+            
+            if( str_contains($filename, '_') ){
+                
+                $parts = explode('_', $filename);
+                
+                $index = array_pop($parts);
+
+                if( is_numeric($index) ){
+                    
+                    $filename = implode('_',$parts);
+                }
+            }
+            
+            $meta_name = sanitize_text_field($args['name']);
+            
+            $meta_value = str_replace('{%FILENAME%}',$filename,sanitize_text_field($args['value']));
+            
+            $gallery_name = sanitize_text_field($args['gallery']);
+            
+            $post_type = sanitize_text_field($args['type']);
+            
+            $posts = get_posts(array(
+                
+                'post_status'   => 'any',
+                'post_type'     => $post_type,
+                'numberposts'   => -1,
+                'meta_query'    => array(
+                
+                    array(
+                    
+                        'key'      => $meta_name,
+                        'value'    => $meta_value,
+                        'compare'  => '=',
+                    ),
+                ),
+            ));
+            
+            if( !empty($posts) ){
+                
+                foreach( $posts as $post ){
+                    
+                    $this->put_post_image($post,$path,$gallery_name,$index);
+                }
+            }
+        }
+    }
+    
+    public function put_post_image($post,$path,$location='thumbnail',$insert='skip'){
         
         if( is_numeric($post) ){
             
@@ -6108,7 +6208,29 @@ class Rew_Bulk_Editor {
                 
                 if( $type == 'image' ){
                     
-                    if ( $attach_id = media_handle_sideload( array(
+                    $filename = basename($path);
+                    
+                    $attachments = get_posts( array(
+                    
+                        'post_type'      => 'attachment',
+                        'post_status'    => 'inherit',
+                        'posts_per_page' => 1,
+                        'fields'         => 'ids',
+                        'meta_query'     => array(
+                        
+                            array(
+                            
+                                'key'   => $this->_base . 'imported_filename',
+                                'value' => $filename,
+                            )
+                        ),
+                    ));
+
+                    if( !empty($attachments) ){
+                    
+                        $attach_id = intval($attachments[0]);
+                    }
+                    elseif ( $attach_id = media_handle_sideload( array(
                     
                         'name' 		=> $post->post_name . '.' . $ext,
                         'tmp_name' 	=> $path,
@@ -6122,24 +6244,34 @@ class Rew_Bulk_Editor {
                         
                     ))){
                         
+                        update_post_meta($attach_id,$this->_base.'imported_filename',$filename);
+                    }
+                    
+                    if( !empty($attach_id) ){
+                    
                         if( $location == 'thumbnail' ){
-                        
-                            set_post_thumbnail($post->ID, $attach_id);
+                            
+                            if( $insert == 'replace' || !has_post_thumbnail($post->ID) ){
+                     
+                                set_post_thumbnail($post->ID,$attach_id);
+                            }
                         }
                         else{
-                            
-                            // '_product_image_gallery'
                             
                             $gallery = get_post_meta($post->ID, $location, true);
 
                             $ids = !empty($gallery) ? explode(',', $gallery) : array();
-
-                            if( !in_array($attach_id,$ids) ){
                             
-                                $ids[] = $attach_id;
-
-                                update_post_meta($post->ID,$location, implode(',', $ids));
+                            $index = intval($insert);
+                            
+                            if( $index >= count($ids) ){
+                                
+                                $ids = array_pad($ids,$index + 1,''); // Pad with empty strings up to the index
                             }
+                            
+                            $ids[$index] = $attach_id;
+
+                            update_post_meta($post->ID,$location, implode(',',$ids));
                         }
                     }
                 }
@@ -6571,16 +6703,7 @@ class Rew_Bulk_Editor {
     
     public function get_schedule_steps($task_type,$total){
         
-        if( $task_type == 'data-task' ){
-            
-            $steps = 1;
-        }
-        else{
-            
-            $steps = ceil($total/$this->sc_items);
-        }
-        
-        return $steps;
+        return ceil($total/$this->sc_items);
     }
     
     public function parse_data_task_parameters($task,$number=-1,$paged=1,$fields='all'){
@@ -6635,6 +6758,8 @@ class Rew_Bulk_Editor {
             if( $type == 'directory' ){
                 
                 $files = $wp_filesystem->dirlist($source);
+                
+                ksort($files, SORT_NATURAL);
                 
                 foreach( $files as $file_name => $file_info ){
                     
