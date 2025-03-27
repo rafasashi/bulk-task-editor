@@ -4261,6 +4261,7 @@ class Rew_Bulk_Editor {
                 if( !empty($files) ){
                     
                     $source = $files[0];
+                    //$source = $files[array_rand($files)]; 
                     
                     if( file_exists($source) && is_readable($source) ){
                         
@@ -6195,13 +6196,6 @@ class Rew_Bulk_Editor {
         
         if( !empty($post) && is_object($post)  ){
             
-            if ( !function_exists('media_handle_upload') ) {
-                
-                require_once(ABSPATH . "wp-admin" . '/includes/image.php');
-                require_once(ABSPATH . "wp-admin" . '/includes/file.php');
-                require_once(ABSPATH . "wp-admin" . '/includes/media.php');
-            }			
-            
             if( file_exists($path) ){
                 
                 list($type,$ext) = explode('/',mime_content_type($path));
@@ -6225,26 +6219,40 @@ class Rew_Bulk_Editor {
                             )
                         ),
                     ));
-                   
+                    
                     if( !empty($attachments) ){
                     
                         $attach_id = intval($attachments[0]);
                     }
-                    elseif ( $attach_id = media_handle_sideload( array(
-                    
-                        'name' 		=> $post->post_name . '.' . $ext,
-                        'tmp_name' 	=> $path,
-                    ), 
-                    null, 
-                    null, 
-                    array(
-                    
-                        'post_title' 	=> $post->post_title,
-                        'post_content'  => $post->post_content,
+                    else{
                         
-                    ))){
+                        if ( !function_exists('media_handle_sideload') ) {
+                            
+                            require_once(ABSPATH . "wp-admin" . '/includes/image.php');
+                            require_once(ABSPATH . "wp-admin" . '/includes/file.php');
+                            require_once(ABSPATH . "wp-admin" . '/includes/media.php');
+                        }			
+            
+                        $post_name = sanitize_title($post->post_title);
                         
-                        update_post_meta($attach_id,$this->_base.'imported_filename',$filename);
+                        $attach_id = media_handle_sideload( array(
+                        
+                            'name' 		=> $post_name . '.' . $ext,
+                            'tmp_name' 	=> $path,
+                        ), 
+                        null, 
+                        null, 
+                        array(
+                        
+                            'post_title' 	=> $post->post_title,
+                            'post_content'  => $post->post_content,
+                            
+                        ));
+                        
+                        if( !is_wp_error($attach_id) ){
+                            
+                            update_post_meta($attach_id,$this->_base.'imported_filename',$filename);
+                        }
                         
                         if( function_exists('gc_collect_cycles') ){
                         
@@ -6298,6 +6306,55 @@ class Rew_Bulk_Editor {
         }
     }
     
+    public function debug_image_processing($path) {
+        
+        $info = [
+            'file_details' => [
+                'path' => $path,
+                'exists' => file_exists($path),
+                'readable' => is_readable($path),
+                'file_size' => filesize($path)
+            ],
+            'getimagesize' => getimagesize($path)
+        ];
+
+        // Log file details
+        error_log('File Path: ' . $path);
+        error_log('File Exists: ' . ($info['file_details']['exists'] ? 'Yes' : 'No'));
+        error_log('File Readable: ' . ($info['file_details']['readable'] ? 'Yes' : 'No'));
+        error_log('File Size: ' . $info['file_details']['file_size'] . ' bytes');
+
+        // Imagick processing if available
+        if (extension_loaded('imagick')) {
+            try {
+                $imagick = new Imagick($path);
+                $info['imagick'] = [
+                    'geometry' => $imagick->getImageGeometry(),
+                    'format' => $imagick->getImageFormat(),
+                    'color_space' => $imagick->getColorSpace(),
+                    'compression' => $imagick->getImageCompression()
+                ];
+                error_log('Imagick Geometry: ' . print_r($info['imagick']['geometry'], true));
+            } catch (Exception $e) {
+                $info['imagick_error'] = $e->getMessage();
+                error_log('Imagick Error: ' . $e->getMessage());
+            }
+        }
+
+        // File header check
+        $handle = fopen($path, 'rb');
+        $header = fread($handle, 256);
+        fclose($handle);
+        
+        $info['file_header'] = [
+            'hex' => bin2hex($header),
+            'first_20_chars' => substr($header, 0, 20)
+        ];
+        
+        error_log('File Header (hex): ' . $info['file_header']['hex']);
+
+        return $info;
+    }
 	public function export_post_data($post,$args,$task,$iteration=0) {
         
         if ( !empty($args['format']) && !empty($args['path'])  && !empty($args['filename']) && !empty($args['fields']) && is_array($args['fields']) ){
