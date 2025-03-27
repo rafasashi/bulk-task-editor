@@ -923,6 +923,7 @@
 		}
 		
 		var processing;
+        var progressThrottle = 0;
 		
 		load_task_items();
 		
@@ -1036,12 +1037,16 @@
                             
                             $("#rewbe_task_processed").removeClass("loading loading-right");
                         }
+                        
+                        progressThrottle = 0;
 					},
 					error: function(xhr, status, error){
 						
+                        progressThrottle += 10;
+                        
 						open_task_console('Error ' + xhr.status  + ' processing task: ' + xhr.responseText,'error');
 
-                        open_task_console('Retrying after 10 seconds...','warning');
+                        open_task_console('Retrying after ' + progressThrottle + ' seconds...','warning');
                         
                         //$("#rewbe_task_processed").removeClass("loading loading-right");
                         
@@ -1049,7 +1054,7 @@
                             
                             $.ajaxQueue(this);
                             
-                        }.bind(this),10000);
+                        }.bind(this),progressThrottle*1000);
 					}
 				});
 			}

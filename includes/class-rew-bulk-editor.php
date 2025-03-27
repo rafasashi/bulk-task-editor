@@ -6225,7 +6225,7 @@ class Rew_Bulk_Editor {
                             )
                         ),
                     ));
-
+                   
                     if( !empty($attachments) ){
                     
                         $attach_id = intval($attachments[0]);
@@ -6245,6 +6245,11 @@ class Rew_Bulk_Editor {
                     ))){
                         
                         update_post_meta($attach_id,$this->_base.'imported_filename',$filename);
+                        
+                        if( function_exists('gc_collect_cycles') ){
+                        
+                            gc_collect_cycles(); // Force garbage collection
+                        }
                     }
                     
                     if( is_wp_error($attach_id) ){
