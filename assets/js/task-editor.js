@@ -1010,8 +1010,8 @@
                                 
                                 if( prog < 100 ){
                                     
-                                    var delay = method == 'cron' ? 30000 : 0;
-                                    
+                                    var delay = $('#rewbe_interval').val() * 1000;
+                                    console.log(delay);
                                     setTimeout(function(){
                                         
                                         load_task_progress();

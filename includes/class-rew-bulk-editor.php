@@ -528,6 +528,8 @@ class Rew_Bulk_Editor {
 				
 				$fields[]= $this->get_per_process_field($task);
 				
+                $fields[]= $this->get_calling_interval_field($task);
+                
 				$fields[]= $this->get_process_calling_field($task);
 				
 				$fields[]= $this->get_process_status_field($task);
@@ -1231,6 +1233,8 @@ class Rew_Bulk_Editor {
 				
 				$fields[]= $this->get_per_process_field($task);
 
+                $fields[]= $this->get_calling_interval_field($task);
+                
 				$fields[]= $this->get_process_calling_field($task);
 				
 				$fields[]= $this->get_process_status_field($task);
@@ -1483,6 +1487,8 @@ class Rew_Bulk_Editor {
 				
 				$fields[]= $this->get_per_process_field($task);
 
+                $fields[]= $this->get_calling_interval_field($task);
+                
 				$fields[]= $this->get_process_calling_field($task);
 				
 				$fields[]= $this->get_process_status_field($task);
@@ -1734,8 +1740,10 @@ class Rew_Bulk_Editor {
 				
 				$fields[]= $this->get_per_process_field($task);
 				
-				$fields[]= $this->get_process_calling_field($task);
+                $fields[]= $this->get_calling_interval_field($task);
 				
+				$fields[]= $this->get_process_calling_field($task);
+                
 				$fields[]= $this->get_process_status_field($task);
 				
 				// progress
@@ -2047,6 +2055,21 @@ class Rew_Bulk_Editor {
 			'type'        	=> 'radio',
 			'options'       => $options,
 			'default'       => 'ajax',
+		);
+	}
+
+	public function get_calling_interval_field($task){
+		
+		return array(
+			
+			'metabox' 		=> array('name'=>'bulk-editor-process'),
+			'id'        	=> $this->_base . 'interval',
+			'label'       	=> 'Calling interval (sec)',
+			'type'        	=> 'number',
+			'default'       => 0,
+            'min'           => 0,
+            'max'           => 10000,
+            'step'          => 1,
 		);
 	}
 	
